@@ -1,0 +1,871 @@
+{
+  "name": "Al-Hegn",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=you are a helpful ai bot, called Lnamoos , answer any queries about alnamoos racings for camel racings in dubai"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        192
+      ],
+      "id": "eeaf1f02-63eb-4a57-b2e3-a0eb5df4eb9e",
+      "name": "AI Agent4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        256,
+        384
+      ],
+      "id": "802a76a3-18e4-4234-9120-42fed68a32eb",
+      "name": "Google Gemini Chat Model4",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.Title }}",
+        "regionCode": "AE",
+        "categoryId": "17",
+        "options": {
+          "description": "={{ $json.Description }}",
+          "privacyStatus": "public",
+          "selfDeclaredMadeForKids": false,
+          "tags": "={{ $json.tags }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        544
+      ],
+      "id": "0109d806-dcd3-4c3f-b57d-da068e951892",
+      "name": "Upload a video"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1z6Z_Y5GBoczciwLt_JPtaZ1JePlYh0Zy",
+            "mode": "list",
+            "cachedResultName": "Al Namoos",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1z6Z_Y5GBoczciwLt_JPtaZ1JePlYh0Zy"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1184,
+        144
+      ],
+      "id": "1849592a-7d9c-4195-83af-b5c7ae38431f",
+      "name": "Search files and folders",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5963701b-ee78-4111-91f0-8f0147ea5d19",
+              "name": "Description",
+              "value": "={{ $json.Description }}",
+              "type": "string"
+            },
+            {
+              "id": "597c1dc4-f855-4533-85c9-480fec28d83c",
+              "name": "tags",
+              "value": " #دبي #الإمارات #سباق_الهجن #الهجن #camel_racing #الناموس #Alnamoos #dubai #فطامين #حقايق #لقايا #ثنايا #حول #زمول #تسعيرة",
+              "type": "string"
+            },
+            {
+              "id": "af4f7973-9c6f-4640-97c0-a23e91ae3298",
+              "name": "title",
+              "value": "={{ \n  $('Search files and folders').item.json.name\n    .split('-')                              // split by hyphens\n    .filter((part, i) => i !== 1)            // remove the \"سن حقايق\" part\n    .join(' ')                               // join with single space\n    .replace(/\\s+\\d{4}\\/\\d{2}\\/\\d{2}/, '')   // remove the date\n    .replace(/\\s+/g, ' ')                    // collapse multiple spaces\n    .trim()                                  // clean both ends\n}}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -848,
+        496
+      ],
+      "id": "a726a182-93fe-4456-a533-ff12ee8fa398",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1392,
+        480
+      ],
+      "id": "97143086-84a7-401f-ae46-8797f2be7444",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A",
+          "mode": "list",
+          "cachedResultName": "Alnamoos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Get row(s) in sheet').item.json.id }}",
+            "Status": "Done",
+            "URL": "=https://www.youtube.com/watch?v={{ $json.uploadId }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Race",
+              "displayName": "Race",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -368,
+        544
+      ],
+      "id": "0b0d9774-8b9a-4277-9d3c-c8e7df1a8106",
+      "name": "Append or update row in sheet"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A",
+          "mode": "list",
+          "cachedResultName": "Alnamoos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "id",
+              "lookupValue": "={{ $('Loop Over Items').item.json.name.split(\".mp4\")[0] }}"
+            },
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "For Upload"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1216,
+        496
+      ],
+      "id": "8c72bd4f-da1b-4f41-8504-4a1570dda3ba",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -992,
+        144
+      ],
+      "id": "b5052f77-2876-4637-925f-95af49e3b397",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -800,
+        208
+      ],
+      "id": "d394fe63-8d4d-4140-93aa-1a1ef88013dd",
+      "name": "Search files and folders1"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Loop Over Items').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1024,
+        496
+      ],
+      "id": "8c85c136-0bcf-42a4-825d-e575b15bf61e",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A",
+          "mode": "list",
+          "cachedResultName": "Alnamoos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "سباق تأهيلي المرموم - سن حقايق - الجمعة 2025/10/24",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/143PPCDoZ1GIoV_PwaETtewqtriHYcHWaB41v9gtqh_A/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1136,
+        864
+      ],
+      "id": "adb78f95-91a3-4544-bd27-7a4c34255f60",
+      "name": "Get row(s) in sheet1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9985ec03-4c29-494f-a64a-9cf5c33b7674",
+              "name": "URL",
+              "value": "={{ $json.Title }}\n{{ $('Get row(s) in sheet1').item.json.URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -944,
+        864
+      ],
+      "id": "4933dd4b-693f-493d-9eb7-d8eb1323f687",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        144
+      ],
+      "id": "0c3c6e8c-53ff-44d9-841b-8d8d2bca9b4e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "chatId": "1560629909",
+        "text": "={{ $json.URL }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -528,
+        912
+      ],
+      "id": "65c57758-98f8-4e73-8586-64980c5c7a20",
+      "name": "Send a text message",
+      "webhookId": "27ac880d-9af0-4f9b-9779-cbd0f1935533"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1328,
+        864
+      ],
+      "id": "bc6d18b7-b59b-4eb6-84ac-2f8e8df1ee25",
+      "name": "Edit Fields3",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -752,
+        896
+      ],
+      "id": "32048501-3661-465b-a481-17632d7fcf34",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "content": "## Next Step Ai Agents",
+        "height": 560,
+        "width": 928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "91e1095b-cf65-479e-8434-5ee96e65c1f7",
+      "name": "Sticky Note",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        208
+      ],
+      "id": "31a4d72d-47fc-46e1-af34-bcb5c0ab2c8c",
+      "name": "Telegram Trigger",
+      "webhookId": "f5f267d3-1b35-45bf-a7e6-3abdbdd17aba",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        192
+      ],
+      "id": "5a84b04b-640c-4d75-8736-e1f3fdbc33a0",
+      "name": "Send a text message1",
+      "webhookId": "27ac880d-9af0-4f9b-9779-cbd0f1935533"
+    },
+    {
+      "parameters": {
+        "content": "## Check for new Videos",
+        "height": 336,
+        "width": 816
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1472,
+        32
+      ],
+      "typeVersion": 1,
+      "id": "1ae5b644-3d49-4dda-af8e-9fb0f52d047e",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Automation on videos",
+        "height": 352,
+        "width": 816,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1488,
+        416
+      ],
+      "typeVersion": 1,
+      "id": "f61792eb-e4b6-42c9-9461-dd256754b57f",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Upload on social meda",
+        "height": 336,
+        "width": 1264,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1488,
+        800
+      ],
+      "typeVersion": 1,
+      "id": "fd3c6f26-c3d0-4c05-a6ae-ea52afa764ca",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        912
+      ],
+      "id": "2d7670d2-1a63-4487-95cf-6804bee59421",
+      "name": "Wait",
+      "webhookId": "f765016d-e804-47c7-bb8b-7373f1fad8ef"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.result.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        912
+      ],
+      "id": "24ad5aaf-13d1-47c0-bd9e-35305abf8959",
+      "name": "Create Tweet",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        784
+      ],
+      "id": "e061328a-805b-4fcc-a455-3e2a3f771966",
+      "name": "Telegram Trigger1",
+      "webhookId": "f5f267d3-1b35-45bf-a7e6-3abdbdd17aba"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=مرحبا\nسباق تاهيل #المرموم 2025/10/24 الشوط 4 - الراجح لـ علي سالم حمد أبوشقله المري 4:32:0\nhttps://www.youtube.com/watch?v=3yQMoJVz6mA",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        784
+      ],
+      "id": "2d152afc-beb1-4043-8342-859c1223f729",
+      "name": "Send a text message2",
+      "webhookId": "27ac880d-9af0-4f9b-9779-cbd0f1935533"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent4": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a video": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Create Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Tweet": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a8900083-7948-4f8c-8a97-bdd8609434f5",
+  "meta": {
+    "instanceId": "f918e9fa1c3bab72c3d0a6ccda7f1a4dfaa52e47d5bc79d13a6c664c3f81640d"
+  },
+  "id": "QDhjxHk0gHVYwoTg",
+  "tags": []
+}

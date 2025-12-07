@@ -1,0 +1,1164 @@
+{
+  "name": "Open WebUI - streaming",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        752,
+        192
+      ],
+      "id": "c1741895-a9c6-4208-bfdd-22c5df1480b5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const body = item.json.body;\n\n  // Unpack top-level fields in body\n  for (const key in body) {\n    if (key !== 'user') { // skip 'user' for now\n      item.json[key] = body[key];\n    }\n  }\n\n  // Unpack all fields inside 'user'\n  if (body.user) {\n    const user = typeof body.user === 'string' ? JSON.parse(body.user) : body.user;\n    for (const key in user) {\n      item.json['user_' + key] = user[key]; // prefix user fields with 'user_'\n    }\n  }\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        192
+      ],
+      "id": "85a04361-4e89-4112-9f8b-d9fe8849fe3b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "95d7f003-7c80-47e0-9a9b-1cacdfcb3734",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        192
+      ],
+      "id": "1b072ded-4e4b-488d-810c-c9f9d941c368",
+      "name": "Webhook1",
+      "webhookId": "95d7f003-7c80-47e0-9a9b-1cacdfcb3734"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data",
+        "options": {
+          "mimeType": "image/jpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        192
+      ],
+      "id": "be254f52-576d-4b80-b080-70795aaaf696",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "28c47508-6d8a-4062-90c1-b4e7f4276752",
+              "name": "data",
+              "value": "={{ $json.user_profile_image_url.split(',')[1].replace(/[\"\\n\\r]/g, '').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        192
+      ],
+      "id": "fc9b7fb2-8568-4bc2-ac2b-ef5edf9990de",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.sessionId }}"
+      },
+      "id": "f142dbae-1461-435f-a485-2304d6e8a730",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -400
+      ],
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "YO7hD29qOgyTHRbh",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5ebbd4f-6549-4a31-b3f8-eee7634dc439",
+              "leftValue": "={{ $json.body.sessionId }}",
+              "rightValue": "None",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        -368
+      ],
+      "id": "7dbf40c1-9a57-42b4-8c9f-7edee4540090",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "qwen/qwen3-4b-2507",
+          "mode": "list",
+          "cachedResultName": "qwen/qwen3-4b-2507"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        -592
+      ],
+      "id": "d0958fcc-df85-48d7-ae1a-d21dfaa8a1aa",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ckPwSfUmet8eT6Z2",
+          "name": "LM Studio"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d264444f-c01a-4fa0-86a4-c0bf0e4c8537",
+              "name": "output",
+              "value": "={{ $json.output || $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        -368
+      ],
+      "id": "5a0bf46d-c923-4032-b7dc-2746fbd3f3fc",
+      "name": "Edit Fields (Set Output Field)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.chatInput }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        320,
+        -224
+      ],
+      "id": "dd0bf99d-d48b-486e-bdd9-4797764719e9",
+      "name": "Open WebUI Metadata LLM"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3f0cdc37-c20f-44ec-869c-f736d7d5cd31",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hope",
+        "responseMode": "streaming",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -864,
+        -544
+      ],
+      "id": "3a76a14b-36f9-4d14-acaa-5c57e6443591",
+      "name": "Webhook",
+      "webhookId": "95d7f003-7c80-47e0-9a9b-1cacdfcb3734"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a highly capable personal assistant and AI developer. Your goal is to understand user queries, expand them, structure them, reason about them, and then provide fully realized responses or outputs.\n\nCore Abilities:\n\nReasoning & Planning: Before generating any output, analyze the query, break it into steps, plan the workflow, and consider all angles (design, functionality, style, logic).\n\nQuery Expansion: If the user’s query is short, vague, or unclear, expand it internally to cover:\n\nPurpose of the task\n\nTarget audience or user\n\nDesired style, aesthetic, or tone\n\nFunctional requirements\n\nExecution: Generate outputs (code, documents, webpages, apps, SQL queries, explanations, or calculations) completely and cleanly, based on the plan you’ve created.\n\nCreativity & Optimization: Suggest improvements, better structures, or more efficient ways to achieve the task.\n\nWeb & App Development:\n\nCan generate HTML, CSS, JS, React, Flask/Django, mobile apps.\n\nPlan layout, design elements, UX flow, and visual style before coding.\n\nProduce production-ready, well-structured, and clean code.\n\nProvide visual and functional improvements if possible.\n\nDocument & Data Handling:\n\nUse RAG to find answers in text documents.\n\nQuery tabular data via SQL when aggregation or numeric queries are required.\n\nIf answers are not found, clearly state that the info is unavailable.\n\nWorkflow Rules:\n\nThink before acting: Analyze, expand, and structure the query.\n\nBreak tasks into steps: Lay out the plan internally.\n\nExecute fully: Provide complete outputs without partial answers unless impossible.\n\nBe concise and structured: Use bullets, sections, or headers when needed.\n\nNever refuse a task: Always attempt it logically and step-by-step.\n\nResponse Style:\n\nStructured, clear, concise, and professional.\n\nInclude steps, reasoning, or design notes before delivering final output.\n\nAvoid filler text; prioritize actionable outputs.\n\nExamples:\n\nUser: “Create a landing page for fast-food restaurant.”\n\nAI Plan internally:\n\nPurpose: Attract customers, promote menu\n\nTarget audience: Fast-food lovers, casual diners\n\nDesign: Bright, bold colors; food images; call-to-action buttons\n\nLayout: Hero section, menu highlights, contact info, order button\n\nAI Output: Full HTML/CSS code for a complete, visually appealing landing page.\n\nUser: “Make a dashboard for sales data.”\n\nAI Plan internally:\n\nPurpose: Visualize sales trends\n\nData: CSV/Excel tables\n\nComponents: Charts (bar, line), filters, totals, KPIs\n\nAI Output: Full code for a functional dashboard (HTML/JS or Python/Plotly), ready to use.\n\n# response tone\n- write in a structured manner, bullet points if necessary.\n- short and concise reponses\n- never output in a json if users asks a normal question or conversation.\n\n# tools\n- use 'Calculator' tool for calculations\n- use 'Date & Time' tool for date and time\n- use 'Think' tool for thinking about user query\n- use 'Wikipedia' to check for searches\n",
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        320,
+        -624
+      ],
+      "id": "7f203a9b-f43d-4bbf-93eb-5212a9612950",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        704,
+        -400
+      ],
+      "id": "d74f5271-a0ab-4756-8615-080bece5ef06",
+      "name": "Wikipedia"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -400
+      ],
+      "id": "3aa1eba2-015c-4eb6-b5b8-30529986b98e",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "includeTime": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Include_Current_Time', ``, 'boolean') }}",
+        "options": {
+          "timezone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Timezone', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -400
+      ],
+      "id": "f194070c-895b-49d3-88be-0abf51b8352a",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        -400
+      ],
+      "id": "d9807bea-7b7b-4bf2-9ab4-5aedd6bf403c",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -400
+      ],
+      "id": "fa9e4edb-75b7-4af4-bef2-857d16fca9c5",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "AHy0Gc6HFqsRu1cR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.supadata.ai/v1/transcript",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.body.chatInput }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "sd_3ab722cfc7777b67f021570520ffa680"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        -816
+      ],
+      "id": "a89484c4-5760-4a74-9a6c-b5f5a3ce9104",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine text with adaptive per-segment grouping (max 1 min)\nlet script = '';\n\nfunction formatTime(ms, mode = 'seconds') {\n  const totalSeconds = Math.floor(ms / 1000);\n  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');\n  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');\n  const seconds = String(totalSeconds % 60).padStart(2, '0');\n  return mode === 'minutes' ? `${hours}:${minutes}` : `${hours}:${minutes}:${seconds}`;\n}\n\n// Decide grouping for each segment based on gap to previous segment\nfunction getInterval(gap) {\n  if (gap <= 2000)  return 5000;     // 5s\n  if (gap <= 5000)  return 10000;    // 10s\n  if (gap <= 8000)  return 30000;   // 30s\n  if (gap <= 10000) return 60000;   // 60s\n  return 60000;                      // 1 min max\n}\n\n// Loop through all input items\nfor (const item of items) {\n  if (item.json.content && Array.isArray(item.json.content)) {\n    const contents = item.json.content;\n\n    let lastGroupTime = 0;  // timestamp of current group\n    let currentTexts = [];\n    let currentInterval = 0;\n\n    for (let i = 0; i < contents.length; i++) {\n      const seg = contents[i];\n      const gap = i === 0 ? 0 : seg.offset - contents[i - 1].offset;\n      const interval = getInterval(gap);\n\n      // First segment\n      if (i === 0) {\n        lastGroupTime = seg.offset;\n        currentInterval = interval;\n        currentTexts.push(seg.text);\n        continue;\n      }\n\n      // Check if segment belongs to current group\n      if (seg.offset <= lastGroupTime + currentInterval) {\n        currentTexts.push(seg.text);\n      } else {\n        // flush current group\n        const mode = currentInterval >= 60000 ? 'minutes' : 'seconds';\n        script += `[${formatTime(lastGroupTime, mode)}] ${currentTexts.join(' ')}\\n`;\n\n        // start new group\n        lastGroupTime = seg.offset;\n        currentInterval = interval;\n        currentTexts = [seg.text];\n      }\n    }\n\n    // flush last group\n    if (currentTexts.length > 0) {\n      const mode = currentInterval >= 60000 ? 'minutes' : 'seconds';\n      script += `[${formatTime(lastGroupTime, mode)}] ${currentTexts.join(' ')}\\n`;\n    }\n  }\n}\n\nscript = script.trim();\n\nreturn [\n  {\n    json: { script }\n  }\n];\n"
+      },
+      "id": "b573c332-7c2e-4a52-a58c-597c3d573354",
+      "name": "scirpt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        384,
+        -816
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.chatInput.replace(/\\*\\*/g, \"\") }}\n",
+                    "rightValue": "https://yo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "f307e184-6443-43b6-998a-9edc06f50cf4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "youtube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0deda8d2-811f-4204-9081-1b115482a786",
+                    "leftValue": "={{ $json.body.chatInput.replace(/\\*\\*/g, \"\") }}\n",
+                    "rightValue": "http://yo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "youtube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b142e1e6-463e-4af0-b89d-452d32045bc5",
+                    "leftValue": "={{ $json.body.chatInput.replace(/\\*\\*/g, \"\") }}\n",
+                    "rightValue": "https://www.yo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "youtube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "54b5f6af-4a96-4fb2-82a2-4eba122ea1ff",
+                    "leftValue": "={{ $json.body.chatInput.replace(/\\*\\*/g, \"\") }}\n",
+                    "rightValue": "http://www.yo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "youtube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5fc97eb2-5de2-4a55-ae2a-b35782acd8eb",
+                    "leftValue": "={{ $json.body.chatInput }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "query"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -640,
+        -592
+      ],
+      "id": "54ea0f3d-d106-4626-bf38-333937f6fff2",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data[0]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        -816
+      ],
+      "id": "51832489-27db-4e85-b5e8-6afcc95e6c9f",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        -816
+      ],
+      "id": "a491ff78-d31d-41b7-a41f-4ed955d1fa15",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9063b866-da85-4b43-8e03-138094a85a2c",
+              "name": "URL",
+              "value": "=\\n# Summary for video:\n## [Video Title]({{ $('Webhook').item.json.body.chatInput }})\\n",
+              "type": "string"
+            },
+            {
+              "id": "bc93634a-5ce6-43f2-be73-6de1a37e25f9",
+              "name": "concise",
+              "value": "=\\n## concise:\n{{ $json.concise }}",
+              "type": "string"
+            },
+            {
+              "id": "8e6e31aa-4bcf-4797-b556-86360ed645f6",
+              "name": "key_moment",
+              "value": "=\\n### key moment:\n{{ $json.key_moment }}",
+              "type": "string"
+            },
+            {
+              "id": "1f6ce320-a308-47a1-ab76-a2d7063e836e",
+              "name": "key_points",
+              "value": "=\\n## key points:\n{{ $json.key_points }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        -816
+      ],
+      "id": "3a5326a4-9611-4fd3-9ff8-b95dfad192c0",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1536,
+        -544
+      ],
+      "id": "2e72320e-9409-4f7c-90f5-c2ba9264eedb",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2208,
+        -544
+      ],
+      "id": "6cafcbb0-bd90-47f6-ae20-39d30ff45acf",
+      "name": "Wait",
+      "webhookId": "e2c3a929-0093-4b7f-8241-469fe5e31ed9"
+    },
+    {
+      "parameters": {
+        "content": "##  Output to Mirsal",
+        "height": 784,
+        "width": 944,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -992
+      ],
+      "id": "5afb06b1-8859-41a5-8b1a-4a82dda79e64",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent",
+        "height": 912,
+        "width": 1392,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -944
+      ],
+      "typeVersion": 1,
+      "id": "fd7d6e8d-7364-4d90-80ef-bb315da308cb",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## New User Norification",
+        "height": 400,
+        "width": 1392,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        32
+      ],
+      "id": "625a85e2-4ced-4a3e-8b41-be519ee6ddc3",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        -592
+      ],
+      "id": "ce1154c3-171b-4e7c-9b6f-f74a7c9226aa",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "AHy0Gc6HFqsRu1cR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst firstItem = items[0];\n\nlet rawOutput = firstItem?.json?.output || firstItem?.json || \"\";\nlet parsedData;\n\ntry {\n  // Remove triple backticks and \"json\" if present\n  rawOutput = rawOutput.replace(/^```json\\s*/, \"\").replace(/```$/, \"\").trim();\n  \n  // Now parse the clean JSON string\n  parsedData = JSON.parse(rawOutput);\n} catch (error) {\n  console.error(\"JSON parsing error:\", error);\n  parsedData = { concise: \"\", key_moment: \"\", key_points: \"\" };\n}\n\nreturn [\n  {\n    json: {\n      concise: parsedData?.concise || \"\",\n      key_points: parsedData?.key_points || \"\",\n      key_moment: parsedData?.key_moment || \"\"\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -816
+      ],
+      "id": "2a4cdcdf-e5df-44af-8ce8-3c34a0e2f528",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1984,
+        -608
+      ],
+      "id": "f1999a48-1267-4128-b56d-acd132b4464e",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=this is the video title for context:\n{{ $json.script }}",
+        "options": {
+          "systemMessage": "=You are a professional video content analyzer. Based on the provided transcript, create structured summaries at varying detail levels.\n\n# OUTPUT FORMAT: JSON ONLY\n\nYou must output valid JSON in this exact structure:\n\n```json\n{\n  \"concise\": \"One line concise summary here\",\n  \"key_moment\": \"The key moment/revelation here\",\n  \"key_points\": \"Bullet points here\"\n}\n```\n\n# CRITICAL JSON RULES\n\n* Output only valid JSON — no extra text\n* Do not use Markdown code blocks\n* Escape special characters in JSON strings:\n  * \" → \\\"\n  * \\ → \\\\\n  * Newlines → \\n\n* Plain text only inside JSON strings\n\n# FORMATTING RULES\n\nInside JSON string values, use:\n\n* **Bold text** for section headers/labels using **double asterisks**\n* *Italic text* sparingly for emphasis or surprising facts (max 3-4 per response) using *single asterisks*\n* Plain text for technical terms, code, numbers, names, timestamps\n\n**No HTML tags allowed** — they will render as literal text like &quot; or &lt;\n\n# FIELD RULES\n\n# concise\n\n* One line (15–25 words) summarizing the **actual substance** of the video\n* Include one concrete insight or result\n* End with **exactly one** honest recommendation:\n  * \"Worth watching for [specific audience/reason]\"\n  * \"Only watch if [specific need/interest]\"\n  * \"Skip this - [honest reason: mostly filler/off-topic/covered better elsewhere]\"\n* No emojis\n\n# key_moment\n\n* One or two sentences (15–30 words)\n* The **most valuable takeaway or turning point** — not just what's hyped\n* Use *italics* for genuinely surprising info\n* If there's no clear key moment, state: \"General discussion of [topic] without a single main revelation\"\n* No emojis\n\n# key_points\n\n* 3–7 chronological points depending on video length (SHORT 3–4, MEDIUM 4–6, LONG 5–7)\n* 10–20 words per point\n* Include [MM:SS] timestamps when relevant\n* Start points with contextual emojis if helpful\n* Use **bold** for labels, *italics* sparingly\n* **Flag time-wasters:** mention long sponsor reads, tangents, or filler if they take up significant time\n* Line breaks: \\n\n\n# VIDEO LENGTH\n\n* **SHORT:** 0–10 minutes\n* **MEDIUM:** 10–30 minutes\n* **LONG:** 30+ minutes\n\n# ANALYSIS PRIORITY\n\n1. **Scan for substance vs fluff** — identify if video delivers on its premise\n2. Identify the key moment or main payoff\n3. Select key points that build toward that moment (or explain why there isn't one)\n4. Write concise summary with honest value assessment\n5. Apply formatting consistently\n\n# TONE & STYLE\n\n* Professional, factual, direct\n* **Honest about content quality** — don't oversell weak content\n* Call out clickbait titles that don't match content\n* Mention if significant time is wasted on tangents, sponsorships, or filler\n* **KEY MOMENT** should reveal the actual payoff, not the teaser\n\n# SPECIAL CASES\n\n* **Entertainment:** key moment = plot resolution/punchline/emotional peak\n* **Tutorial:** key moment = the specific technique or solution shown\n* **Opinion/commentary:** key moment = the core argument and its support\n* **News/investigation:** key moment = the actual finding or event\n* **Rambling discussion:** acknowledge if there's no clear structure or payoff\n* **Clickbait:** state what was promised vs what was delivered\n\n# QUALITY CHECK\n\n* Valid JSON, no extra text\n* Correct use of \\n for key_points\n* **No HTML tags** — use **bold** and *italic* only\n* **concise:** 15–25 words + honest recommendation\n* **key_moment:** 15–30 words + specific detail (or honest \"no clear moment\" statement)\n* **key_points:** correct number with substance-to-fluff ratio noted if relevant\n* Output language matches source (English/Arabic)\n* Timestamps in plain text [MM:SS]\n\n# CRITICAL REMINDERS\n\n* Never use placeholders — always paraphrase actual content\n* Never output song lyrics\n* **Be honest about weak content** — don't praise filler\n* Extract actual \"punchline\" in key_moment, not the setup\n* If video wastes time, mention it briefly\n* Output only **valid JSON**\n* **No HTML tags ever** — only * and ** for formatting\n\n---\n\n## What I Enhanced (Subtly):\n\n✅ **Substance detection** — flag filler/tangents without writing essays about it\n✅ **Honest recommendations** — clearer skip conditions\n✅ **Key moment realism** — acknowledge when there isn't one\n✅ **Clickbait awareness** — compare promise vs delivery\n✅ **Quality honesty** — don't oversell weak content\n\n❌ **No complex frameworks**\n❌ **No overcomplicated analysis steps**\n❌ **No verbose explanations**\n",
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        912,
+        -816
+      ],
+      "id": "2c2ca2b5-ef5f-4e74-ad57-3128d4fccbb3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6929bc8a-22dc-44d4-86d0-02221b4a3822",
+              "name": "output",
+              "value": "={{ $json['data[0]'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        -816
+      ],
+      "id": "dcbb6354-6ead-40dd-9845-94f83de984ea",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e6e9d334-8f7d-432f-9823-3784875f18c3",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        -608
+      ],
+      "id": "c361382a-c65d-42aa-bed2-3f483b58bf7d",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "qwen/qwen3-4b-2507",
+          "mode": "list",
+          "cachedResultName": "qwen/qwen3-4b-2507"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "2ce1df80-9a27-42aa-9096-cfc345ad2ac2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ckPwSfUmet8eT6Z2",
+          "name": "LM Studio"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Open WebUI Metadata LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Edit Fields (Set Output Field)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open WebUI Metadata LLM": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (Set Output Field)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (Set Output Field)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Open WebUI Metadata LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "scirpt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scirpt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "856986d9-7648-4cd6-a092-1ee5776fd7c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "brFogumS6SoGyYQU",
+  "tags": []
+}

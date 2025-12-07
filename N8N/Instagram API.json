@@ -1,0 +1,683 @@
+{
+  "name": "Instagram API",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        496,
+        16
+      ],
+      "id": "3ac04daa-d409-491f-9c03-ab5b1a0c5378",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.62:5000/api/post",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://www.instagram.com/p/DIOL3Pkpt7A/?img_index=1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Start Download",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        736,
+        0
+      ],
+      "typeVersion": 4.1,
+      "id": "018eb68f-243f-45a2-9870-ffdce3368e4c"
+    },
+    {
+      "parameters": {
+        "url": "=http://192.168.1.62:5000/api/get/{{ $('Start Download').item.json.task_id }}",
+        "options": {}
+      },
+      "name": "Get Download Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        976,
+        0
+      ],
+      "typeVersion": 4.1,
+      "id": "abda28a2-8707-4a77-8664-4a2f824026ad"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and format the results\nconst item = items[0].json;\n\n// Helper function to convert Windows paths to Unix and prepend shared folder path\nfunction toSharedPath(path) {\n  if (!path) return null;\n  // Replace backslashes with forward slashes\n  const unixPath = path.replace(/\\\\/g, '/');\n  // Prepend the shared folder path with leading slash\n  return `/data/shared/instagram_downloads/${unixPath}`;\n}\n\n// Helper function to convert path for URL (replace backslashes with forward slashes)\nfunction toUrlPath(path) {\n  if (!path) return null;\n  return path.replace(/\\\\/g, '/');\n}\n\nreturn [\n  {\n    json: {\n      task_id: item.task_id,\n      status: item.status,\n      caption: item.caption,\n      type: item.type,\n      \n      // Full URLs for accessing files via Flask API\n      video_url: item.video ? `http://localhost:5000/api/file/${toUrlPath(item.video)}` : null,\n      thumbnail_url: item.thumbnail ? `http://localhost:5000/api/file/${toUrlPath(item.thumbnail)}` : null,\n      \n      // Array of all image URLs\n      image_urls: (item.images || []).map(img => `http://localhost:5000/api/file/${toUrlPath(img)}`),\n      \n      // Shared folder paths (for n8n file operations)\n      video_shared_path: toSharedPath(item.video),\n      thumbnail_shared_path: toSharedPath(item.thumbnail),\n      image_shared_paths: (item.images || []).map(img => toSharedPath(img)),\n      \n      // Original relative paths from API\n      video_path: item.video,\n      thumbnail_path: item.thumbnail,\n      image_paths: item.images,\n      \n      // Metadata\n      downloaded_at: item.downloaded_at,\n      downloaded_by: item.downloaded_by,\n      instagram_url: item.url,\n      shortcode: item.shortcode,\n      profile: item.profile\n    }\n  }\n];"
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1392,
+        48
+      ],
+      "typeVersion": 2,
+      "id": "58fdc607-aa38-4bc1-9dc7-cf2d2d3d1090"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "COMPLETED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b070f451-4691-4e5c-b884-9f08a22ca72e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1f04c676-b4bc-4e06-a899-585ea1d01757",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PENDING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d7555227-c2f5-4a49-bacd-92185ba548b2",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "FAILED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1136,
+        -16
+      ],
+      "id": "5d0b5f4d-aaba-48de-a9ee-78c04cdeea73",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "name": "Wait for Download",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1136,
+        -144
+      ],
+      "typeVersion": 1,
+      "webhookId": "wait-webhook-id",
+      "id": "55722a27-6413-424d-9142-4b4c851613eb"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.video_shared_path }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        176
+      ],
+      "id": "696e7d2b-6b82-4f21-98b2-3240955839be",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.video_shared_path }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "55c5718e-8b88-4764-a26b-fcd41b0dde79"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f4efd433-5386-474f-8d87-75ccdf501fb7",
+                    "leftValue": "={{ $json.image_shared_paths[0] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1600,
+        160
+      ],
+      "id": "6659e1a2-9670-4f6f-b00c-9e57386abda6",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v1.api.crosspostify.com/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "IMAGE"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1984,
+        384
+      ],
+      "id": "79ec8608-c95d-4a64-bae3-984feb88ee0d",
+      "name": "upload image",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jqan63WqpzoyQkwP",
+          "name": "basic"
+        },
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v1.api.crosspostify.com/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "VIDEO"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1984,
+        176
+      ],
+      "id": "a6f9dc78-e8cc-4691-af3e-b971ce8bc8ca",
+      "name": "upload video",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jqan63WqpzoyQkwP",
+          "name": "basic"
+        },
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://v1.api.crosspostify.com/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1984,
+        624
+      ],
+      "id": "34274b8b-ad77-4230-974c-7a543e4ed9d3",
+      "name": "check All media",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jqan63WqpzoyQkwP",
+          "name": "basic"
+        },
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://v1.api.crosspostify.com/media/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2240,
+        624
+      ],
+      "id": "a956fb9d-661e-43db-9640-5e005d15a221",
+      "name": "Delete",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jqan63WqpzoyQkwP",
+          "name": "basic"
+        },
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.image_shared_paths[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        384
+      ],
+      "id": "39e89630-c359-46dc-ba46-99f27b465343",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v1.api.crosspostify.com/post/video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"mediaId\": \"{{ $json.id }}\",\n  \"scheduledDate\": \"{{ new Date(Date.now() + 0.25*60*1000).toISOString() }}\",\n  \"posts\": [\n    {\n      \"accountId\": \"cmi1zm0nh0001ji0a3dgwc314\",\n      \"caption\": \"Check out our new product!\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2240,
+        176
+      ],
+      "id": "1028baa1-bdd4-47a6-9a9f-7fda4f8919e1",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v1.api.crosspostify.com/post/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"mediaId\": \"{{ $json.id }}\",\n  \"scheduledDate\": \"{{ new Date(Date.now() + 0.25*60*1000).toISOString() }}\",\n  \"posts\": [\n    {\n      \"accountId\": \"cmi1zm0nh0001ji0a3dgwc314\",\n      \"caption\": \"Check out our new product!\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2240,
+        384
+      ],
+      "id": "11427648-c17f-458a-9f91-ca0d58b53289",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://v1.api.crosspostify.com/social-accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1792,
+        624
+      ],
+      "id": "a11b74ec-5863-4805-be89-e04fdabc87e0",
+      "name": "check Socials",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jqan63WqpzoyQkwP",
+          "name": "basic"
+        },
+        "httpHeaderAuth": {
+          "id": "AbwjiFLs0T2GneJj",
+          "name": "Crosspostify"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Delete": [
+      {
+        "json": {
+          "id": "858e96df-b60d-4163-ae76-18ac244b5630",
+          "message": "Media deleted successfully"
+        }
+      }
+    ],
+    "check Socials": [
+      {
+        "json": {
+          "accounts": [
+            {
+              "createdAt": "Sun, 16 Nov 2025 17:26:12 GMT",
+              "id": "cmi1zm0nh0001ji0a3dgwc314",
+              "platform": "instagram",
+              "username": "faz3.posts"
+            }
+          ],
+          "total": 1
+        }
+      }
+    ],
+    "check All media": [
+      {
+        "json": {
+          "media": [
+            {
+              "aspectRatio": null,
+              "createdAt": "2025-11-16T17:54:26",
+              "filename": "DRHo7VciBoV_2025-11-16_13-40-54_UTC.mp4",
+              "height": null,
+              "id": "ac554136-9dce-453e-b4ea-f72780a5474a",
+              "scheduledDeletionDate": "2025-12-16T17:55:31",
+              "type": "VIDEO",
+              "width": null
+            },
+            {
+              "aspectRatio": 0.563,
+              "createdAt": "2025-11-16T17:41:56",
+              "filename": "DRHo7VciBoV_2025-11-16_13-40-54_UTC.jpg",
+              "height": 1136,
+              "id": "7006db28-9aa7-4195-a31b-205ca89e887f",
+              "scheduledDeletionDate": "2025-12-16T17:50:22",
+              "type": "IMAGE",
+              "width": 640
+            },
+            {
+              "aspectRatio": 0.563,
+              "createdAt": "2025-11-16T17:22:15",
+              "filename": "DRHo7VciBoV_2025-11-16_13-40-54_UTC.jpg",
+              "height": 1136,
+              "id": "845dbba6-6e08-4a18-b693-4aade0edffd4",
+              "scheduledDeletionDate": "2025-12-16T17:22:15",
+              "type": "IMAGE",
+              "width": 640
+            }
+          ],
+          "pagination": {
+            "limit": 50,
+            "offset": 0,
+            "total": 3
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Start Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Download": {
+      "main": [
+        [
+          {
+            "node": "Get Download Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Download Details": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Download",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Wait for Download": {
+      "main": [
+        [
+          {
+            "node": "Get Download Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "upload video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload video": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ceadbbb4-5255-4b30-a0c1-5f561386fff0",
+  "meta": {
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "Md0J33MnhavIaYQ0",
+  "tags": []
+}

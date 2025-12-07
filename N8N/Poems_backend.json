@@ -1,6 +1,38 @@
 {
-  "name": "Poems_backend",
+  "name": "AI Agent workflow",
   "nodes": [
+    {
+      "parameters": {
+        "content": "@[youtube](TDby7k_0vc4)",
+        "height": 512,
+        "width": 902,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -560
+      ],
+      "id": "ec65e69e-77fa-4912-a4af-49e0a248e2c8",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "### 📰 Daily AI Summary\n\n\nThis workflow gets the latest news and asks AI to summarize it for you.\n\n⭐ Bonus: Send the summary via email by connecting your Gmail account\n\n▶ Watch the video to get started ",
+        "height": 272,
+        "width": 224,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -432
+      ],
+      "id": "74d80857-5e63-47a8-8e86-8ecd10fd5f9e",
+      "name": "Sticky Note2"
+    },
     {
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -9,10 +41,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1520,
-        256
+        896,
+        224
       ],
-      "id": "a3f0787d-7089-45ff-bbee-c6e6b167071e",
+      "id": "681693c7-d756-47e9-ac03-5e89d508144c",
       "name": "Respond to Webhook"
     },
     {
@@ -22,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        656,
-        416
+        352,
+        32
       ],
-      "id": "b0323bd7-cf2f-47fb-ad5f-b5888db2c1e7",
+      "id": "79da2f4d-ac97-4090-b0a5-3cbbe8e7d70e",
       "name": "Code in JavaScript4"
     },
     {
@@ -37,16 +69,16 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        880,
-        416
+        640,
+        32
       ],
-      "id": "89cffc7c-b061-40d4-9212-fd0780bb5f98",
+      "id": "ac3e1783-4a16-4934-96fd-0b724db311b4",
       "name": "Aggregate"
     },
     {
       "parameters": {
         "resource": "chat",
-        "model": "qwen/qwen3-4b-2507",
+        "model": "gpt-4.1-mini",
         "prompt": {
           "messages": [
             {
@@ -54,30 +86,31 @@
             },
             {
               "role": "system",
-              "content": "=take user`s query and give a summary about it regarding its relation with UAE and sheih Hamdan Poetry, very fast, matching input language to output language.\nyou must match user`s input language\nrespond with less than 30-50 words, peotic, smooth and natural with little emoji usage.\n\nRules (strict):\n- Respond with realtive language as input.\n- NEVER say \"لا يوجد\", \"غير موجود\", \"لا تواجد\", or anything negative.\n- Always make it sound like the topic is emotionally important to Sheikh Hamdan (Fazaa), even if it appears only once or twice in his entire poetry.\n- Use emotional, proud, or nostalgic tone to create anticipation.\n- if query is vague, like a name , you should reveal who he truly is\n- never give extra comments like: etc, and so on, never give any reasoning other than the summary\n\nExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\n بو خالد → بو خالد قائدنا وسندنا  \nو هو رئيس دولة الامارات و فخرها.\n\nزايد → زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند → أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → 🇦🇪  اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنانExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → 👑 بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\nزايد → 👑زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → 👑 راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند →🌹 أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنان\n\n-------------\nhere are extra links and entiy relations in case you dont know the query origin.\nKEY PEOPLE (most common in poems):\n- محمد بن زايد (Mohammed bin Zayed) = UAE President, also called \"بو خالد\" or \"أبو خالد\"\n- محمد بن راشد (Mohammed bin Rashid) = Sheikh Hamdan's father, Dubai ruler\n- زايد (Zayed) = Founding father of UAE\n- راشد (Rashid) = Can be: Sheikh Hamdan's son, or his late brother, or historical Dubai ruler\n- خالد (Khaled) = Refers to Mohammed bin Zayed (nickname \"أبو خالد\")\n- حمدان (Hamdan) = The poet himself OR Hamdan bin Zayed\n\nLOCATIONS:\n- مصر (Egypt), دبي (Dubai), أبوظبي (Abu Dhabi), الإمارات (UAE)\n\nTHEMES:\n- Leadership (القيادة), Unity (الوحدة), Sacrifice (التضحية), Pride (الفخر)\n\n\nProvide 2-3 sentences in Arabic explaining what this term represents in Sheikh Hamdan's poetry and its significance to UAE/Arab relations.\n\nDo NOT make up news. Respond ONLY in Arabic.\n\n# people entities\n\n[\n  {\n    \"name_ar\": \"حمدان بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الذات\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيدي\", \"أمير\", \"Fazaa\", \"Hamdan\", \"Crown Prince\", \"Leader\", \"Commander\"]\n  },\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\", \"Mohammed bin Rashid\", \"My Father\", \"Ruler of Dubai\", \"Vice President\", \"Prime Minister\"]\n  },\n  {\n    \"name_ar\": \"هند بنت مكتوم بن جمعة\",\n    \"name_en\": \"Sheikha Hind bint Maktoum bin Juma'a\",\n    \"relation\": \"الأم\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\", \"Hind\", \"My Mother\", \"Her Highness\"]\n  },\n  {\n    \"name_ar\": \"راشد بن حمدان بن محمد\",\n    \"name_en\": \"Sheikh Rashid bin Hamdan bin Mohammed\",\n    \"relation\": \"الابن\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\", \"Rashid\", \"My Son\", \"Light of My Eyes\", \"Hope\"]\n  },\n  {\n    \"name_ar\": \"شيخة بنت حمدان بن محمد\",\n    \"name_en\": \"Sheikha Sheikha bint Hamdan bin Mohammed\",\n    \"relation\": \"الابنة\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\", \"Sheikha\", \"My Daughter\", \"Joy\", \"Beloved\"]\n  },\n  {\n    \"name_ar\": \"مكتوم بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Maktoum bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\", \"Maktoum\", \"My Brother\", \"Deputy Ruler\", \"Minister of Finance\"]\n  },\n  {\n    \"name_ar\": \"أحمد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Ahmed bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"Ahmed\", \"My Brother\", \"Deputy Ruler of Dubai\"]\n  },\n  {\n    \"name_ar\": \"راشد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Rashid bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ (في ذمة الله)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\", \"Rashid\", \"My Brother\", \"Late Brother\", \"May God Have Mercy\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\", \"رفيق درب\", \"MBZ\", \"UAE President\", \"Ruler of Abu Dhabi\", \"My Leader\", \"Companion\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n    \"relation\": \"Grandfather\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\", \"Zayed\", \"Founding Father\", \"Father of the Nation\", \"Builder\", \"May He Rest in Peace\"]\n  },\n  {\n    \"name_ar\": \"فاطمة بنت مبارك الكتبي\",\n    \"name_en\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n    \"relation\": \"أم الإمارات\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\", \"Fatima bint Mubarak\", \"Mother of the UAE\", \"Mother of the Nation\"]\n  },\n  {\n    \"name_ar\": \"حمدان بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Hamdan bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم في المنطقة الغربية\", \"صاحب السمو\", \"Hamdan bin Zayed\", \"Ruler's Representative\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"منصور بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Mansour bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\", \"Mansour bin Zayed\", \"Deputy Prime Minister\", \"Minister of Presidential Affairs\"]\n  },\n  {\n    \"name_ar\": \"طحنون بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Tahnoun bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\", \"Tahnoun bin Zayed\", \"National Security Advisor\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"عبدالله بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Abdullah bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية والتعاون الدولي\", \"صاحب السمو\", \"Abdullah bin Zayed\", \"Minister of Foreign Affairs\"]\n  },\n  {\n    \"name_ar\": \"سلمان بن عبدالعزيز آل سعود\",\n    \"name_en\": \"King Salman bin Abdulaziz Al Saud\",\n    \"relation\": \"ملك المملكة العربية السعودية\",\n    \"tags\": [\"سلمان\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\", \"Salman\", \"King of Saudi Arabia\", \"Custodian of the Two Holy Mosques\"]\n  },\n  {\n    \"name_ar\": \"محمد بن سلمان آل سعود\",\n    \"name_en\": \"Crown Prince Mohammed bin Salman\",\n    \"relation\": \"ولي عهد المملكة العربية السعودية\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\", \"MBS\", \"Crown Prince of Saudi Arabia\", \"Prince\", \"Leader\"]\n  },\n  {\n    \"name_ar\": \"تميم بن حمد آل ثاني\",\n    \"name_en\": \"Sheikh Tamim bin Hamad Al Thani\",\n    \"relation\": \"أمير دولة قطر\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\", \"Tamim\", \"Emir of Qatar\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"حمد بن عيسى آل خليفة\",\n    \"name_en\": \"King Hamad bin Isa Al Khalifa\",\n    \"relation\": \"ملك مملكة البحرين\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\", \"Hamad\", \"King of Bahrain\", \"Brother\", \"Neighbor\"]\n  },\n  {\n    \"name_ar\": \"مشعل الأحمد الجابر الصباح\",\n    \"name_en\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n    \"relation\": \"أمير دولة الكويت\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\", \"Mishal\", \"Emir of Kuwait\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"هيثم بن طارق\",\n    \"name_en\": \"Sultan Haitham bin Tariq\",\n    \"relation\": \"سلطان عُمان الحالي\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"عمان\", \"جار\", \"صديق\", \"Haitham\", \"Sultan of Oman\", \"Brother\", \"Neighbor\"]\n  }\n]\n\n# Note\nalways match user`s query langugae."
+              "content": "=take user`s query and give a summary about it regarding its relation with UAE and sheih Hamdan Poetry, very fast, matching input language to output language.\nyou must match user`s input language\nresond with 1-3 sentences, peotic, smooth and natural with little emoji usage.\n\nRules (strict):\n- Respond with realtive language as input.\n- at least 1–4 scentences, poetic, and warm sentences.\n- NEVER say \"لا يوجد\", \"غير موجود\", \"لا تواجد\", or anything negative.\n- Always make it sound like the topic is emotionally important to Sheikh Hamdan (Fazaa), even if it appears only once or twice in his entire poetry.\n- Use emotional, proud, or nostalgic tone to create anticipation.\n- if query is vague, like a name , you should reveal who he truly is\n- never give extra comments like: etc, and so on, never give any reasoning other than the summary\n\nExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\n بو خالد → بو خالد قائدنا وسندنا  \nو هو رئيس دولة الامارات و فخرها.\n\nزايد → زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند → أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → 🇦🇪  اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنانExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → 👑 بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\nزايد → 👑زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → 👑 راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند →🌹 أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنان\n\n-------------\nhere are extra links and entiy relations in case you dont know the query origin.\nKEY PEOPLE (most common in poems):\n- محمد بن زايد (Mohammed bin Zayed) = UAE President, also called \"بو خالد\" or \"أبو خالد\"\n- محمد بن راشد (Mohammed bin Rashid) = Sheikh Hamdan's father, Dubai ruler\n- زايد (Zayed) = Founding father of UAE\n- راشد (Rashid) = Can be: Sheikh Hamdan's son, or his late brother, or historical Dubai ruler\n- خالد (Khaled) = Refers to Mohammed bin Zayed (nickname \"أبو خالد\")\n- حمدان (Hamdan) = The poet himself OR Hamdan bin Zayed\n\nLOCATIONS:\n- مصر (Egypt), دبي (Dubai), أبوظبي (Abu Dhabi), الإمارات (UAE)\n\nTHEMES:\n- Leadership (القيادة), Unity (الوحدة), Sacrifice (التضحية), Pride (الفخر)\n\n\nProvide 2-3 sentences in Arabic explaining what this term represents in Sheikh Hamdan's poetry and its significance to UAE/Arab relations.\n\nDo NOT make up news. Respond ONLY in Arabic.\n\n# people entities\n\n[\n  {\n    \"name_ar\": \"حمدان بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الذات\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيدي\", \"أمير\", \"Fazaa\", \"Hamdan\", \"Crown Prince\", \"Leader\", \"Commander\"]\n  },\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\", \"Mohammed bin Rashid\", \"My Father\", \"Ruler of Dubai\", \"Vice President\", \"Prime Minister\"]\n  },\n  {\n    \"name_ar\": \"هند بنت مكتوم بن جمعة\",\n    \"name_en\": \"Sheikha Hind bint Maktoum bin Juma'a\",\n    \"relation\": \"الأم\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\", \"Hind\", \"My Mother\", \"Her Highness\"]\n  },\n  {\n    \"name_ar\": \"راشد بن حمدان بن محمد\",\n    \"name_en\": \"Sheikh Rashid bin Hamdan bin Mohammed\",\n    \"relation\": \"الابن\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\", \"Rashid\", \"My Son\", \"Light of My Eyes\", \"Hope\"]\n  },\n  {\n    \"name_ar\": \"شيخة بنت حمدان بن محمد\",\n    \"name_en\": \"Sheikha Sheikha bint Hamdan bin Mohammed\",\n    \"relation\": \"الابنة\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\", \"Sheikha\", \"My Daughter\", \"Joy\", \"Beloved\"]\n  },\n  {\n    \"name_ar\": \"مكتوم بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Maktoum bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\", \"Maktoum\", \"My Brother\", \"Deputy Ruler\", \"Minister of Finance\"]\n  },\n  {\n    \"name_ar\": \"أحمد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Ahmed bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"Ahmed\", \"My Brother\", \"Deputy Ruler of Dubai\"]\n  },\n  {\n    \"name_ar\": \"راشد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Rashid bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ (في ذمة الله)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\", \"Rashid\", \"My Brother\", \"Late Brother\", \"May God Have Mercy\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\", \"رفيق درب\", \"MBZ\", \"UAE President\", \"Ruler of Abu Dhabi\", \"My Leader\", \"Companion\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n    \"relation\": \"Grandfather\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\", \"Zayed\", \"Founding Father\", \"Father of the Nation\", \"Builder\", \"May He Rest in Peace\"]\n  },\n  {\n    \"name_ar\": \"فاطمة بنت مبارك الكتبي\",\n    \"name_en\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n    \"relation\": \"أم الإمارات\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\", \"Fatima bint Mubarak\", \"Mother of the UAE\", \"Mother of the Nation\"]\n  },\n  {\n    \"name_ar\": \"حمدان بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Hamdan bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم في المنطقة الغربية\", \"صاحب السمو\", \"Hamdan bin Zayed\", \"Ruler's Representative\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"منصور بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Mansour bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\", \"Mansour bin Zayed\", \"Deputy Prime Minister\", \"Minister of Presidential Affairs\"]\n  },\n  {\n    \"name_ar\": \"طحنون بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Tahnoun bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\", \"Tahnoun bin Zayed\", \"National Security Advisor\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"عبدالله بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Abdullah bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية والتعاون الدولي\", \"صاحب السمو\", \"Abdullah bin Zayed\", \"Minister of Foreign Affairs\"]\n  },\n  {\n    \"name_ar\": \"سلمان بن عبدالعزيز آل سعود\",\n    \"name_en\": \"King Salman bin Abdulaziz Al Saud\",\n    \"relation\": \"ملك المملكة العربية السعودية\",\n    \"tags\": [\"سلمان\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\", \"Salman\", \"King of Saudi Arabia\", \"Custodian of the Two Holy Mosques\"]\n  },\n  {\n    \"name_ar\": \"محمد بن سلمان آل سعود\",\n    \"name_en\": \"Crown Prince Mohammed bin Salman\",\n    \"relation\": \"ولي عهد المملكة العربية السعودية\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\", \"MBS\", \"Crown Prince of Saudi Arabia\", \"Prince\", \"Leader\"]\n  },\n  {\n    \"name_ar\": \"تميم بن حمد آل ثاني\",\n    \"name_en\": \"Sheikh Tamim bin Hamad Al Thani\",\n    \"relation\": \"أمير دولة قطر\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\", \"Tamim\", \"Emir of Qatar\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"حمد بن عيسى آل خليفة\",\n    \"name_en\": \"King Hamad bin Isa Al Khalifa\",\n    \"relation\": \"ملك مملكة البحرين\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\", \"Hamad\", \"King of Bahrain\", \"Brother\", \"Neighbor\"]\n  },\n  {\n    \"name_ar\": \"مشعل الأحمد الجابر الصباح\",\n    \"name_en\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n    \"relation\": \"أمير دولة الكويت\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\", \"Mishal\", \"Emir of Kuwait\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"هيثم بن طارق\",\n    \"name_en\": \"Sultan Haitham bin Tariq\",\n    \"relation\": \"سلطان عُمان الحالي\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"عمان\", \"جار\", \"صديق\", \"Haitham\", \"Sultan of Oman\", \"Brother\", \"Neighbor\"]\n  }\n]\n\n# Note\nalways match user`s query langugae."
             }
           ]
         },
         "options": {
           "maxTokens": 150,
-          "temperature": 0.4
+          "temperature": 0.2
         },
         "requestOptions": {}
       },
-      "id": "7bb787e5-938e-4a08-96c6-3ee656952891",
+      "id": "72bc85e5-d73a-4311-a3d2-72aadf0eee2e",
       "name": "AI Summary",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -16,
-        96
+        64,
+        448
       ],
       "credentials": {
         "openAiApi": {
-          "id": "Uswobcxe4rsjDaMe",
-          "name": "LM studio"
+          "id": "N9uFAcggOeSTy9zR",
+          "name": "n8n free OpenAI API credits"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -86,10 +119,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        416
+        -160,
+        32
       ],
-      "id": "6360bfdb-3607-4f4d-9f1f-366ae24156f5",
+      "id": "26c9301d-94c9-4fbc-a38d-22a1c2608ab9",
       "name": "Code in JavaScript3"
     },
     {
@@ -109,11 +142,34 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        880,
-        256
+        640,
+        224
       ],
-      "id": "271caefc-08bf-4b32-abf5-1c3775c8ddd5",
+      "id": "d35cde48-6414-4875-a8f2-b4abaacdd953",
       "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "14b54e98-ea58-4241-a729-d958fd97fd6e",
+              "name": "summary",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        656,
+        448
+      ],
+      "id": "9bbfe5ff-b4ba-4a35-a4ed-a48916b7cf1d",
+      "name": "Edit Fields1"
     },
     {
       "parameters": {
@@ -147,13 +203,13 @@
           }
         }
       },
-      "id": "1bad4c56-472a-4fa7-a538-9a95d7ef215c",
+      "id": "1b41e652-d865-4a78-b870-7c2773191e2e",
       "name": "Edge-function-exact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        432,
-        256
+        352,
+        224
       ]
     },
     {
@@ -182,13 +238,13 @@
           }
         }
       },
-      "id": "672bdda7-a1e7-41fc-b105-8f1852f87855",
+      "id": "a23df99d-06b1-4cd4-90f5-364d4b0d23a1",
       "name": "Edge-function-Semantic",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        432,
-        416
+        64,
+        32
       ]
     },
     {
@@ -201,10 +257,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -240,
-        96
+        -608,
+        448
       ],
-      "id": "f0920cdd-756d-40d2-9907-e625de47b7d0",
+      "id": "9a530fb6-9806-4b3a-adfe-9747dab80aa3",
       "name": "Webhook_ٍsummary",
       "webhookId": "f09ef934-74f6-49ab-b588-9e50cc24036d"
     },
@@ -218,10 +274,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -240,
-        256
+        -608,
+        224
       ],
-      "id": "c5d829e8-a80a-4aba-8d5f-786f55c08a90",
+      "id": "51103e91-0b15-4974-a933-5ff4116e11b3",
       "name": "Webhook_word",
       "webhookId": "f09ef934-74f6-49ab-b588-9e50cc24036d"
     },
@@ -235,17 +291,17 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -240,
-        416
+        -608,
+        32
       ],
-      "id": "1879e832-fac6-41c8-9c97-cda7c254ef1c",
+      "id": "2e02fc15-abb8-4c24-b0f3-2388d3d40c0e",
       "name": "Webhook_Semantic",
       "webhookId": "f09ef934-74f6-49ab-b588-9e50cc24036d"
     },
     {
       "parameters": {
         "resource": "chat",
-        "model": "qwen/qwen3-4b-2507",
+        "model": "gpt-4.1-mini",
         "prompt": {
           "messages": [
             {
@@ -263,25 +319,25 @@
         },
         "requestOptions": {}
       },
-      "id": "472a2f01-78cd-42d3-a242-79f3ff7d6c71",
+      "id": "782b1b4f-8cde-4464-8b0a-11480a1192d9",
       "name": "exact_search",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -16,
-        256
+        64,
+        224
       ],
       "credentials": {
         "openAiApi": {
-          "id": "Uswobcxe4rsjDaMe",
-          "name": "LM studio"
+          "id": "frYVvB9GNXXi6o6J",
+          "name": "OpenAi account"
         }
       }
     },
     {
       "parameters": {
         "resource": "chat",
-        "model": "qwen/qwen3-4b-2507",
+        "model": "gpt-4.1-mini",
         "prompt": {
           "messages": [
             {
@@ -299,18 +355,18 @@
         },
         "requestOptions": {}
       },
-      "id": "f0dd47e1-ce85-41b9-805b-fd71484ab60b",
+      "id": "c0dd9656-39e4-4547-a317-cff90ff016b2",
       "name": "Semantic_search",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -16,
-        416
+        -384,
+        32
       ],
       "credentials": {
         "openAiApi": {
-          "id": "Uswobcxe4rsjDaMe",
-          "name": "LM studio"
+          "id": "frYVvB9GNXXi6o6J",
+          "name": "OpenAi account"
         }
       }
     },
@@ -319,19 +375,18 @@
         "promptType": "define",
         "text": "={{ $json.body.query }}",
         "options": {
-          "systemMessage": "=You must run 'Get World New' and 'Tech News' to check for related news every run\nreturn a 10-30 words summary only if related to the query absolutly\n\n# News\n- use 'Get World News' and 'Tech News' tool to fetch query related news.\n- only check news related to user_query and nothing more.\n- if nothing is found related then NEVER return any output\n\nToday is {{ $today }}\n\n## Example:\nfound news results:\n- user_query: \"مصر\"\n- ouput:\".....مصر امس المتحف المصري الكبير بحضور\"\n\nnot found news results:\n- user_query: \"المغرب\"\n- ouput: \n\nnever ask for follow ups insights, only short summary\n- never say \"no news found\" if no news found then output nothing. then no output.\n- never say  \"لا توجد أخبار\" if no news related found then no output.\n\n# IMPORTANT\n\n- you Must filter out any no returns and stop output at once, \n- never return garbage like this \"no return was found\"\n\n"
+          "systemMessage": "=You are short summary agent related to the user query, take the user query and return less than 50 words \"summary ... query\" \nYou must run 'Get World New' and 'Tech News' to check for only-related news every run\n\n# News\n- use 'Get World News' and 'Tech News' tool to fetch query related news.\n- only check news related to user_query and nothing more.\n- never try to force link the news with the summary, they are seperate.\n## User query\nhere is the user_query: {{ $json.chatInput }}\n\nThe titles should be \"{user_query} news:\" \nToday is {{ $today }}\nconcatnate news and summary if news were found\nexample found news output: \"summary ... news\"\nexample NOT found news output: \"summary\"\n\n## Example:\nfound news results:\n- user_query: \"مصر\"\n- ouput:\"تمثل العلاقات بين مصر و الامارات علاقة قوية راسخة تمتد لحضارات ما قبل التاريخ ... وافتتحت مصر امس المتحف المصري الكبير بحضور ... ,\"\n\nnot found news results:\n- user_query: \"المغرب\"\n- ouput:\" المغرب الغروب الذهبي للعروبة  في قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\"\n\n\n#  Summary\n\n-never output any extra comments or follwo ups\n-never say no news found, just pass empty response in the news output without \"output\", just complete silence\n\ntake user`s query and give a summary about it regarding its relation with UAE and sheih Hamdan Poetry, very fast, matching input language to output language.\nyou must match user`s input language\nresond with 1-3 sentences, peotic, smooth and natural with little emoji usage.\n\nRules (strict):\n- Respond with realtive language as input.\n- at least 1–4 scentences, poetic, and warm sentences.\n- NEVER say \"لا يوجد\", \"غير موجود\", \"لا تواجد\", or anything negative.\n- Always make it sound like the topic is emotionally important to Sheikh Hamdan (Fazaa), even if it appears only once or twice in his entire poetry.\n- Use emotional, proud, or nostalgic tone to create anticipation.\n- if query is vague, like a name , you should reveal who he truly is\n- never give extra comments like: etc, and so on, never give any reasoning other than the summary\n\nExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\n بو خالد → بو خالد قائدنا وسندنا  \nو هو رئيس دولة الامارات و فخرها.\n\nزايد → زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند → أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → 🇦🇪  اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنانExamples you must follow exactly in style:\n\n=== Places ===\nمصر → مصر أم الدنيا ومهد الحضارة  \nفي شعر حمدان لها مكانة خاصة تربطها بالإمارات حبًا ووفاء\n\nفلسطين → فلسطين قضية الأمة الأولى  \nحمدان يكتبها دائمًا بدم القلب تضامنًا مع كل عربي وإماراتي\n\nالمغرب → المغرب الغروب الذهبي للعروبة  \nفي قصائدنا الإماراتية دائمًا له ركن دافئ من الفخر\n\nبغداد → بغداد دار السلام ورمز التاريخ  \nحمدان يحييها بكل بيت يربط الماضي العربي بمستقبل الإمارات\n\nالشام → الشام قلب العروبة النابض  \nمهما طال الزمان تبقى في شعرنا الإماراتي ريحة الياسمين والكرامة\n\n=== People ===\nمحمد بن زايد → 👑 بو خالد قائدنا وسندنا  \nكل قصيدة تكتب فخر الإمارات\n\nزايد → 👑زايد الوالد المؤسس  \nاسمه يعيش في كل بيت إماراتي\n\nراشد → 👑 راشد نور عيني وفلذة كبدي  \nيحمله حمدان في صدره وفي كل قصيدة إماراتية\n\nخالد → خالد هو محمد بن زايد، قائد درب الإمارات وتاج راسنا\n\nهند →🌹 أمي هند أم الإمارات كلها  \nلها في شعرنا أعلى مقام وأجمل كلمات\n\nمنصور بن زايد → منصور الأخ والسند  \nدائمًا حاضر في قصائد الفخر الإمارات\n\nتميم → تميم أخي ورفيق الدرب  \nبيننا وبين قطر محبة تكتب بالذهب في شعر الإمارات\n\n=== Events / Occasions ===\nيوم الشهيد → يوم الشهيد دمعة فخر ودمعة وفاء  \nلكل روح ضحت من أجل الإمارات\n\nاليوم الوطني → اليوم الوطني عيد ميلاد الإمارات في قلوبنا  \nكل سنة نزداد حب الوطن فخرًا\n\nيوم العلم → يوم العلم يرفرف فيه قلب الإمارات عاليًا  \nالراية حمراء بدم الشهداء وبيضاء بنقاء القلوب\n\nرمضان → رمضان شهر القلب والروح  \nحمدان يسكب فيه أجمل قصائده من روح إماراتية إلى روح\n\nيوم الأم → يوم الأم عيد أمي هند وعيد كل أم إماراتية  \nفزاع يكتب لها من القلب للقلب بكل الحب والامتنان\n\n-------------\nhere are extra links and entiy relations in case you dont know the query origin.\nKEY PEOPLE (most common in poems):\n- محمد بن زايد (Mohammed bin Zayed) = UAE President, also called \"بو خالد\" or \"أبو خالد\"\n- محمد بن راشد (Mohammed bin Rashid) = Sheikh Hamdan's father, Dubai ruler\n- زايد (Zayed) = Founding father of UAE\n- راشد (Rashid) = Can be: Sheikh Hamdan's son, or his late brother, or historical Dubai ruler\n- خالد (Khaled) = Refers to Mohammed bin Zayed (nickname \"أبو خالد\")\n- حمدان (Hamdan) = The poet himself OR Hamdan bin Zayed\n\nLOCATIONS:\n- مصر (Egypt), دبي (Dubai), أبوظبي (Abu Dhabi), الإمارات (UAE)\n\nTHEMES:\n- Leadership (القيادة), Unity (الوحدة), Sacrifice (التضحية), Pride (الفخر)\n\n\nProvide 2-3 sentences in Arabic explaining what this term represents in Sheikh Hamdan's poetry and its significance to UAE/Arab relations.\n\nDo NOT make up news. Respond ONLY in Arabic.\n\n# people entities\n\n[\n  {\n    \"name_ar\": \"حمدان بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الذات\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيدي\", \"أمير\", \"Fazaa\", \"Hamdan\", \"Crown Prince\", \"Leader\", \"Commander\"]\n  },\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\", \"Mohammed bin Rashid\", \"My Father\", \"Ruler of Dubai\", \"Vice President\", \"Prime Minister\"]\n  },\n  {\n    \"name_ar\": \"هند بنت مكتوم بن جمعة\",\n    \"name_en\": \"Sheikha Hind bint Maktoum bin Juma'a\",\n    \"relation\": \"الأم\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\", \"Hind\", \"My Mother\", \"Her Highness\"]\n  },\n  {\n    \"name_ar\": \"راشد بن حمدان بن محمد\",\n    \"name_en\": \"Sheikh Rashid bin Hamdan bin Mohammed\",\n    \"relation\": \"الابن\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\", \"Rashid\", \"My Son\", \"Light of My Eyes\", \"Hope\"]\n  },\n  {\n    \"name_ar\": \"شيخة بنت حمدان بن محمد\",\n    \"name_en\": \"Sheikha Sheikha bint Hamdan bin Mohammed\",\n    \"relation\": \"الابنة\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\", \"Sheikha\", \"My Daughter\", \"Joy\", \"Beloved\"]\n  },\n  {\n    \"name_ar\": \"مكتوم بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Maktoum bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\", \"Maktoum\", \"My Brother\", \"Deputy Ruler\", \"Minister of Finance\"]\n  },\n  {\n    \"name_ar\": \"أحمد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Ahmed bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"Ahmed\", \"My Brother\", \"Deputy Ruler of Dubai\"]\n  },\n  {\n    \"name_ar\": \"راشد بن محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Rashid bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأخ (في ذمة الله)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\", \"Rashid\", \"My Brother\", \"Late Brother\", \"May God Have Mercy\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\", \"رفيق درب\", \"MBZ\", \"UAE President\", \"Ruler of Abu Dhabi\", \"My Leader\", \"Companion\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n    \"relation\": \"Grandfather\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\", \"Zayed\", \"Founding Father\", \"Father of the Nation\", \"Builder\", \"May He Rest in Peace\"]\n  },\n  {\n    \"name_ar\": \"فاطمة بنت مبارك الكتبي\",\n    \"name_en\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n    \"relation\": \"أم الإمارات\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\", \"Fatima bint Mubarak\", \"Mother of the UAE\", \"Mother of the Nation\"]\n  },\n  {\n    \"name_ar\": \"حمدان بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Hamdan bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم في المنطقة الغربية\", \"صاحب السمو\", \"Hamdan bin Zayed\", \"Ruler's Representative\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"منصور بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Mansour bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\", \"Mansour bin Zayed\", \"Deputy Prime Minister\", \"Minister of Presidential Affairs\"]\n  },\n  {\n    \"name_ar\": \"طحنون بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Tahnoun bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\", \"Tahnoun bin Zayed\", \"National Security Advisor\", \"My Lord\"]\n  },\n  {\n    \"name_ar\": \"عبدالله بن زايد آل نهيان\",\n    \"name_en\": \"Sheikh Abdullah bin Zayed Al Nahyan\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية والتعاون الدولي\", \"صاحب السمو\", \"Abdullah bin Zayed\", \"Minister of Foreign Affairs\"]\n  },\n  {\n    \"name_ar\": \"سلمان بن عبدالعزيز آل سعود\",\n    \"name_en\": \"King Salman bin Abdulaziz Al Saud\",\n    \"relation\": \"ملك المملكة العربية السعودية\",\n    \"tags\": [\"سلمان\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\", \"Salman\", \"King of Saudi Arabia\", \"Custodian of the Two Holy Mosques\"]\n  },\n  {\n    \"name_ar\": \"محمد بن سلمان آل سعود\",\n    \"name_en\": \"Crown Prince Mohammed bin Salman\",\n    \"relation\": \"ولي عهد المملكة العربية السعودية\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\", \"MBS\", \"Crown Prince of Saudi Arabia\", \"Prince\", \"Leader\"]\n  },\n  {\n    \"name_ar\": \"تميم بن حمد آل ثاني\",\n    \"name_en\": \"Sheikh Tamim bin Hamad Al Thani\",\n    \"relation\": \"أمير دولة قطر\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\", \"Tamim\", \"Emir of Qatar\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"حمد بن عيسى آل خليفة\",\n    \"name_en\": \"King Hamad bin Isa Al Khalifa\",\n    \"relation\": \"ملك مملكة البحرين\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\", \"Hamad\", \"King of Bahrain\", \"Brother\", \"Neighbor\"]\n  },\n  {\n    \"name_ar\": \"مشعل الأحمد الجابر الصباح\",\n    \"name_en\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n    \"relation\": \"أمير دولة الكويت\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\", \"Mishal\", \"Emir of Kuwait\", \"Brother\", \"Friend\"]\n  },\n  {\n    \"name_ar\": \"هيثم بن طارق\",\n    \"name_en\": \"Sultan Haitham bin Tariq\",\n    \"relation\": \"سلطان عُمان الحالي\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"عمان\", \"جار\", \"صديق\", \"Haitham\", \"Sultan of Oman\", \"Brother\", \"Neighbor\"]\n  }\n]\n\n# Note\nalways match user`s query langugae.\nalways concatnate summary + search news if found"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        0,
-        -272
+        64,
+        640
       ],
-      "id": "40b3392b-68dc-4747-b534-1e683d868cf0",
+      "id": "3f7700ea-0fbd-4910-b2fe-1adedf1c97e5",
       "name": "AI Summary Agent1",
       "notesInFlow": true,
-      "executeOnce": false,
       "disabled": true,
       "notes": "Double-click to open"
     },
@@ -339,26 +394,23 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gpt-4.1-mini",
           "mode": "list",
-          "cachedResultName": "gpt-4.1-mini"
+          "value": "gpt-4.1-mini"
         },
-        "options": {
-          "maxTokens": 4000
-        }
+        "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -16,
-        -32
+        48,
+        880
       ],
-      "id": "872a7f9f-4a98-4ab9-8a3c-24c3543902cc",
+      "id": "5e19a1a1-f2ed-4b59-94fa-571f22a93e2f",
       "name": "OpenAI Model1",
       "notesInFlow": true,
       "credentials": {
         "openAiApi": {
-          "id": "eMNmDe8h7ot76c4r",
+          "id": "frYVvB9GNXXi6o6J",
           "name": "OpenAi account"
         }
       },
@@ -373,10 +425,10 @@
       "type": "n8n-nodes-base.rssFeedReadTool",
       "typeVersion": 1.2,
       "position": [
-        160,
-        -32
+        224,
+        880
       ],
-      "id": "a0b3f5b8-b270-4d60-8820-91370c3314e1",
+      "id": "ed5f79f0-3c5c-4b21-817c-e22ecfc01e86",
       "name": "Get World News"
     },
     {
@@ -387,105 +439,11 @@
       "type": "n8n-nodes-base.rssFeedReadTool",
       "typeVersion": 1.2,
       "position": [
-        320,
-        -32
+        384,
+        880
       ],
-      "id": "68816fb1-102f-4747-8508-21b133ce14e8",
+      "id": "f89d8159-90f2-4141-87c5-d3951c209d7f",
       "name": "Tech News"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "14b54e98-ea58-4241-a729-d958fd97fd6e",
-              "name": "mini_summary",
-              "value": "={{ $json.message.content }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        448,
-        96
-      ],
-      "id": "76b65ae3-7b62-4475-9379-cb686b6d3fe2",
-      "name": "Edit Fields2"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "b3fe56af-0584-4646-84ed-d892d44a9b7c",
-              "name": "summary",
-              "value": "={{ $json.data[1].mini_summary }}.\n{{ $json.data[0].news }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1296,
-        80
-      ],
-      "id": "edf34b29-4a53-4e1c-a544-e9b37926f965",
-      "name": "Edit Fields3"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "14b54e98-ea58-4241-a729-d958fd97fd6e",
-              "name": "news",
-              "value": "={{ $json.output }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        448,
-        -144
-      ],
-      "id": "0e86484e-2ea8-4466-bb1f-3d4f21a594ae",
-      "name": "Edit Fields4"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        880,
-        16
-      ],
-      "id": "577b147d-132d-4cc7-b60d-73f8ba340d19",
-      "name": "Merge"
-    },
-    {
-      "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
-      "position": [
-        1088,
-        16
-      ],
-      "id": "93849cc7-caa2-4b40-89fb-5505b5e1fc1d",
-      "name": "Aggregate1"
     }
   ],
   "pinData": {},
@@ -495,17 +453,6 @@
         [
           {
             "node": "Aggregate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript3": {
-      "main": [
-        [
-          {
-            "node": "Edge-function-Semantic",
             "type": "main",
             "index": 0
           }
@@ -527,7 +474,18 @@
       "main": [
         [
           {
-            "node": "Edit Fields2",
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Edge-function-Semantic",
             "type": "main",
             "index": 0
           }
@@ -535,6 +493,17 @@
       ]
     },
     "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
       "main": [
         [
           {
@@ -570,11 +539,6 @@
     "Webhook_ٍsummary": {
       "main": [
         [
-          {
-            "node": "AI Summary Agent1",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "AI Summary",
             "type": "main",
@@ -627,6 +591,17 @@
         ]
       ]
     },
+    "AI Summary Agent1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "OpenAI Model1": {
       "ai_languageModel": [
         [
@@ -659,83 +634,16 @@
           }
         ]
       ]
-    },
-    "AI Summary Agent1": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields4",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields2": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Edit Fields3": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields4": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Aggregate1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Aggregate1": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": true,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "versionId": "7d700ede-22ba-44ef-8a9b-55c06502fdd2",
+  "settings": {},
+  "versionId": "57aef842-4468-4819-9c6e-e8be984bad8b",
   "meta": {
+    "templateId": "ready-to-run-ai-workflow",
     "templateCredsSetupCompleted": true,
-    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+    "instanceId": "3db7a0aadfa6894039310fa93c794f61ffc29ec48d6084432610f65693af31b2"
   },
-  "id": "wjx0NneYSWlJDzwK",
+  "id": "jqLqGLoCbt9M6D1U",
   "tags": []
 }

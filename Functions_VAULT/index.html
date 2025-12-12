@@ -201,24 +201,24 @@
 
     <script>
       /* ============================================================================
-   FULL VERBOSE SEARCH APP (FlexSearch) - Developer friendly expanded version
-   ----------------------------------------------------------------------------
-   Features:
-   - Loads CSV/TSV with header detection
-   - Builds FlexSearch.Document index on pre-cleaned or normalized fields
-   - Arabic normalization (tashkeel/tatweel removal, alef/yaa/hamza handling)
-   - Exact/prefix/contains boosting to prioritize full matches (fixes محمد vs حمد)
-   - Boost list (up to 100 words)
-   - Deduplication (never return duplicates)
-   - Returns context: previous/current/next line within the same poem_id
-   - Dropdown shows initial 10 items, scroll to load more
-   - Click -> detail view with highlighted tokens in title & text
-   - Verbose console logs & debug panel in UI
-   ============================================================================ */
+         FULL VERBOSE SEARCH APP (FlexSearch) - Developer friendly expanded version
+         ----------------------------------------------------------------------------
+         Features:
+         - Loads CSV/TSV with header detection
+         - Builds FlexSearch.Document index on pre-cleaned or normalized fields
+         - Arabic normalization (tashkeel/tatweel removal, alef/yaa/hamza handling)
+         - Exact/prefix/contains boosting to prioritize full matches (fixes محمد vs حمد)
+         - Boost list (up to 100 words)
+         - Deduplication (never return duplicates)
+         - Returns context: previous/current/next line within the same poem_id
+         - Dropdown shows initial 10 items, scroll to load more
+         - Click -> detail view with highlighted tokens in title & text
+         - Verbose console logs & debug panel in UI
+         ============================================================================ */
 
       /* ---------------------------
-   Configuration
-   --------------------------- */
+         Configuration
+         --------------------------- */
       const DATA_FILE = "poems.csv"; // file must be in same folder as HTML
       const EXPECTED_HEADERS = [
         "Row_number",
@@ -231,24 +231,158 @@
       const INITIAL_SHOW = 10;
       const LOAD_MORE = 10; // chunk to append when scrolling
 
-      // BOOST WORDS - editable up to 100 words
+      // BOOST WORDS - priority search terms (up to 100)
       const BOOSTED_WORDS = [
+        // Immediate Family & Close Relations
         "محمد",
         "راشد",
+        "زايد",
+        "هند",
+        "شيخة",
+        "مكتوم",
+        "أحمد",
+        "حمدان",
+        "فلذة",
+        "نور",
+        "حبيبي",
+        "أمي",
+        "أبي",
+        "ابني",
+        "ابنتي",
+        "أخي",
+        "بنتي",
+        "ابنتي",
+        "فرحتي",
+
+        // Leadership & Founding Fathers
+        "بو خالد",
+        "MBZ",
+        "خليفة",
+        "سعود",
+        "صقر",
+        "حميد",
+        "راشد بن سعيد",
+        "مكتوم بن راشد",
+        "زايد بن سلطان",
+        "حاكم دبي",
+        "حاكم أبوظبي",
+        "حاكم الشارقة",
+        "حاكم الفجيرة",
+        "حاكم رأس الخيمة",
+        "حاكم عجمان",
+        "نائب رئيس الدولة",
+        "رئيس الوزراء",
+
+        // Core National & Pride Terms
+        "الوطن",
+        "الإمارات",
+        "دبي",
+        "أبوظبي",
+        "الشارقة",
+        "الفجيرة",
+        "رأس الخيمة",
+        "عجمان",
+        "أم القيوين",
+        "الشهداء",
+        "الجنود",
+        "المواطنين",
+        "شعب الإمارات",
+        "الآباء المؤسسين",
+        "العلم",
+        "الراية",
+        "المجد",
+        "الفخر",
+        "الكرامة",
+        "الوفا",
+        "العروبة",
+        "الأمل",
+        "الزمن",
+
+        // Common Poetic Words / Love Language
         "حب",
         "عشق",
         "قلب",
-        "ليل",
-        "الوطن",
-        "امارات",
+        "العيون",
+        "الشوق",
+        "الغلا",
+        "الهجر",
+        "الفراق",
+        "الوصل",
+        "الهوى",
+        "الغرام",
+        "المحبين",
+        "الاشواق",
+        "الحنين",
+        "الوجد",
+        "اللوعة",
+        "الشجن",
+        "الجروح",
+        "الألم",
+        "الدموع",
+        "الحزن",
+        "المحاني",
+        "العذال",
+        "الصد",
+        "الهجران",
+        "الملام",
+
+        // Key Events & Cultural Terms
+        "يوم الشهيد",
+        "اليوم الوطني",
+        "يوم العلم",
+        "يوم الاتحاد",
+        "رمضان",
+        "عيد الفطر",
+        "عيد الأضحى",
+        "يوم عرفة",
+        "رأس السنة الهجرية",
+        "المولد النبوي",
+        "يوم الأم",
+        "تحدي دبي للياقة",
+        "مهرجان دبي للتسوق",
+        "مفاجآت دبي الصيفية",
+        "معرض دبي للطيران",
+        "جائزة أبوظبي الكبرى",
+        "كأس دبي العالمي",
+        "expo 2020",
+
+        // Pan-Arab / Regional References
+        "مصر",
+        "فلسطين",
+        "المغرب",
+        "بغداد",
+        "الشام",
+        "سلمان",
+        "تميم",
         "حمد",
-        "احمد",
-        // add more words...
+        "مشعل",
+        "هيثم",
+        "محمد بن سلمان",
+        "MBS",
+
+        // Miscellaneous Boosters from Poetry Style
+        "ليل",
+        "العطر",
+        "العشق",
+        "الروح",
+        "الحياة",
+        "الدنيا",
+        "الصبر",
+        "الأمل",
+        "المجد",
+        "السماء",
+        "الأرض",
+        "الهواء",
+        "الثرا",
+        "الماء",
+        "البحر",
+        "الشمس",
+        "القمر",
       ];
 
       /* ---------------------------
-   Global state
-   --------------------------- */
+         Global state
+         --------------------------- */
       let RAW_ROWS = []; // raw parsed rows (objects)
       let LINES = []; // normalized line objects with index mapping
       let GROUPS = {}; // poem_id => [lineIdx,...]
@@ -267,8 +401,8 @@
       let shownCount = 0; // how many items currently shown in dropdown
 
       /* ============================
-   Utility: Logging & debug
-   ============================ */
+         Utility: Logging & debug
+         ============================ */
       function logDebug(msg) {
         console.log("[search-dev] " + msg);
       }
@@ -280,8 +414,8 @@
       }
 
       /* ============================
-   Utility: HTML escape
-   ============================ */
+         Utility: HTML escape
+         ============================ */
       function escapeHtml(s) {
         if (s === undefined || s === null) return "";
         return String(s)
@@ -291,11 +425,11 @@
       }
 
       /* ============================
-   CSV/TSV Loader (robust)
-   - detects delimiter based on header line
-   - supports quoted fields
-   - returns array of objects keyed by header
-   ============================ */
+         CSV/TSV Loader (robust)
+         - detects delimiter based on header line
+         - supports quoted fields
+         - returns array of objects keyed by header
+         ============================ */
       async function loadDataFile(path) {
         logDebug("Fetching data file: " + path);
         const res = await fetch(path);
@@ -386,21 +520,21 @@
       }
 
       /* ============================
-   Arabic Normalization functions
-   - explicit, well documented
-   ============================ */
+         Arabic Normalization functions
+         - explicit, well documented
+         ============================ */
 
       /*
-  Normalization steps applied:
-  1) Remove Arabic diacritics (tashkeel) U+0610–U+061A, U+064B–U+065F and more
-  2) Remove tatweel (kashida) U+0640
-  3) Normalize alef variants to plain ا
-  4) Normalize alif maqsura (ى) to ي
-  5) Normalize hamza variants to bare hamza ء (or keep as ء)
-  6) Normalize taa marbouta handling (kept as ة to be safer)
-  7) Remove punctuation that interferes with tokenization
-  8) Collapse multiple spaces
-*/
+        Normalization steps applied:
+        1) Remove Arabic diacritics (tashkeel) U+0610–U+061A, U+064B–U+065F and more
+        2) Remove tatweel (kashida) U+0640
+        3) Normalize alef variants to plain ا
+        4) Normalize alif maqsura (ى) to ي
+        5) Normalize hamza variants to bare hamza ء (or keep as ء)
+        6) Normalize taa marbouta handling (kept as ة to be safer)
+        7) Remove punctuation that interferes with tokenization
+        8) Collapse multiple spaces
+      */
       function removeDiacriticsAndNormalize(str) {
         if (!str) return "";
         let s = String(str);
@@ -443,9 +577,9 @@
       }
 
       /* ============================
-   Build LINES structure + GROUPS + FlexSearch index
-   - verbose and explicit for easy debugging & modifications
-   ============================ */
+         Build LINES structure + GROUPS + FlexSearch index
+         - verbose and explicit for easy debugging & modifications
+         ============================ */
       function buildIndexFromRows(headers, rows) {
         RAW_ROWS = rows; // store raw rows for debug
         LINES = [];
@@ -579,20 +713,20 @@
       }
 
       /* ============================
-   Search pipeline (verbose)
-   Steps:
-   1) Normalize query
-   2) Query FlexSearch (enrich) to get candidate docs
-   3) Deduplicate candidates (unique idx)
-   4) Compute custom scoring:
-        - exact full-word match in title/text -> large boost
-        - prefix (startsWith) -> medium boost
-        - contains -> smaller boost
-        - boosted words present -> add small boost
-        - length/distance penalty for ambiguous short matches (helps محمد vs حمد)
-   5) Sort by score (desc)
-   6) Return unique results with context (prev/current/next)
-   ============================ */
+         Search pipeline (verbose)
+         Steps:
+         1) Normalize query
+         2) Query FlexSearch (enrich) to get candidate docs
+         3) Deduplicate candidates (unique idx)
+         4) Compute custom scoring:
+              - exact full-word match in title/text -> large boost
+              - prefix (startsWith) -> medium boost
+              - contains -> smaller boost
+              - boosted words present -> add small boost
+              - length/distance penalty for ambiguous short matches (helps محمد vs حمد)
+         5) Sort by score (desc)
+         6) Return unique results with context (prev/current/next)
+         ============================ */
 
       // normalize query
       function normalizeQuery(q) {
@@ -734,9 +868,9 @@
       }
 
       /* ============================
-   Context builder (prev/current/next) with same poem_id constraint
-   - returns array of lines in order
-   ============================ */
+         Context builder (prev/current/next) with same poem_id constraint
+         - returns array of lines in order
+         ============================ */
       function getContextForLineIdx(lineIdx) {
         const line = LINES[lineIdx];
         if (!line) return [];
@@ -751,10 +885,10 @@
       }
 
       /* ============================
-   Highlighting tolerant function
-   - builds a tolerant regex that tolerates diacritics/tatweel between characters
-   - but highlights the actual substring in raw text (keeps original diacritics)
-   ============================ */
+         Highlighting tolerant function
+         - builds a tolerant regex that tolerates diacritics/tatweel between characters
+         - but highlights the actual substring in raw text (keeps original diacritics)
+         ============================ */
       function tolerantRegexForToken(token) {
         // escape
         const esc = token.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
@@ -782,11 +916,11 @@
       }
 
       /* ============================
-   Dropdown rendering & infinite scroll logic
-   - show initial chunk: INITIAL_SHOW
-   - on scroll -> append LOAD_MORE items
-   - ensure deduplication
-   ============================ */
+         Dropdown rendering & infinite scroll logic
+         - show initial chunk: INITIAL_SHOW
+         - on scroll -> append LOAD_MORE items
+         - ensure deduplication
+         ============================ */
 
       function renderDropdown(results, query) {
         // results: array of doc objects (unique)
@@ -814,16 +948,19 @@
           const titleRaw = doc.Title_raw || "";
           // build HTML for this item: title + 3-line context
           const itemHtml = `
-      <div class="result-item" data-idx="${idx}" role="option" aria-selected="false">
-        <div class="title">${highlightRawWithQuery(titleRaw, query)}</div>
-        <div class="line">${ctx
-          .map(
-            (c, j) =>
-              `<div>${highlightRawWithQuery(c.Text_raw || "", query)}</div>`
-          )
-          .join("")}</div>
-      </div>
-    `;
+            <div class="result-item" data-idx="${idx}" role="option" aria-selected="false">
+              <div class="title">${highlightRawWithQuery(titleRaw, query)}</div>
+              <div class="line">${ctx
+                .map(
+                  (c, j) =>
+                    `<div>${highlightRawWithQuery(
+                      c.Text_raw || "",
+                      query
+                    )}</div>`
+                )
+                .join("")}</div>
+            </div>
+          `;
           dropdown.insertAdjacentHTML("beforeend", itemHtml);
         }
         // wire click handlers lazily (delegate will handle)
@@ -852,10 +989,10 @@
       });
 
       /* ============================
-   Detail view rendering
-   - show title + context (prev/current/next)
-   - highlight tokens in title & lines
-   ============================ */
+         Detail view rendering
+         - show title + context (prev/current/next)
+         - highlight tokens in title & lines
+         ============================ */
       function openDetailForIndex(idx, query) {
         const ctx = getContextForLineIdx(idx);
         if (!ctx || ctx.length === 0) return;
@@ -883,10 +1020,165 @@
       }
 
       /* ============================
-   Input handling & debounce
-   ============================ */
+         Input handling & debounce
+         ============================ */
       let debounceTimer = null;
       const DEBOUNCE_MS = 120;
+      const LATIN_TO_ARABIC = {
+        // Names & Family
+        mohamed: "محمد",
+        mohammad: "محمد",
+        ahmed: "أحمد",
+        hmd: "حمد",
+        hamdan: "حمدان",
+        hind: "هند",
+        sheikha: "شيخة",
+        mktoum: "مكتوم",
+        bin: "بن",
+        ibn: "بن",
+
+        // Leadership & Royalty
+        mbz: "محمد بن زايد",
+        zayed: "زايد",
+        zxayed: "زايد",
+        khalifa: "خليفة",
+        saud: "سعود",
+        saqr: "صقر",
+        hamid: "حميد",
+        rashid: "راشد",
+        "rashid bin said": "راشد بن سعيد",
+        "maktoum bin rashid": "مكتوم بن راشد",
+        "zayed bin sultan": "زايد بن سلطان",
+        "ruler of dubai": "حاكم دبي",
+        "ruler of abu dhabi": "حاكم أبوظبي",
+        "ruler of sharjah": "حاكم الشارقة",
+        "ruler of fujairah": "حاكم الفجيرة",
+        "ruler of ras al khaimah": "حاكم رأس الخيمة",
+        "ruler of ajman": "حاكم عجمان",
+        "vice president": "نائب رئيس الدولة",
+        "prime minister": "رئيس الوزراء",
+
+        // National & Cultural terms
+        wattan: "الوطن",
+        uae: "الإمارات",
+        dubai: "دبي",
+        abudhabi: "أبوظبي",
+        sharjah: "الشارقة",
+        fujairah: "الفجيرة",
+        "ras alkhaimah": "رأس الخيمة",
+        ajman: "عجمان",
+        "um alqaiwain": "أم القيوين",
+        martyrs: "الشهداء",
+        soldiers: "الجنود",
+        people: "شعب الإمارات",
+        "founding father": "الآباء المؤسسين",
+        flag: ["العلم", "الراية"],
+        glory: ["المجد"],
+        pride: ["الفخر"],
+        dignity: ["الكرامة"],
+        loyalty: ["الوفا"],
+        arob: ["العروبة"],
+        hope: ["الأمل"],
+        time: ["الزمن"],
+
+        // Poetic / love
+        love: "حب",
+        passion: "عشق",
+        heart: "قلب",
+        eyes: "العيون",
+        longing: "الشوق",
+        affection: "الغلا",
+        separation: "الهجر",
+        parting: "الفراق",
+        union: "الوصل",
+        desire: "الهوى",
+        romance: "الغرام",
+        lovers: "المحبين",
+        longings: "الاشواق",
+        nostalgia: "الحنين",
+        existence: "الوجد",
+        anguish: "اللوعة",
+        melancholy: "الشجن",
+        wounds: "الجروح",
+        pain: "الألم",
+        sorrow: "الحزن",
+        afflictions: "المحاني",
+        reproaches: "العذال",
+        rejection: "الصد",
+        abandonment: "الهجران",
+        reproach: "الملام",
+        night: "ليل",
+        perfume: "العطر",
+        soul: "الروح",
+        life: "الحياة",
+        world: "الدنيا",
+
+        // Events & holidays
+        "martyrs day": "يوم الشهيد",
+        "national day": "اليوم الوطني",
+        "flag day": "يوم العلم",
+        "union day": "يوم الاتحاد",
+        ramadan: "رمضان",
+        "eid al fitr": "عيد الفطر",
+        "eid al adha": "عيد الأضحى",
+        "arafah day": "يوم عرفة",
+        "hijri new year": "رأس السنة الهجرية",
+        "mawlid al nabawi": "المولد النبوي",
+        "mothers day": "يوم الأم",
+
+        "dubai fitness challenge": "تحدي دبي للياقة",
+        "dubai shopping festival": "مهرجان دبي للتسوق",
+        "dubai summer surprises": "مفاجآت دبي الصيفية",
+        "dubai airshow": "معرض دبي للطيران",
+        "abu dhabi grand prix": "جائزة أبوظبي الكبرى",
+        "dubai world cup": "كأس دبي العالمي",
+        expo2020: "expo 2020",
+
+        // Pan-Arab / regional
+        egypt: "مصر",
+        palestine: "فلسطين",
+        morocco: "المغرب",
+        baghdad: "بغداد",
+        sham: "الشام",
+        salman: "سلمان",
+        tamim: "تميم",
+        mishal: "مشعل",
+        haitham: "هيثم",
+        "mohamed bin salman": "محمد بن سلمان",
+        mbs: "MBS",
+
+        // Elements / natural
+        perfume: "العطر",
+        love: "العشق",
+        soul: "الروح",
+        life: "الحياة",
+        world: "الدنيا",
+        patience: "الصبر",
+        hope: "الأمل",
+        sky: "السماء",
+        earth: "الأرض",
+        air: "الهواء",
+        soil: "الثرا",
+        water: "الماء",
+        sea: "البحر",
+        sun: "الشمس",
+        moon: "القمر",
+      };
+
+      function mapLatinToArabic(query) {
+        if (!query) return "";
+        const tokens = query.toLowerCase().split(/\s+/);
+        const mapped = tokens.map((t) => {
+          // exact match first
+          if (LATIN_TO_ARABIC[t]) return LATIN_TO_ARABIC[t];
+          // fuzzy match: see if any key starts with the token
+          for (const k of Object.keys(LATIN_TO_ARABIC)) {
+            if (k.startsWith(t)) return LATIN_TO_ARABIC[k];
+          }
+          return t; // fallback
+        });
+        return mapped.join(" ");
+      }
 
       inp.addEventListener("input", (ev) => {
         const q = ev.target.value;
@@ -903,9 +1195,17 @@
           shownCount = 0;
           return;
         }
-        const results = searchPipeline(q); // returns array of docs
-        // remove duplicates across lines (two lines with same poem_id and identical text maybe) - but already unique by idx
-        // however, ensure we never return two results that have identical title+text raw combination (de-dup)
+
+        // Step 1: map Latin → Arabic
+        const arabicQuery = mapLatinToArabic(q);
+
+        // Step 2: normalize (removes diacritics etc.)
+        const normQuery = normalizeQuery(arabicQuery);
+
+        // Step 3: search
+        const results = searchPipeline(normQuery);
+
+        // dedupe and render
         const uniq = [];
         const seen = new Set();
         for (const r of results) {
@@ -915,12 +1215,13 @@
             seen.add(key);
           }
         }
-        renderDropdown(uniq, q);
+        renderDropdown(uniq, arabicQuery);
+        // keep original user query for highlighting
       }
 
       /* ============================
-   Helper Buttons
-   ============================ */
+         Helper Buttons
+         ============================ */
       clearBtn.addEventListener("click", () => {
         inp.value = "";
         dropdownContainer.style.display = "none";
@@ -938,9 +1239,9 @@
       });
 
       /* ============================
-   Startup init
-   - load file -> parse -> build index -> ready
-   ============================ */
+         Startup init
+         - load file -> parse -> build index -> ready
+         ============================ */
       (async function init() {
         try {
           const { headers, rows } = await loadDataFile(DATA_FILE);
@@ -971,9 +1272,9 @@
       })();
 
       /* ============================================================================
-   End of file
-   ============================================================================
-*/
+         End of file
+         ============================================================================
+      */
     </script>
   </body>
 </html>

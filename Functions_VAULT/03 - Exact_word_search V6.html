@@ -561,8 +561,17 @@
         resultsDiv.innerHTML = '<div class="loading">جاري البحث...</div>';
 
         try {
+          // Dynamic threshold based on query length
+          // Single word: stricter (0.4)
+          // Multiple words: more lenient (0.3)
+          const wordCount = query.trim().split(/\s+/).length;
+          const threshold = wordCount === 1 ? 0.4 : 0.3;
+
+          console.log(`🔍 Searching for: "${query}"`);
+          console.log(`   Words: ${wordCount}, Threshold: ${threshold}`);
+
           const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/rpc/hybrid_search_exact`,
+            `${SUPABASE_URL}/rest/v1/rpc/smart_exact_search`,
             {
               method: "POST",
               headers: {
@@ -573,14 +582,28 @@
               body: JSON.stringify({
                 query_text: query,
                 match_count: 50,
+                score_threshold: threshold,
               }),
             }
           );
 
           const data = await response.json();
-          currentResults = data || [];
-          displayResults(currentResults, query);
+
+          if (!response.ok) {
+            throw new Error(data.message || "Search failed");
+          }
+
+          // Filter out low-quality results (below 0.3 even if threshold was lower)
+          const qualityResults = data.filter((r) => r.final_score >= 0.3);
+
+          console.log(
+            `✅ Found ${data.length} results, ${qualityResults.length} high quality`
+          );
+
+          currentResults = qualityResults;
+          displayResults(qualityResults, query);
         } catch (error) {
+          console.error("Search error:", error);
           resultsDiv.innerHTML = `<div class="result">خطأ: ${error.message}</div>`;
         }
       }
@@ -634,63 +657,80 @@
         }
 
         // Calculate analytics
-        const uniquePoems = new Set(results.map((r) => r.metadata?.poem_id))
-          .size;
-        const totalOccurrences = results.reduce((sum, r) => {
-          const positions = r.highlight_positions?.positions || [];
-          return sum + positions.length;
-        }, 0);
+        const uniquePoems = new Set(results.map((r) => r.poem_id)).size;
+        const avgScore = (
+          results.reduce((sum, r) => sum + parseFloat(r.final_score), 0) /
+          results.length
+        ).toFixed(2);
+        const highQuality = results.filter((r) => r.final_score >= 50).length;
 
         const analyticsHTML = `
         <div class="analytics">
           <div><span style="color: var(--muted);">النتائج:</span> <strong>${results.length}</strong></div>
           <div><span style="color: var(--muted);">القصائد:</span> <strong style="color: #2196F3;">${uniquePoems}</strong></div>
-          <div><span style="color: var(--muted);">التكرارات:</span> <strong style="color: #4CAF50;">${totalOccurrences}</strong></div>
+          <div><span style="color: var(--muted);">جودة عالية:</span> <strong style="color: #4CAF50;">${highQuality}</strong></div>
+          <div><span style="color: var(--muted);">متوسط النقاط:</span> <strong style="color: #FF9800;">${avgScore}</strong></div>
         </div>
       `;
 
         const resultsHTML = results
           .map((r, idx) => {
-            const positions = r.highlight_positions?.positions || [];
-            const title = r.metadata?.poem_name || "بدون عنوان";
-            const poemId = r.metadata?.poem_id || "";
+            const title = r.title_raw || "بدون عنوان";
+            const poemId = r.poem_id || "";
+            const score = parseFloat(r.final_score || 0);
+            const sourceFields = r.source_fields || [];
 
             const highlightedTitle = highlight(title, query);
             const highlightedPoem = wrapPoetryLine(
-              highlight(r.poem_raw, query)
+              highlight(r.poem_line_raw, query)
             );
 
-            const matchTypeColors = {
-              exact_full_match: "#4CAF50",
-              partial_match: "#2196F3",
-              metadata_match: "#FF9800",
-              single_word_match: "#9C27B0",
+            // Score quality indicator
+            let scoreColor = "#999";
+            let scoreLabel = "ضعيف";
+            if (score >= 80) {
+              scoreColor = "#4CAF50";
+              scoreLabel = "ممتاز";
+            } else if (score >= 50) {
+              scoreColor = "#2196F3";
+              scoreLabel = "جيد";
+            } else if (score >= 30) {
+              scoreColor = "#FF9800";
+              scoreLabel = "متوسط";
+            }
+
+            // Source fields badges
+            const fieldArabic = {
+              title: "عنوان",
+              poem: "نص",
+              summary: "ملخص",
+              شخص: "شخص",
+              أماكن: "أماكن",
+              أحداث: "أحداث",
+              مواضيع: "مواضيع",
+              sentiments: "مشاعر",
             };
 
-            const matchTypeArabic = {
-              exact_full_match: "تطابق تام",
-              partial_match: "تطابق جزئي",
-              metadata_match: "تطابق وصفي",
-              single_word_match: "كلمة مفردة",
-            };
+            const sourceBadges = sourceFields
+              .slice(0, 3)
+              .map(
+                (field) =>
+                  `<span class="badge" style="background: #e3f2fd; color: #1976d2;">${
+                    fieldArabic[field] || field
+                  }</span>`
+              )
+              .join("");
 
             return `
-          <div class="result" data-index="${idx}">
+          <div class="result" data-index="${idx}" data-score="${score}">
             <div class="title">${highlightedTitle}</div>
             <div class="poem-lines">${highlightedPoem || "لا يوجد نص"}</div>
             <div class="meta">
               <span class="badge">قصيدة #${poemId}</span>
-              <span class="badge match-type-badge" style="background-color: ${
-                matchTypeColors[r.match_type]
-              }20; color: ${matchTypeColors[r.match_type]};">
-                ${matchTypeArabic[r.match_type] || r.match_type}
+              <span class="badge" style="background-color: ${scoreColor}20; color: ${scoreColor}; font-weight: 600;">
+                ${score.toFixed(1)} • ${scoreLabel}
               </span>
-              <span class="badge score-badge">النتيجة: ${r.final_score.toFixed(
-                2
-              )}</span>
-              <span class="badge">مواضع: ${
-                positions.length > 0 ? positions.join(", ") : "لا يوجد"
-              }</span>
+              ${sourceBadges}
             </div>
           </div>
         `;
@@ -710,17 +750,23 @@
       }
 
       async function openPoemWidget(result, query) {
-        const poemId = String(result.metadata?.poem_id || "").trim();
+        const poemId = String(result.poem_id || "").trim();
         if (!poemId) {
           console.error("❌ No poem_id in result");
           return;
         }
 
+        console.log("═══════════════════════════════════════");
+        console.log("📖 Opening poem widget for poem_id:", poemId);
+        console.log("CSV data loaded:", poemsData.length, "lines");
+
         let poemLines = null;
 
-        // STRATEGY 1: Try local CSV first
+        // ═══════════════════════════════════════════════
+        // STRATEGY 1: Try LOCAL CSV FIRST (Priority!)
+        // ═══════════════════════════════════════════════
         if (poemsData.length > 0) {
-          console.log("🔍 Searching in local CSV for poem_id:", poemId);
+          console.log("✅ CSV available - searching locally...");
 
           // Convert both to strings for comparison
           poemLines = poemsData.filter(
@@ -728,23 +774,34 @@
           );
 
           if (poemLines && poemLines.length > 0) {
-            console.log("✅ Found in CSV:", poemLines.length, "lines");
+            console.log("🎯 SUCCESS: Found in LOCAL CSV!");
+            console.log("   Lines found:", poemLines.length);
+            console.log("   Source: LOCAL FILE (fast!)");
+            console.log("═══════════════════════════════════════");
             showPoemModal(poemLines, query);
-            return;
+            return; // EXIT - Don't try Supabase!
           } else {
+            console.warn("⚠️ NOT found in CSV");
             console.log(
-              "⚠️ Not found in CSV. Poem IDs in data:",
-              [...new Set(poemsData.map((p) => p.poem_id))].slice(0, 10)
+              "   Available poem_ids:",
+              [...new Set(poemsData.map((p) => p.poem_id))]
+                .slice(0, 10)
+                .join(", ")
             );
-            console.log("⚠️ Trying Supabase fallback...");
+            console.log("   Looking for:", poemId);
           }
+        } else {
+          console.warn("⚠️ CSV not loaded (poemsData is empty)");
         }
 
-        // STRATEGY 2: Fallback to Supabase if CSV didn't work
+        // ═══════════════════════════════════════════════
+        // STRATEGY 2: FALLBACK to Supabase (if CSV failed)
+        // ═══════════════════════════════════════════════
+        console.log("☁️ Falling back to Supabase...");
         statusDiv.textContent = "جاري التحميل من السحابة...";
 
         try {
-          console.log("☁️ Fetching from Supabase table:", SUPABASE_TABLE);
+          console.log("   Fetching from:", SUPABASE_TABLE);
 
           const response = await fetch(
             `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?poem_id=eq.${poemId}&select=*&order=Row_ID.asc`,
@@ -766,7 +823,10 @@
             throw new Error("No lines returned from Supabase");
           }
 
-          console.log("✅ Found in Supabase:", poemLines.length, "lines");
+          console.log("🎯 SUCCESS: Found in SUPABASE!");
+          console.log("   Lines found:", poemLines.length);
+          console.log("   Source: CLOUD (online)");
+          console.log("═══════════════════════════════════════");
           statusDiv.textContent = "جاهز للبحث...";
 
           // Normalize Supabase column names to match CSV format
@@ -795,7 +855,8 @@
 
           showPoemModal(poemLines, query);
         } catch (error) {
-          console.error("❌ Supabase fallback failed:", error);
+          console.error("❌ Supabase fallback FAILED:", error);
+          console.log("═══════════════════════════════════════");
           statusDiv.textContent = "جاهز للبحث...";
           alert("لم يتم العثور على القصيدة الكاملة في CSV أو Supabase");
         }

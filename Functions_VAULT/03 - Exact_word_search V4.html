@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>البحث الدقيق - Enhanced</title>
+    <style>
+      :root {
+        --bg: #f9fafb;
+        --card: #fff;
+        --accent: #ffd54f;
+        --border: #e8e8e8;
+        --text: #111;
+        --muted: #666;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Naskh Arabic", "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        direction: rtl;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      .search-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      input {
+        flex: 1;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 17px;
+        background: white;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background: #f5f5f5;
+      }
+
+      .search-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 14px 24px;
+        font-weight: 600;
+      }
+
+      .search-btn:hover {
+        background: #2980b9;
+      }
+
+      .analytics {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .analytics > div {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .analytics strong {
+        color: #2c3e50;
+        font-size: 16px;
+      }
+
+      .results {
+        margin-top: 16px;
+      }
+
+      .result {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .result:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .title {
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: #2c3e50;
+      }
+
+      .poem-lines {
+        line-height: 1.9;
+        font-size: 18px;
+        color: var(--text);
+        font-family: "Noto Naskh Arabic", "Traditional Arabic", serif;
+      }
+
+      .poetry-line {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 4px;
+        max-width: 550px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hemistich {
+        text-align: justify;
+        word-spacing: 0.05em;
+      }
+
+      .hemistich-right {
+        text-align-last: right;
+      }
+
+      .hemistich-left {
+        text-align-last: left;
+      }
+
+      /* Metadata panel - same as V6 */
+      .metadata-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-radius: 28px 28px 0 0;
+        padding: 0;
+        box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.15);
+        transform: translateY(100%);
+        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-height: 60vh;
+        overflow: hidden;
+        z-index: 2000;
+      }
+
+      .metadata-panel.visible {
+        transform: translateY(0);
+      }
+
+      .metadata-header {
+        padding: 24px 28px 16px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 249, 230, 0.3) 0%,
+          transparent 100%
+        );
+      }
+
+      .metadata-body {
+        padding: 20px 28px 32px;
+        overflow-y: auto;
+        max-height: calc(60vh - 120px);
+      }
+
+      .summary-box {
+        background: linear-gradient(135deg, #fffbf0 0%, #fff8e6 100%);
+        border: 1px solid rgba(255, 213, 79, 0.3);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        line-height: 1.8;
+        font-size: 15px;
+        color: #4a4a4a;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .summary-box::before {
+        content: "📝";
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        font-size: 28px;
+        opacity: 0.3;
+      }
+
+      .summary-box .summary-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #b8860b;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .metadata-section {
+        margin-bottom: 20px;
+      }
+
+      .metadata-section-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #999;
+        margin-bottom: 12px;
+        padding-right: 8px;
+      }
+
+      .metadata-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .metadata-chip {
+        background: white;
+        border: 1.5px solid rgba(255, 213, 79, 0.4);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        color: #333;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+
+      .metadata-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #ffd54f;
+      }
+
+      .metadata-chip .label {
+        font-weight: 600;
+        color: #b8860b;
+      }
+
+      .clickable-line {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 12px 16px;
+        margin: -12px -16px 4px;
+        border-radius: 12px;
+        position: relative;
+      }
+
+      .clickable-line::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 0;
+        background: linear-gradient(180deg, #ffd54f 0%, #ffb300 100%);
+        border-radius: 0 3px 3px 0;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .clickable-line:hover {
+        background: rgba(255, 213, 79, 0.08);
+      }
+
+      .clickable-line:hover::before {
+        height: 60%;
+      }
+
+      .clickable-line.active {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 213, 79, 0.15) 0%,
+          rgba(255, 213, 79, 0.05) 100%
+        );
+      }
+
+      .clickable-line.active::before {
+        height: 80%;
+      }
+
+      .close-metadata-btn {
+        background: rgba(0, 0, 0, 0.05);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #666;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      .close-metadata-btn:hover {
+        background: rgba(0, 0, 0, 0.1);
+        transform: rotate(90deg);
+      }
+
+      mark {
+        background: var(--accent);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+
+      .meta {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #e3f2fd;
+        color: #1976d2;
+        font-size: 11px;
+        font-weight: 500;
+      }
+
+      .match-type-badge {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .score-badge {
+        background: #fff3e0;
+        color: #e65100;
+      }
+
+      .no-results {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+
+      .info-section {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+        font-size: 12px;
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 البحث الدقيق - نسخة محسّنة</h1>
+      <div class="status" id="status">جاهز للبحث...</div>
+
+      <div class="search-bar">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="ابحث بالكلمات أو الأسماء (مثال: محمد، حب، دبي)"
+          autofocus
+        />
+        <button id="searchBtn" class="search-btn">بحث</button>
+        <button id="clearBtn">مسح</button>
+      </div>
+
+      <div id="results" class="results"></div>
+    </div>
+
+    <script>
+      const SUPABASE_URL = "https://ezcbshyresjinfyscals.supabase.co";
+      const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2JzaHlyZXNqaW5meXNjYWxzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzE2MjY0NSwiZXhwIjoyMDc4NzM4NjQ1fQ.ozzNCzjvWOym1QqxkQXxgDH2_zf-Y7trpvaaUF7ZpFs";
+
+      // CSV FILE CONFIG - Put your CSV file in the same folder as this HTML
+      const CSV_FILE = "02 - live_search.csv";
+
+      const searchInput = document.getElementById("searchInput");
+      const searchBtn = document.getElementById("searchBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const resultsDiv = document.getElementById("results");
+      const statusDiv = document.getElementById("status");
+
+      let currentResults = [];
+      let poemsData = []; // Store CSV data
+
+      // Event handlers
+      searchBtn.addEventListener("click", () => search(searchInput.value));
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") search(e.target.value);
+      });
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        resultsDiv.innerHTML = "";
+        currentResults = [];
+      });
+
+      // CSV LOADER (from V6)
+      async function loadCSV(path) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to load ${path}`);
+
+        const text = await response
+          .text()
+          .then((t) => t.replace(/^\uFEFF/, ""));
+        const lines = text.trim().split(/\r?\n/);
+
+        if (lines.length < 2) throw new Error("CSV is empty");
+
+        const rows = [];
+        let i = 1;
+
+        while (i < lines.length) {
+          let currentLine = lines[i];
+          let parts = [];
+          let current = "";
+          let inQuotes = false;
+
+          while (i < lines.length) {
+            for (let j = 0; j < currentLine.length; j++) {
+              const char = currentLine[j];
+
+              if (char === '"') {
+                if (inQuotes && currentLine[j + 1] === '"') {
+                  current += '"';
+                  j++;
+                } else {
+                  inQuotes = !inQuotes;
+                }
+              } else if (char === "," && !inQuotes) {
+                parts.push(current);
+                current = "";
+              } else {
+                current += char;
+              }
+            }
+
+            if (inQuotes) {
+              current += "\n";
+              i++;
+              if (i < lines.length) {
+                currentLine = lines[i];
+              } else {
+                break;
+              }
+            } else {
+              parts.push(current);
+              break;
+            }
+          }
+
+          if (parts.length >= 7) {
+            rows.push({
+              poem_id: parts[0]?.trim(),
+              row_id: parts[1]?.trim(),
+              title_raw: parts[2]?.trim(),
+              poem_line_raw: parts[3]?.trim(),
+              summary: parts[4]?.trim(),
+              title_cleaned: parts[5]?.trim(),
+              poem_line_cleaned: parts[6]?.trim(),
+              qafiya: parts[7]?.trim(),
+              bahr: parts[8]?.trim(),
+              wasl: parts[9]?.trim(),
+              haraka: parts[10]?.trim(),
+              naw3: parts[11]?.trim(),
+              shaks: parts[12]?.trim(),
+              sentiments: parts[13]?.trim(),
+              amakin: parts[14]?.trim(),
+              ahdath: parts[15]?.trim(),
+              mawadi3: parts[16]?.trim(),
+              tasnif: parts[17]?.trim(),
+              confidence: parts[18]?.trim(),
+              status: parts[19]?.trim(),
+            });
+          }
+
+          i++;
+        }
+
+        console.log(`✅ Loaded ${rows.length} lines from CSV`);
+        return rows;
+      }
+
+      // Group poems by poem_id
+      function groupPoems(rows) {
+        const poemGroups = {};
+
+        rows.forEach((line) => {
+          if (!poemGroups[line.poem_id]) {
+            poemGroups[line.poem_id] = {
+              poem_id: line.poem_id,
+              title_raw: line.title_raw,
+              lines: [],
+            };
+          }
+          poemGroups[line.poem_id].lines.push(line);
+        });
+
+        return poemGroups;
+      }
+
+      async function search(query) {
+        if (!query.trim()) {
+          resultsDiv.innerHTML = "";
+          return;
+        }
+
+        resultsDiv.innerHTML = '<div class="loading">جاري البحث...</div>';
+
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/rpc/hybrid_search_exact`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: SUPABASE_KEY,
+                Authorization: `Bearer ${SUPABASE_KEY}`,
+              },
+              body: JSON.stringify({
+                query_text: query,
+                match_count: 20,
+              }),
+            }
+          );
+
+          const data = await response.json();
+          currentResults = data || [];
+          displayResults(currentResults, query);
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">خطأ: ${error.message}</div>`;
+        }
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function highlight(text, query) {
+        if (!text || !query) return escapeHtml(text);
+
+        const tokens = query.split(/\s+/).filter(Boolean);
+        let result = escapeHtml(text);
+
+        tokens.forEach((token) => {
+          const cleanToken = token.replace(/[()،؛.!?«»"""''\-]/g, "");
+          const pattern = Array.from(cleanToken)
+            .map(
+              (ch) =>
+                ch + "[\\u0610-\\u061A\\u064B-\\u065F\\u06D6-\\u06ED\\u0640]*"
+            )
+            .join("");
+          const regex = new RegExp(pattern, "gi");
+          result = result.replace(regex, (match) => `<mark>${match}</mark>`);
+        });
+
+        return result;
+      }
+
+      function wrapPoetryLine(highlightedText) {
+        if (!highlightedText) return "";
+        const parts = highlightedText.split(/\s{4,}/);
+
+        if (parts.length === 2) {
+          return `<div class="poetry-line">
+          <div class="hemistich hemistich-right">${parts[0].trim()}</div>
+          <div class="hemistich hemistich-left">${parts[1].trim()}</div>
+        </div>`;
+        }
+        return highlightedText;
+      }
+
+      function displayResults(results, query) {
+        if (!results || results.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">لا توجد نتائج</div>';
+          return;
+        }
+
+        // Calculate analytics
+        const uniquePoems = new Set(results.map((r) => r.metadata?.poem_id))
+          .size;
+        const totalOccurrences = results.reduce((sum, r) => {
+          const positions = r.highlight_positions?.positions || [];
+          return sum + positions.length;
+        }, 0);
+
+        const analyticsHTML = `
+        <div class="analytics">
+          <div><span style="color: var(--muted);">النتائج:</span> <strong>${results.length}</strong></div>
+          <div><span style="color: var(--muted);">القصائد:</span> <strong style="color: #2196F3;">${uniquePoems}</strong></div>
+          <div><span style="color: var(--muted);">التكرارات:</span> <strong style="color: #4CAF50;">${totalOccurrences}</strong></div>
+        </div>
+      `;
+
+        const resultsHTML = results
+          .map((r, idx) => {
+            const positions = r.highlight_positions?.positions || [];
+            const title = r.metadata?.poem_name || "بدون عنوان";
+            const poemId = r.metadata?.poem_id || "";
+
+            const highlightedTitle = highlight(title, query);
+            const highlightedPoem = wrapPoetryLine(
+              highlight(r.poem_raw, query)
+            );
+
+            const matchTypeColors = {
+              exact_full_match: "#4CAF50",
+              partial_match: "#2196F3",
+              metadata_match: "#FF9800",
+              single_word_match: "#9C27B0",
+            };
+
+            const matchTypeArabic = {
+              exact_full_match: "تطابق تام",
+              partial_match: "تطابق جزئي",
+              metadata_match: "تطابق وصفي",
+              single_word_match: "كلمة مفردة",
+            };
+
+            return `
+          <div class="result" data-index="${idx}">
+            <div class="title">${highlightedTitle}</div>
+            <div class="poem-lines">${highlightedPoem || "لا يوجد نص"}</div>
+            <div class="meta">
+              <span class="badge">قصيدة #${poemId}</span>
+              <span class="badge match-type-badge" style="background-color: ${
+                matchTypeColors[r.match_type]
+              }20; color: ${matchTypeColors[r.match_type]};">
+                ${matchTypeArabic[r.match_type] || r.match_type}
+              </span>
+              <span class="badge score-badge">النتيجة: ${r.final_score.toFixed(
+                2
+              )}</span>
+              <span class="badge">مواضع: ${
+                positions.length > 0 ? positions.join(", ") : "لا يوجد"
+              }</span>
+            </div>
+          </div>
+        `;
+          })
+          .join("");
+
+        resultsDiv.innerHTML = analyticsHTML + resultsHTML;
+
+        // Add click handlers
+        document.querySelectorAll(".result").forEach((el) => {
+          el.addEventListener("click", function () {
+            const idx = parseInt(this.getAttribute("data-index"));
+            const result = results[idx];
+            openPoemWidget(result, query);
+          });
+        });
+      }
+
+      async function openPoemWidget(result, query) {
+        const poemId = result.metadata?.poem_id;
+        if (!poemId) return;
+
+        // Get poem from local CSV data
+        const poemLines = poemsData.filter((line) => line.poem_id === poemId);
+
+        if (!poemLines || poemLines.length === 0) {
+          alert("لم يتم العثور على القصيدة");
+          return;
+        }
+
+        showPoemModal(poemLines, query);
+      }
+
+      function showPoemModal(poemLines, query) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+      `;
+
+        const title = poemLines[0]?.title_raw || "بدون عنوان";
+        const poemId = poemLines[0]?.poem_id || "";
+
+        const formattedLines = poemLines
+          .map((line, idx) => {
+            const lineHTML = wrapPoetryLine(
+              highlight(line.poem_line_raw, query)
+            );
+            return `<div class="clickable-line" data-line-idx="${idx}">${lineHTML}</div>`;
+          })
+          .join("");
+
+        overlay.innerHTML = `
+        <div style="
+          background: white; border-radius: 16px; padding: 32px;
+          max-width: 900px; width: 90%; max-height: 80vh; overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          position: relative;
+        ">
+          <h2 style="margin-bottom: 20px; font-size: 24px; color: #2c3e50; text-align: center;">${highlight(
+            title,
+            query
+          )}</h2>
+          <div style="line-height: 2; font-size: 18px; padding-bottom: 20px;">
+            ${formattedLines}
+          </div>
+          <div class="info-section">
+            <div>قصيدة #${poemId} • ${poemLines.length} بيت</div>
+          </div>
+          <button id="closeWidget" style="
+            margin-top: 20px; padding: 12px 24px; border-radius: 12px;
+            background: #3498db; color: white; border: none;
+            cursor: pointer; font-size: 16px; display: block; margin: 20px auto 0;
+            font-weight: 500;
+          ">إغلاق</button>
+          
+          <div id="metadataPanel" class="metadata-panel">
+            <div class="metadata-header">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #2c3e50;">تفاصيل البيت</h3>
+                <button id="closeMetadata" class="close-metadata-btn">×</button>
+              </div>
+            </div>
+            <div class="metadata-body" id="metadataContent"></div>
+          </div>
+        </div>
+      `;
+
+        document.body.appendChild(overlay);
+
+        const clickableLines = overlay.querySelectorAll(".clickable-line");
+        const metadataPanel = overlay.querySelector("#metadataPanel");
+        const metadataContent = overlay.querySelector("#metadataContent");
+        const closeMetadataBtn = overlay.querySelector("#closeMetadata");
+
+        clickableLines.forEach((lineEl, idx) => {
+          lineEl.addEventListener("click", () => {
+            clickableLines.forEach((l) => l.classList.remove("active"));
+            lineEl.classList.add("active");
+
+            const lineData = poemLines[idx];
+            showMetadata(lineData, metadataContent, metadataPanel);
+          });
+        });
+
+        closeMetadataBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          metadataPanel.classList.remove("visible");
+          clickableLines.forEach((l) => l.classList.remove("active"));
+        });
+
+        overlay
+          .querySelector("#closeWidget")
+          .addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        // Scroll to first highlight
+        setTimeout(() => {
+          const firstMark = overlay.querySelector("mark");
+          if (firstMark)
+            firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      }
+
+      function showMetadata(lineData, contentEl, panelEl) {
+        let html = "";
+
+        // Summary
+        if (lineData.summary?.trim()) {
+          html += `
+          <div class="summary-box">
+            <span class="summary-label">ملخص البيت</span>
+            <div>${lineData.summary}</div>
+          </div>
+        `;
+        }
+
+        // Prosody
+        const prosodyItems = [];
+        if (lineData.bahr)
+          prosodyItems.push(
+            `<div class="metadata-chip"><span class="label">البحر:</span> ${lineData.bahr}</div>`
+          );
+        if (lineData.qafiya)
+          prosodyItems.push(
+            `<div class="metadata-chip"><span class="label">القافية:</span> ${lineData.qafiya}</div>`
+          );
+        if (lineData.wasl)
+          prosodyItems.push(
+            `<div class="metadata-chip"><span class="label">الوصل:</span> ${lineData.wasl}</div>`
+          );
+        if (lineData.haraka)
+          prosodyItems.push(
+            `<div class="metadata-chip"><span class="label">الحركة:</span> ${lineData.haraka}</div>`
+          );
+
+        if (prosodyItems.length > 0) {
+          html += `
+          <div class="metadata-section">
+            <div class="metadata-section-title">العروض والقافية</div>
+            <div class="metadata-chips">${prosodyItems.join("")}</div>
+          </div>
+        `;
+        }
+
+        // Content
+        const contentItems = [];
+
+        try {
+          if (lineData.shaks && lineData.shaks !== "[]") {
+            const shaksArray = JSON.parse(lineData.shaks);
+            if (shaksArray.length > 0) {
+              const names = shaksArray.map((s) => s.name || s).join("، ");
+              contentItems.push(
+                `<div class="metadata-chip"><span class="label">👤</span> ${names}</div>`
+              );
+            }
+          }
+        } catch (e) {}
+
+        try {
+          if (lineData.sentiments && lineData.sentiments !== "[]") {
+            const sentArray = JSON.parse(lineData.sentiments);
+            if (sentArray.length > 0) {
+              contentItems.push(
+                `<div class="metadata-chip"><span class="label">💭</span> ${sentArray.join(
+                  "، "
+                )}</div>`
+              );
+            }
+          }
+        } catch (e) {}
+
+        try {
+          if (lineData.amakin && lineData.amakin !== "[]") {
+            const amakinArray = JSON.parse(lineData.amakin);
+            if (amakinArray.length > 0) {
+              contentItems.push(
+                `<div class="metadata-chip"><span class="label">📍</span> ${amakinArray.join(
+                  "، "
+                )}</div>`
+              );
+            }
+          }
+        } catch (e) {}
+
+        try {
+          if (lineData.ahdath && lineData.ahdath !== "[]") {
+            const ahdathArray = JSON.parse(lineData.ahdath);
+            if (ahdathArray.length > 0) {
+              contentItems.push(
+                `<div class="metadata-chip"><span class="label">📅</span> ${ahdathArray.join(
+                  "، "
+                )}</div>`
+              );
+            }
+          }
+        } catch (e) {}
+
+        try {
+          if (lineData.mawadi3 && lineData.mawadi3 !== "[]") {
+            const mawArray = JSON.parse(lineData.mawadi3);
+            if (mawArray.length > 0) {
+              contentItems.push(
+                `<div class="metadata-chip"><span class="label">🏷️</span> ${mawArray.join(
+                  "، "
+                )}</div>`
+              );
+            }
+          }
+        } catch (e) {}
+
+        if (contentItems.length > 0) {
+          html += `
+          <div class="metadata-section">
+            <div class="metadata-section-title">المحتوى</div>
+            <div class="metadata-chips">${contentItems.join("")}</div>
+          </div>
+        `;
+        }
+
+        // Classification
+        const classItems = [];
+        if (lineData.naw3)
+          classItems.push(
+            `<div class="metadata-chip"><span class="label">النوع:</span> ${lineData.naw3}</div>`
+          );
+        if (lineData.tasnif && lineData.tasnif !== "معاصر") {
+          classItems.push(
+            `<div class="metadata-chip"><span class="label">التصنيف:</span> ${lineData.tasnif}</div>`
+          );
+        }
+
+        if (classItems.length > 0) {
+          html += `
+          <div class="metadata-section">
+            <div class="metadata-section-title">التصنيف</div>
+            <div class="metadata-chips">${classItems.join("")}</div>
+          </div>
+        `;
+        }
+
+        if (html) {
+          contentEl.innerHTML = html;
+          panelEl.classList.add("visible");
+        } else {
+          contentEl.innerHTML = `
+          <div style="text-align: center; color: #999; padding: 40px 20px;">
+            <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.3;">📖</div>
+            <div>لا توجد تفاصيل إضافية لهذا البيت</div>
+          </div>
+        `;
+          panelEl.classList.add("visible");
+        }
+      }
+
+      // INITIALIZATION - Load CSV on page load
+      (async function init() {
+        try {
+          statusDiv.textContent = "جاري تحميل البيانات من CSV...";
+          poemsData = await loadCSV(CSV_FILE);
+          const uniquePoems = new Set(poemsData.map((p) => p.poem_id)).size;
+          statusDiv.textContent = `✅ تم تحميل ${poemsData.length} سطر من ${uniquePoems} قصيدة`;
+          console.log(
+            `📊 Loaded ${poemsData.length} lines from ${uniquePoems} poems`
+          );
+        } catch (error) {
+          statusDiv.textContent = "❌ فشل التحميل: " + error.message;
+          statusDiv.style.color = "red";
+          console.error("CSV loading error:", error);
+          alert("تأكد من وجود الملف: " + CSV_FILE + " في نفس المجلد");
+        }
+      })();
+    </script>
+  </body>
+</html>

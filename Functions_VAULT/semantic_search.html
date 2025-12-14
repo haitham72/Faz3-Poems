@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Semantic Search Test</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 900px;
+        margin: 50px auto;
+        padding: 20px;
+        direction: rtl;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      button {
+        padding: 12px 24px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 8px;
+        border: none;
+        background: #3498db;
+        color: white;
+      }
+      .result {
+        border: 1px solid #e0e0e0;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        background: #fafafa;
+      }
+      .title {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+      .summary {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-bottom: 10px;
+        padding: 8px;
+        background: #ecf0f1;
+        border-radius: 4px;
+      }
+      .poem {
+        line-height: 1.8;
+        color: #34495e;
+        font-size: 16px;
+      }
+      .info {
+        font-size: 12px;
+        color: #95a5a6;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #ecf0f1;
+      }
+      .loading {
+        text-align: center;
+        color: #3498db;
+      }
+      .example {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+      }
+      .score {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #27ae60;
+        color: white;
+        border-radius: 4px;
+        font-size: 11px;
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 اختبار البحث الدلالي (Semantic Search)</h1>
+    <div class="example">
+      أمثلة: "قصائد عن الحب من طرف واحد" | "is there any poem about unrequited
+      love?" | "poems where lover is ignored"
+    </div>
+
+    <input
+      type="text"
+      id="search"
+      placeholder="اكتب سؤالك أو وصف لما تبحث عنه..."
+      autofocus
+    />
+
+    <div class="controls">
+      <button id="searchBtn">بحث</button>
+      <label
+        style="display: flex; align-items: center; gap: 5px; font-size: 14px"
+      >
+        حد التشابه:
+        <input
+          type="number"
+          id="threshold"
+          value="0.1"
+          min="0"
+          max="1"
+          step="0.05"
+          style="width: 70px; padding: 5px"
+        />
+      </label>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+      const SUPABASE_URL = "https://ezcbshyresjinfyscals.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_FjlIO4TFYGQZJpQm-PosDw_hk2AFmeN";
+
+      const searchInput = document.getElementById("search");
+      const searchBtn = document.getElementById("searchBtn");
+      const thresholdInput = document.getElementById("threshold");
+      const resultsDiv = document.getElementById("results");
+
+      searchBtn.addEventListener("click", () => {
+        search(searchInput.value);
+      });
+
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          search(e.target.value);
+        }
+      });
+
+      async function search(query) {
+        if (!query.trim()) {
+          resultsDiv.innerHTML =
+            '<div class="result">الرجاء إدخال استفسار</div>';
+          return;
+        }
+
+        resultsDiv.innerHTML =
+          '<div class="loading">جاري البحث الدلالي...</div>';
+
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/functions/v1/Edge-function-Semantic`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${SUPABASE_KEY}`,
+              },
+              body: JSON.stringify({
+                query: query,
+                match_count: 15,
+                similarity_threshold: parseFloat(thresholdInput.value),
+              }),
+            }
+          );
+
+          const data = await response.json();
+          displayResults(data);
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">خطأ: ${error.message}</div>`;
+        }
+      }
+
+      function displayResults(data) {
+        if (!data.results || data.results.length === 0) {
+          resultsDiv.innerHTML =
+            '<div class="result">لا توجد نتائج. جرّب تقليل حد التشابه.</div>';
+          return;
+        }
+
+        resultsDiv.innerHTML = data.results
+          .map((r) => {
+            return `
+                    <div class="result">
+                        <div class="title">
+                            ${r.poem_name || "بدون عنوان"}
+                            <span class="score">${(
+                              r.similarity_score * 100
+                            ).toFixed(1)}%</span>
+                        </div>
+                        
+                        ${
+                          r.summary
+                            ? `<div class="summary">📝 ${r.summary}</div>`
+                            : ""
+                        }
+                        
+                        <div class="poem">${
+                          r.Poem_Raw || r.chunk || "لا يوجد نص"
+                        }</div>
+                        
+                        <div class="info">
+                            ${r.sentiments ? `المشاعر: ${r.sentiments} | ` : ""}
+                            ${r.qafya ? `القافية: ${r.qafya} | ` : ""}
+                            ${r.bahr ? `البحر: ${r.bahr} | ` : ""}
+                            التشابه: ${r.similarity_score.toFixed(4)}
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+    </script>
+  </body>
+</html>

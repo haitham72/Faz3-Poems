@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>بحث في الشعر</title>
+    <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.7.31/dist/flexsearch.bundle.js"></script>
+    <style>
+      :root {
+        --bg: #f9fafb;
+        --card: #fff;
+        --accent: #ffd54f;
+        --border: #e8e8e8;
+        --text: #111;
+        --muted: #666;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Naskh Arabic", "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        direction: rtl;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      .search-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      input {
+        flex: 1;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 17px;
+        background: white;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background: #f5f5f5;
+      }
+
+      .results {
+        margin-top: 16px;
+      }
+
+      .result {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .result:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .title {
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: #2c3e50;
+      }
+
+      .poem-lines {
+        line-height: 1.9;
+        font-size: 18px;
+        color: var(--text);
+        font-family: "Noto Naskh Arabic", "Traditional Arabic", serif;
+      }
+
+      .poetry-line {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 4px;
+        max-width: 550px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hemistich {
+        text-align: justify;
+        word-spacing: 0.05em;
+      }
+
+      .hemistich-right {
+        text-align-last: right;
+      }
+
+      .hemistich-left {
+        text-align-last: left;
+      }
+
+      mark {
+        background: var(--accent);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+
+      .meta {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        background: #e3f2fd;
+        color: #1976d2;
+        font-size: 11px;
+        margin-left: 4px;
+      }
+
+      .no-results {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 بحث في الشعر</h1>
+      <div class="status" id="status">جارٍ التحميل...</div>
+
+      <div class="search-bar">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="ابحث بالكلمات أو الأسماء (مثال: محمد، حب، دبي)"
+          disabled
+        />
+        <button id="clearBtn" disabled>مسح</button>
+      </div>
+
+      <div id="results" class="results"></div>
+    </div>
+
+    <script>
+      // ============================================================
+      // CONFIG
+      // ============================================================
+      const CSV_FILE = "02 - Exact_search.csv";
+      const DEBOUNCE_MS = 150;
+
+      // Boosted words for priority matching
+      const BOOSTED_WORDS = [
+        // Immediate Family & Close Relations
+        "محمد",
+        "راشد",
+        "زايد",
+        "هند",
+        "شيخة",
+        "مكتوم",
+        "أحمد",
+        "حمدان",
+        "فلذة",
+        "نور",
+        "حبيبي",
+        "أمي",
+        "أبي",
+        "ابني",
+        "ابنتي",
+        "أخي",
+        "بنتي",
+        "ابنتي",
+        "فرحتي",
+
+        // Leadership & Founding Fathers
+        "بو خالد",
+        "MBZ",
+        "خليفة",
+        "سعود",
+        "صقر",
+        "حميد",
+        "راشد بن سعيد",
+        "مكتوم بن راشد",
+        "زايد بن سلطان",
+        "حاكم دبي",
+        "حاكم أبوظبي",
+        "حاكم الشارقة",
+        "حاكم الفجيرة",
+        "حاكم رأس الخيمة",
+        "حاكم عجمان",
+        "نائب رئيس الدولة",
+        "رئيس الوزراء",
+
+        // Core National & Pride Terms
+        "الوطن",
+        "الإمارات",
+        "دبي",
+        "أبوظبي",
+        "الشارقة",
+        "الفجيرة",
+        "رأس الخيمة",
+        "عجمان",
+        "أم القيوين",
+        "الشهداء",
+        "الجنود",
+        "المواطنين",
+        "شعب الإمارات",
+        "الآباء المؤسسين",
+        "العلم",
+        "الراية",
+        "المجد",
+        "الفخر",
+        "الكرامة",
+        "الوفا",
+        "العروبة",
+        "الأمل",
+        "الزمن",
+
+        // Common Poetic Words / Love Language
+        "حب",
+        "عشق",
+        "قلب",
+        "العيون",
+        "الشوق",
+        "الغلا",
+        "الهجر",
+        "الفراق",
+        "الوصل",
+        "الهوى",
+        "الغرام",
+        "المحبين",
+        "الاشواق",
+        "الحنين",
+        "الوجد",
+        "اللوعة",
+        "الشجن",
+        "الجروح",
+        "الألم",
+        "الدموع",
+        "الحزن",
+        "المحاني",
+        "العذال",
+        "الصد",
+        "الهجران",
+        "الملام",
+
+        // Key Events & Cultural Terms
+        "يوم الشهيد",
+        "اليوم الوطني",
+        "يوم العلم",
+        "يوم الاتحاد",
+        "رمضان",
+        "عيد الفطر",
+        "عيد الأضحى",
+        "يوم عرفة",
+        "رأس السنة الهجرية",
+        "المولد النبوي",
+        "يوم الأم",
+        "تحدي دبي للياقة",
+        "مهرجان دبي للتسوق",
+        "مفاجآت دبي الصيفية",
+        "معرض دبي للطيران",
+        "جائزة أبوظبي الكبرى",
+        "كأس دبي العالمي",
+        "expo 2020",
+
+        // Pan-Arab / Regional References
+        "مصر",
+        "فلسطين",
+        "المغرب",
+        "بغداد",
+        "الشام",
+        "سلمان",
+        "تميم",
+        "حمد",
+        "مشعل",
+        "هيثم",
+        "محمد بن سلمان",
+        "MBS",
+
+        // Miscellaneous Boosters from Poetry Style
+        "ليل",
+        "العطر",
+        "العشق",
+        "الروح",
+        "الحياة",
+        "الدنيا",
+        "الصبر",
+        "الأمل",
+        "المجد",
+        "السماء",
+        "الأرض",
+        "الهواء",
+        "الثرا",
+        "الماء",
+        "البحر",
+        "الشمس",
+        "القمر",
+      ];
+
+      // Latin to Arabic mapping
+      const LATIN_TO_ARABIC = {
+        // Names & Family
+        mohamed: "محمد",
+        mohammad: "محمد",
+        ahmed: "أحمد",
+        hmd: "حمد",
+        hamdan: "حمدان",
+        hind: "هند",
+        sheikha: "شيخة",
+        mktoum: "مكتوم",
+        bin: "بن",
+        ibn: "بن",
+
+        // Leadership & Royalty
+        mbz: "محمد بن زايد",
+        zayed: "زايد",
+        zxayed: "زايد",
+        khalifa: "خليفة",
+        saud: "سعود",
+        saqr: "صقر",
+        hamid: "حميد",
+        rashid: "راشد",
+        "rashid bin said": "راشد بن سعيد",
+        "maktoum bin rashid": "مكتوم بن راشد",
+        "zayed bin sultan": "زايد بن سلطان",
+        "ruler of dubai": "حاكم دبي",
+        "ruler of abu dhabi": "حاكم أبوظبي",
+        "ruler of sharjah": "حاكم الشارقة",
+        "ruler of fujairah": "حاكم الفجيرة",
+        "ruler of ras al khaimah": "حاكم رأس الخيمة",
+        "ruler of ajman": "حاكم عجمان",
+        "vice president": "نائب رئيس الدولة",
+        "prime minister": "رئيس الوزراء",
+
+        // National & Cultural terms
+        home: "الوطن",
+        uae: "الإمارات",
+        dubai: "دبي",
+        abudhabi: "أبوظبي",
+        sharjah: "الشارقة",
+        fujairah: "الفجيرة",
+        "ras alkhaimah": "رأس الخيمة",
+        ajman: "عجمان",
+        "um alqaiwain": "أم القيوين",
+        martyrs: "الشهداء",
+        soldiers: "الجنود",
+        people: "شعب الإمارات",
+        "founding father": "الآباء المؤسسين",
+        flag: ["العلم", "الراية"],
+        glory: ["المجد"],
+        pride: ["الفخر"],
+        dignity: ["الكرامة"],
+        loyalty: ["الوفا"],
+        arob: ["العروبة"],
+        hope: ["الأمل"],
+        time: ["الزمن"],
+
+        // Poetic / love
+        love: "حب",
+        passion: "عشق",
+        heart: "قلب",
+        eyes: "العيون",
+        longing: "الشوق",
+        affection: "الغلا",
+        separation: "الهجر",
+        parting: "الفراق",
+        union: "الوصل",
+        desire: "الهوى",
+        romance: "الغرام",
+        lovers: "المحبين",
+        longings: "الاشواق",
+        nostalgia: "الحنين",
+        existence: "الوجد",
+        anguish: "اللوعة",
+        melancholy: "الشجن",
+        wounds: "الجروح",
+        pain: "الألم",
+        sorrow: "الحزن",
+        afflictions: "المحاني",
+        reproaches: "العذال",
+        rejection: "الصد",
+        abandonment: "الهجران",
+        reproach: "الملام",
+        night: "ليل",
+        perfume: "العطر",
+        soul: "الروح",
+        life: "الحياة",
+        world: "الدنيا",
+
+        // Events & holidays
+        "martyrs day": "يوم الشهيد",
+        "national day": "اليوم الوطني",
+        "flag day": "يوم العلم",
+        "union day": "يوم الاتحاد",
+        ramadan: "رمضان",
+        "eid al fitr": "عيد الفطر",
+        "eid al adha": "عيد الأضحى",
+        "arafah day": "يوم عرفة",
+        "hijri new year": "رأس السنة الهجرية",
+        "mawlid al nabawi": "المولد النبوي",
+        "mothers day": "يوم الأم",
+
+        "dubai fitness challenge": "تحدي دبي للياقة",
+        "dubai shopping festival": "مهرجان دبي للتسوق",
+        "dubai summer surprises": "مفاجآت دبي الصيفية",
+        "dubai airshow": "معرض دبي للطيران",
+        "abu dhabi grand prix": "جائزة أبوظبي الكبرى",
+        "dubai world cup": "كأس دبي العالمي",
+        expo2020: "expo 2020",
+
+        // Pan-Arab / Regional (UAE-relevant)
+        egypt: "مصر",
+        palestine: "فلسطين",
+        morocco: "المغرب",
+        baghdad: "بغداد",
+        sham: "الشام",
+
+        // GCC (Closest to UAE)
+        uae: "الإمارات",
+        dubai: "دبي",
+        abu_dhabi: "أبوظبي",
+        sharjah: "الشارقة",
+
+        saudi: "السعودية",
+        ksa: "السعودية",
+        riyadh: "الرياض",
+        jeddah: "جدة",
+
+        oman: "عُمان",
+        muscat: "مسقط",
+
+        kuwait: "الكويت",
+
+        qatar: "قطر",
+        doha: "الدوحة",
+
+        bahrain: "البحرين",
+        manama: "المنامة",
+
+        // Nearby Arab states with strong relation
+        jordan: "الأردن",
+        amman: "عمّان",
+
+        iraq: "العراق",
+        basra: "البصرة",
+
+        syria: "سوريا",
+        damascus: "دمشق",
+
+        lebanon: "لبنان",
+        beirut: "بيروت",
+
+        yemen: "اليمن",
+        sanaa: "صنعاء",
+
+        // North Africa (frequent cultural ties)
+        tunisia: "تونس",
+        algeria: "الجزائر",
+        libya: "ليبيا",
+        sudan: "السودان",
+
+        salman: "سلمان",
+        tamim: "تميم",
+        mishal: "مشعل",
+        haitham: "هيثم",
+        "mohamed bin salman": "محمد بن سلمان",
+        mbs: "MBS",
+
+        // Elements / natural
+        perfume: "العطر",
+        love: "العشق",
+        soul: "الروح",
+        life: "الحياة",
+        world: "الدنيا",
+        patience: "الصبر",
+        hope: "الأمل",
+        sky: "السماء",
+        earth: "الأرض",
+        air: "الهواء",
+        soil: "الثرا",
+        water: "الماء",
+        sea: "البحر",
+        sun: "الشمس",
+        moon: "القمر",
+      };
+
+      // ============================================================
+      // STATE
+      // ============================================================
+      let flexIndex = null;
+      let poemsData = [];
+      let debounceTimer = null;
+
+      const searchInput = document.getElementById("searchInput");
+      const clearBtn = document.getElementById("clearBtn");
+      const resultsDiv = document.getElementById("results");
+      const statusDiv = document.getElementById("status");
+
+      // ============================================================
+      // ARABIC NORMALIZATION
+      // ============================================================
+      function normalize(text) {
+        if (!text) return "";
+        return String(text)
+          .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]/g, "")
+          .replace(/\u0640/g, "")
+          .replace(/[إأآا]/g, "ا")
+          .replace(/ى/g, "ي")
+          .replace(/[ؤئ]/g, "ء")
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟٬«»"""''\-–—]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function mapLatinToArabic(query) {
+        const tokens = query.toLowerCase().split(/\s+/);
+        return tokens.map((t) => LATIN_TO_ARABIC[t] || t).join(" ");
+      }
+
+      // ============================================================
+      // CSV LOADER
+      // ============================================================
+      async function loadCSV(path) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to load ${path}`);
+
+        const text = await response
+          .text()
+          .then((t) => t.replace(/^\uFEFF/, ""));
+        const lines = text.trim().split(/\r?\n/);
+
+        if (lines.length < 2) throw new Error("CSV is empty");
+
+        const headers = lines[0].split(",").map((h) => h.trim());
+        const rows = [];
+
+        let i = 1;
+        while (i < lines.length) {
+          let currentLine = lines[i];
+          let parts = [];
+          let current = "";
+          let inQuotes = false;
+
+          // Handle multi-line quoted fields
+          while (i < lines.length) {
+            for (let j = 0; j < currentLine.length; j++) {
+              const char = currentLine[j];
+
+              if (char === '"') {
+                if (inQuotes && currentLine[j + 1] === '"') {
+                  current += '"';
+                  j++;
+                } else {
+                  inQuotes = !inQuotes;
+                }
+              } else if (char === "," && !inQuotes) {
+                parts.push(current);
+                current = "";
+              } else {
+                current += char;
+              }
+            }
+
+            if (inQuotes) {
+              current += "\n";
+              i++;
+              if (i < lines.length) {
+                currentLine = lines[i];
+              } else {
+                break;
+              }
+            } else {
+              parts.push(current);
+              break;
+            }
+          }
+
+          // NEW CSV has: poem_id, Row_ID, Title_raw, Poem_line_raw, summary, Title_cleaned, Poem_line_cleaned, قافية, البحر, وصل, حركة, نوع, شخص, sentiments, أماكن, أحداث, مواضيع, تصنيف, overall confidence, Status
+          if (parts.length >= 7) {
+            rows.push({
+              poem_id: parts[0]?.trim(),
+              Row_ID: parts[1]?.trim(),
+              Title_raw: parts[2]?.trim(),
+              Poem_line_raw: parts[3]?.trim(),
+              summary: parts[4]?.trim(),
+              Title_cleaned: parts[5]?.trim(),
+              Poem_line_cleaned: parts[6]?.trim(),
+              qafiya: parts[7]?.trim(),
+              bahr: parts[8]?.trim(),
+              wasl: parts[9]?.trim(),
+              haraka: parts[10]?.trim(),
+              naw3: parts[11]?.trim(),
+              shaks: parts[12]?.trim(),
+              sentiments: parts[13]?.trim(),
+              amakin: parts[14]?.trim(),
+              ahdath: parts[15]?.trim(),
+              mawadi3: parts[16]?.trim(),
+              tasnif: parts[17]?.trim(),
+              confidence: parts[18]?.trim(),
+              status: parts[19]?.trim(),
+            });
+          }
+
+          i++;
+        }
+
+        console.log(`✅ Parsed ${rows.length} lines`);
+        return { headers, rows };
+      }
+
+      // ============================================================
+      // INDEX BUILDER
+      // ============================================================
+      function buildIndex(rows) {
+        poemsData = rows.map((r, idx) => ({
+          idx: idx,
+          poem_id: r.poem_id || "",
+          row_id: r.Row_ID || "",
+          title_raw: r.Title_raw || "",
+          line_raw: r.Poem_line_raw || "",
+          summary: r.summary || "",
+          title_clean: normalize(r.Title_cleaned || r.Title_raw || ""),
+          line_clean: normalize(r.Poem_line_cleaned || r.Poem_line_raw || ""),
+          qafiya: r.qafiya || "",
+          bahr: r.bahr || "",
+          wasl: r.wasl || "",
+          haraka: r.haraka || "",
+          naw3: r.naw3 || "",
+          shaks: r.shaks || "",
+          sentiments: r.sentiments || "",
+          amakin: r.amakin || "",
+          ahdath: r.ahdath || "",
+          mawadi3: r.mawadi3 || "",
+          tasnif: r.tasnif || "",
+          confidence: r.confidence || "",
+          status: r.status || "",
+        }));
+
+        // GROUP lines by poem_id
+        const poemGroups = {};
+        poemsData.forEach((line) => {
+          if (!poemGroups[line.poem_id]) {
+            poemGroups[line.poem_id] = {
+              poem_id: line.poem_id,
+              title_raw: line.title_raw,
+              lines: [],
+              linesData: [], // Store full line objects with metadata
+            };
+          }
+          poemGroups[line.poem_id].lines.push(line.line_raw);
+          poemGroups[line.poem_id].linesData.push(line); // Store full object
+        });
+
+        // Store grouped poems globally
+        window.poemsGrouped = poemGroups;
+
+        const uniquePoems = Object.keys(poemGroups).length;
+        console.log(`✅ Loaded ${rows.length} lines from ${uniquePoems} poems`);
+
+        // Build FlexSearch index
+        flexIndex = new FlexSearch.Document({
+          document: {
+            id: "idx",
+            store: [
+              "poem_id",
+              "row_id",
+              "title_raw",
+              "line_raw",
+              "summary",
+              "title_clean",
+              "line_clean",
+            ],
+            index: [
+              { field: "title_clean", tokenize: "forward", weight: 3 },
+              { field: "line_clean", tokenize: "forward", weight: 1 },
+            ],
+          },
+          tokenize: "forward",
+          cache: true,
+        });
+
+        poemsData.forEach((doc) => flexIndex.add(doc));
+      }
+      console.log(`✅ Indexed ${poemsData.length} poems`);
+
+      // ============================================================
+      // SEARCH ENGINE - ADAPTED FROM WORKING FUZZY_SEARCH.HTML
+      // ============================================================
+      function search(rawQuery) {
+        if (!rawQuery.trim()) return [];
+
+        // MAP LATIN TO ARABIC FIRST (like old fuzzy_search.html)
+        const arabicQuery = mapLatinToArabic(rawQuery);
+        const normQuery = normalize(arabicQuery);
+
+        console.log("Original query:", rawQuery);
+        console.log("Arabic query:", arabicQuery);
+        console.log("Normalized query:", normQuery);
+
+        const rawResults = flexIndex.search(normQuery, {
+          enrich: true,
+          limit: 500,
+          suggest: true,
+        });
+
+        const candidateMap = new Map();
+        rawResults.forEach((bucket) => {
+          if (bucket.result) {
+            bucket.result.forEach((r) => {
+              if (!candidateMap.has(r.id)) {
+                candidateMap.set(r.id, r.doc);
+              }
+            });
+          }
+        });
+
+        const candidates = Array.from(candidateMap.values());
+
+        // EXACT SCORING FROM WORKING VERSION
+        const scored = candidates.map((doc) => {
+          let score = 0;
+          const title = doc.title_clean || "";
+          const line = doc.line_clean || "";
+
+          const titleTokens = title.split(" ").filter(Boolean);
+          const lineTokens = line.split(" ").filter(Boolean);
+
+          if (titleTokens.includes(normQuery)) score += 120;
+          if (lineTokens.includes(normQuery)) score += 80;
+
+          if (title.indexOf(normQuery) !== -1) score += 60;
+          if (line.indexOf(normQuery) !== -1) score += 30;
+
+          if (title.startsWith(normQuery)) score += 40;
+          if (line.startsWith(normQuery)) score += 20;
+
+          let boostCount = 0;
+          for (const w of BOOSTED_WORDS) {
+            if (!w) continue;
+            const nw = normalize(w);
+            if (title.indexOf(nw) !== -1 || line.indexOf(nw) !== -1)
+              boostCount++;
+          }
+          score += boostCount * 8;
+
+          score -= Math.abs((title.length || 0) - normQuery.length) * 0.5;
+
+          if (
+            normQuery.length >= 2 &&
+            title.length < normQuery.length &&
+            line.length < normQuery.length
+          ) {
+            score -= 8;
+          }
+
+          return { doc, score };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+
+        const resultsPerPoem = new Map();
+        const limitedResults = [];
+
+        for (const item of scored) {
+          const poemId = item.doc.poem_id;
+          const count = resultsPerPoem.get(poemId) || 0;
+
+          if (count < 2) {
+            limitedResults.push(item.doc);
+            resultsPerPoem.set(poemId, count + 1);
+          }
+
+          if (limitedResults.length >= 10) break;
+        }
+
+        return limitedResults;
+      }
+
+      // ============================================================
+      // ANALYTICS - ACCURATE COUNTING
+      // ============================================================
+      function getAnalytics(query) {
+        if (!query.trim()) return { wordCount: 0, poemCount: 0 };
+
+        const arabicQuery = mapLatinToArabic(query);
+        const normQuery = normalize(arabicQuery);
+
+        const uniquePoems = new Set();
+        let totalOccurrences = 0;
+
+        poemsData.forEach((doc) => {
+          const title = doc.title_clean || "";
+          const line = doc.line_clean || "";
+          const combined = title + " " + line;
+
+          if (combined.indexOf(normQuery) !== -1) {
+            uniquePoems.add(doc.poem_id);
+            const matches = (
+              combined.match(
+                new RegExp(
+                  normQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  "g"
+                )
+              ) || []
+            ).length;
+            totalOccurrences += matches;
+          }
+        });
+
+        return {
+          wordCount: totalOccurrences,
+          poemCount: uniquePoems.size,
+        };
+      }
+
+      // ============================================================
+      // HIGHLIGHTING
+      // ============================================================
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function highlight(text, query) {
+        if (!text || !query) return escapeHtml(text);
+
+        const normTokens = normalize(query).split(/\s+/).filter(Boolean);
+        let result = escapeHtml(text);
+
+        normTokens.forEach((token) => {
+          const pattern = Array.from(token)
+            .map(
+              (ch) =>
+                ch + "[\\u0610-\\u061A\\u064B-\\u065F\\u06D6-\\u06ED\\u0640]*"
+            )
+            .join("");
+          const regex = new RegExp(pattern, "gi");
+          result = result.replace(regex, (match) => `<mark>${match}</mark>`);
+        });
+
+        return result;
+      }
+
+      // ============================================================
+      // POETRY FORMATTING
+      // ============================================================
+      function wrapPoetryLine(highlightedText) {
+        if (!highlightedText) return "";
+
+        // Split by 4+ spaces
+        const parts = highlightedText.split(/\s{4,}/);
+
+        if (parts.length === 2) {
+          return `<div class="poetry-line">
+            <div class="hemistich hemistich-right">${parts[0].trim()}</div>
+            <div class="hemistich hemistich-left">${parts[1].trim()}</div>
+          </div>`;
+        }
+
+        return highlightedText;
+      }
+
+      // ============================================================
+      // WIDGET
+      // ============================================================
+      function openPoemWidget(titleRaw, linesData, poemId, query) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+
+        // Format each line in the poem with metadata
+        const formattedLines = linesData
+          .map((lineData, idx) => {
+            const lineHTML = wrapPoetryLine(
+              highlight(lineData.line_raw, query || "")
+            );
+
+            // Parse JSON fields if they exist
+            let shaksDisplay = "";
+            let sentimentsDisplay = "";
+            let mawadi3Display = "";
+            let amakinDisplay = "";
+            let ahdathDisplay = "";
+
+            try {
+              if (lineData.shaks && lineData.shaks !== "[]") {
+                const shaksArray = JSON.parse(lineData.shaks);
+                if (shaksArray.length > 0) {
+                  shaksDisplay = shaksArray.map((s) => s.name || s).join("، ");
+                }
+              }
+            } catch (e) {}
+
+            try {
+              if (lineData.sentiments && lineData.sentiments !== "[]") {
+                const sentArray = JSON.parse(lineData.sentiments);
+                if (sentArray.length > 0) {
+                  sentimentsDisplay = sentArray.join("، ");
+                }
+              }
+            } catch (e) {}
+
+            try {
+              if (lineData.mawadi3 && lineData.mawadi3 !== "[]") {
+                const mawArray = JSON.parse(lineData.mawadi3);
+                if (mawArray.length > 0) {
+                  mawadi3Display = mawArray.join("، ");
+                }
+              }
+            } catch (e) {}
+
+            try {
+              if (lineData.amakin && lineData.amakin !== "[]") {
+                const amakinArray = JSON.parse(lineData.amakin);
+                if (amakinArray.length > 0) {
+                  amakinDisplay = amakinArray.join("، ");
+                }
+              }
+            } catch (e) {}
+
+            try {
+              if (lineData.ahdath && lineData.ahdath !== "[]") {
+                const ahdathArray = JSON.parse(lineData.ahdath);
+                if (ahdathArray.length > 0) {
+                  ahdathDisplay = ahdathArray.join("، ");
+                }
+              }
+            } catch (e) {}
+
+            // Build metadata HTML
+            let metadataHTML = "";
+            const metaItems = [];
+
+            if (lineData.bahr)
+              metaItems.push(
+                `<span><strong>البحر:</strong> ${lineData.bahr}</span>`
+              );
+            if (lineData.qafiya)
+              metaItems.push(
+                `<span><strong>القافية:</strong> ${lineData.qafiya}</span>`
+              );
+            if (lineData.wasl)
+              metaItems.push(
+                `<span><strong>الوصل:</strong> ${lineData.wasl}</span>`
+              );
+            if (lineData.haraka)
+              metaItems.push(
+                `<span><strong>الحركة:</strong> ${lineData.haraka}</span>`
+              );
+            if (lineData.naw3)
+              metaItems.push(
+                `<span><strong>النوع:</strong> ${lineData.naw3}</span>`
+              );
+            if (shaksDisplay)
+              metaItems.push(
+                `<span><strong>شخصيات:</strong> ${shaksDisplay}</span>`
+              );
+            if (sentimentsDisplay)
+              metaItems.push(
+                `<span><strong>مشاعر:</strong> ${sentimentsDisplay}</span>`
+              );
+            if (amakinDisplay)
+              metaItems.push(
+                `<span><strong>أماكن:</strong> ${amakinDisplay}</span>`
+              );
+            if (ahdathDisplay)
+              metaItems.push(
+                `<span><strong>أحداث:</strong> ${ahdathDisplay}</span>`
+              );
+            if (mawadi3Display)
+              metaItems.push(
+                `<span><strong>مواضيع:</strong> ${mawadi3Display}</span>`
+              );
+            if (lineData.tasnif)
+              metaItems.push(
+                `<span><strong>التصنيف:</strong> ${lineData.tasnif}</span>`
+              );
+
+            if (metaItems.length > 0) {
+              metadataHTML = `<div style="margin-top: 8px; padding: 10px 14px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%); border-radius: 8px; font-size: 13px; color: #666; border-right: 4px solid #ffd54f; display: flex; flex-wrap: wrap; gap: 12px;">
+              ${metaItems.join(" • ")}
+            </div>`;
+            }
+
+            return `<div style="margin-bottom: 16px;">
+            ${lineHTML}
+            ${metadataHTML}
+          </div>`;
+          })
+          .join("");
+
+        const highlightedTitle = highlight(titleRaw, query || "");
+
+        overlay.innerHTML = `
+        <div style="
+            background: white; border-radius: 16px; padding: 32px;
+            max-width: 900px; width: 90%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        ">
+            <h2 style="margin-bottom: 20px; font-size: 24px; color: #2c3e50; text-align: center;">${highlightedTitle}</h2>
+            <div style="line-height: 2; font-size: 18px;">${formattedLines}</div>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 13px; color: #666; text-align: center;">
+                قصيدة #${poemId}
+            </div>
+            <button id="closeWidget" style="
+                margin-top: 20px; padding: 12px 24px; border-radius: 8px;
+                background: #3498db; color: white; border: none;
+                cursor: pointer; font-size: 16px; display: block; margin: 20px auto 0;
+            ">إغلاق</button>
+        </div>
+    `;
+
+        document.body.appendChild(overlay);
+
+        // Scroll to first highlight if it exists
+        setTimeout(() => {
+          const firstMark = overlay.querySelector("mark");
+          if (firstMark) {
+            firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay || e.target.id === "closeWidget") {
+            overlay.remove();
+          }
+        });
+      }
+
+      // ============================================================
+      // UI RENDERING
+      // ============================================================
+      function displayResults(results, query) {
+        if (!results || results.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">لا توجد نتائج</div>';
+          return;
+        }
+
+        const analytics = getAnalytics(query);
+        const arabicQuery = mapLatinToArabic(query);
+        const normQuery = normalize(arabicQuery);
+
+        const analyticsHTML = `
+        <div style="background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 20px;">
+            <div><span style="color: var(--muted);">النتائج:</span> <strong>${results.length}</strong></div>
+            <div><span style="color: var(--muted);">القصائد:</span> <strong style="color: #2196F3;">${analytics.poemCount}</strong></div>
+            <div><span style="color: var(--muted);">التكرارات:</span> <strong style="color: #4CAF50;">${analytics.wordCount}</strong></div>
+        </div>
+    `;
+
+        const resultsHTML = results
+          .map((r) => {
+            const poem = window.poemsGrouped[r.poem_id];
+            const totalLines = poem ? poem.lines.length : 0;
+
+            // Find all matching line numbers in this poem
+            const matchingLineNumbers = [];
+            let occurrenceCount = 0;
+
+            if (poem) {
+              poem.lines.forEach((line, idx) => {
+                const lineNorm = normalize(line);
+                const matches = (
+                  lineNorm.match(
+                    new RegExp(
+                      normQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                      "g"
+                    )
+                  ) || []
+                ).length;
+                if (matches > 0) {
+                  matchingLineNumbers.push(idx + 1); // 1-indexed
+                  occurrenceCount += matches;
+                }
+              });
+            }
+
+            const lineNumbersDisplay =
+              matchingLineNumbers.length > 5
+                ? matchingLineNumbers.slice(0, 5).join(", ") + "..."
+                : matchingLineNumbers.join(", ");
+
+            return `
+            <div class="result" data-poem-id="${r.poem_id}">
+                <div class="title">${highlight(r.title_raw, arabicQuery)}</div>
+                <div class="poem-lines">${wrapPoetryLine(
+                  highlight(r.line_raw, arabicQuery)
+                )}</div>
+                <div class="meta" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span class="badge">قصيدة #${r.poem_id}</span>
+                    <span class="badge" style="background: #e8f5e9; color: #2e7d32;">تكرار: ${occurrenceCount}</span>
+                    <span class="badge" style="background: #fff3e0; color: #e65100;">سطر: ${lineNumbersDisplay}</span>
+                    <span class="badge" style="background: #e3f2fd; color: #1565c0;">أسطر: ${totalLines}</span>
+                </div>
+            </div>
+        `;
+          })
+          .join("");
+
+        resultsDiv.innerHTML = analyticsHTML + resultsHTML;
+
+        // Click handler - opens FULL POEM with highlights
+        document.querySelectorAll(".result").forEach((el) => {
+          el.addEventListener("click", function () {
+            const poemId = this.getAttribute("data-poem-id");
+            const poem = window.poemsGrouped[poemId];
+
+            if (poem) {
+              openPoemWidget(
+                poem.title_raw,
+                poem.linesData,
+                poemId,
+                arabicQuery
+              );
+            }
+          });
+        });
+      }
+      // ============================================================
+      // EVENT HANDLERS
+      // ============================================================
+      searchInput.addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const query = e.target.value;
+          if (!query.trim()) {
+            resultsDiv.innerHTML = "";
+            return;
+          }
+          const results = search(query);
+          displayResults(results, query);
+        }, DEBOUNCE_MS);
+      });
+
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        resultsDiv.innerHTML = "";
+      });
+
+      // ============================================================
+      // INITIALIZATION
+      // ============================================================
+      (async function init() {
+        try {
+          statusDiv.textContent = "جارٍ تحميل القصائد...";
+          const { rows } = await loadCSV(CSV_FILE);
+          buildIndex(rows);
+          statusDiv.textContent = `✅ تم تحميل ${rows.length} سطر من ${
+            Object.keys(window.poemsGrouped).length
+          } قصيدة`;
+
+          searchInput.disabled = false;
+          clearBtn.disabled = false;
+          searchInput.focus();
+        } catch (error) {
+          statusDiv.textContent = "❌ فشل التحميل: " + error.message;
+          console.error(error);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بحث الشعر - Live + Exact</title>
+  <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.7.31/dist/flexsearch.bundle.js"></script>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card: #fff;
+      --accent: #ffd54f;
+      --border: #e8e8e8;
+      --text: #111;
+      --muted: #666;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Noto Naskh Arabic", "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      direction: rtl;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; position: relative; }
+    
+    /* Search box */
+    .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 17px;
+      background: white;
+    }
+    button {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #f5f5f5; }
+    
+    /* DROPDOWN from V1 */
+    .dropdown {
+      position: absolute;
+      top: 60px;
+      right: 0;
+      left: 0;
+      max-height: 400px;
+      overflow-y: auto;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+      z-index: 100;
+      display: none;
+    }
+    .dropdown.visible { display: block; }
+    
+    .dropdown-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f4f4f4;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dropdown-item:hover { background: #fbfbfb; }
+    .dropdown-item:last-child { border-bottom: none; }
+    
+    .dropdown-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 6px;
+      color: #2c3e50;
+    }
+    .dropdown-poem {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    
+    .load-more {
+      text-align: center;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid #f4f4f4;
+      background: #fafafa;
+    }
+    
+    mark {
+      background: var(--accent);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    
+    /* EXACT SEARCH RESULTS (hidden until Enter pressed) */
+    #exactResults { margin-top: 16px; }
+    .analytics {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .result {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .result:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="font-size: 24px; margin-bottom: 8px;">🔍 بحث الشعر</h1>
+    <div class="status" id="status">جاري التحميل...</div>
+    
+    <div class="search-row">
+      <input id="searchInput" type="search" placeholder="ابحث... (محمد، حب، دبي)" autofocus />
+      <button id="clearBtn">مسح</button>
+    </div>
+    
+    <!-- DROPDOWN (Live Search V6) -->
+    <div id="dropdown" class="dropdown"></div>
+    
+    <!-- EXACT RESULTS (activated on Enter) -->
+    <div id="exactResults"></div>
+  </div>
+  
+  <script type="module">
+    const CSV_FILE = "02 - live_search.csv";
+    const SUPABASE_URL = "https://ezcbshyresjinfyscals.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2JzaHlyZXNqaW5meXNjYWxzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzE2MjY0NSwiZXhwIjoyMDc4NzM4NjQ1fQ.ozzNCzjvWOym1QqxkQXxgDH2_zf-Y7trpvaaUF7ZpFs";
+    
+    // ============================================
+    // TODO: PASTE FROM 02_-_live_search_V6.html
+    // Copy BOOSTED_WORDS array (line ~371-440)
+    // Copy LATIN_TO_ARABIC object (line ~443-600)
+    // ============================================
+    const BOOSTED_WORDS = [
+      "محمد", "راشد", "زايد", "دبي", "حب"
+      // ... ADD REST FROM V6
+    ];
+    
+    const LATIN_TO_ARABIC = {
+      mohamed: "محمد",
+      dubai: "دبي"
+      // ... ADD REST FROM V6
+    };
+    // ============================================
+    
+    let poemsData = [];
+    let flexIndex = null;
+    let dropdownData = [];
+    let dropdownPage = 0;
+    const DROPDOWN_PAGE_SIZE = 5;
+    
+    const searchInput = document.getElementById('searchInput');
+    const dropdown = document.getElementById('dropdown');
+    const exactResults = document.getElementById('exactResults');
+    const statusDiv = document.getElementById('status');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    // ============================================
+    // CSV LOADING (from V6)
+    // ============================================
+    async function loadCSV(path) {
+      const response = await fetch(path);
+      const text = await response.text().then(t => t.replace(/^\uFEFF/, ''));
+      const lines = text.trim().split(/\r?\n/);
+      const rows = [];
+      let i = 1;
+      
+      while (i < lines.length) {
+        let currentLine = lines[i];
+        let parts = [];
+        let current = "";
+        let inQuotes = false;
+
+        while (i < lines.length) {
+          for (let j = 0; j < currentLine.length; j++) {
+            const char = currentLine[j];
+            if (char === '"') {
+              if (inQuotes && currentLine[j + 1] === '"') {
+                current += '"';
+                j++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === "," && !inQuotes) {
+              parts.push(current);
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+
+          if (inQuotes) {
+            current += "\n";
+            i++;
+            if (i < lines.length) currentLine = lines[i];
+            else break;
+          } else {
+            parts.push(current);
+            break;
+          }
+        }
+
+        if (parts.length >= 7) {
+          rows.push({
+            poem_id: parts[0]?.trim(),
+            row_id: parts[1]?.trim(),
+            title_raw: parts[2]?.trim(),
+            poem_line_raw: parts[3]?.trim(),
+            summary: parts[4]?.trim(),
+          });
+        }
+        i++;
+      }
+      return rows;
+    }
+    
+    // ============================================
+    // NORMALIZE (from V6)
+    // ============================================
+    function normalize(text) {
+      if (!text) return "";
+      return String(text)
+        .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]/g, "")
+        .replace(/\u0640/g, "")
+        .replace(/[إأآا]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/[ؤئ]/g, "ء")
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟،«»"""''\-——]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+    
+    function mapLatinToArabic(query) {
+      const tokens = query.toLowerCase().split(/\s+/);
+      return tokens.map(t => LATIN_TO_ARABIC[t] || t).join(" ");
+    }
+    
+    // ============================================
+    // FLEXSEARCH INDEX (from V6)
+    // ============================================
+    function buildIndex(rows) {
+      poemsData = rows.map((r, idx) => ({
+        idx,
+        poem_id: r.poem_id,
+        title_raw: r.title_raw,
+        line_raw: r.poem_line_raw,
+        title_clean: normalize(r.title_raw),
+        line_clean: normalize(r.poem_line_raw)
+      }));
+
+      flexIndex = new FlexSearch.Document({
+        document: {
+          id: "idx",
+          store: ["poem_id", "title_raw", "line_raw"],
+          index: [
+            { field: "title_clean", tokenize: "forward", weight: 3 },
+            { field: "line_clean", tokenize: "forward", weight: 1 }
+          ]
+        },
+        tokenize: "forward",
+        cache: true
+      });
+
+      poemsData.forEach(doc => flexIndex.add(doc));
+    }
+    
+    // ============================================
+    // LIVE SEARCH (for dropdown)
+    // ============================================
+    function liveSearch(query) {
+      if (!query.trim()) return [];
+      
+      const arabicQuery = mapLatinToArabic(query);
+      const normQuery = normalize(arabicQuery);
+
+      const rawResults = flexIndex.search(normQuery, {
+        enrich: true,
+        limit: 100
+      });
+
+      const candidateMap = new Map();
+      rawResults.forEach(bucket => {
+        if (bucket.result) {
+          bucket.result.forEach(r => {
+            if (!candidateMap.has(r.id)) {
+              candidateMap.set(r.id, r.doc);
+            }
+          });
+        }
+      });
+
+      const candidates = Array.from(candidateMap.values());
+      
+      // Score (same as V6)
+      const scored = candidates.map(doc => {
+        let score = 0;
+        const title = doc.title_clean || "";
+        const line = doc.line_clean || "";
+        const titleTokens = title.split(" ").filter(Boolean);
+        const lineTokens = line.split(" ").filter(Boolean);
+
+        if (titleTokens.includes(normQuery)) score += 120;
+        if (lineTokens.includes(normQuery)) score += 80;
+        if (title.indexOf(normQuery) !== -1) score += 60;
+        if (line.indexOf(normQuery) !== -1) score += 30;
+
+        return { doc, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, 50).map(s => s.doc);
+    }
+    
+    // ============================================
+    // HIGHLIGHT
+    // ============================================
+    function highlight(text, query) {
+      if (!text || !query) return text;
+      const normTokens = normalize(query).split(/\s+/).filter(Boolean);
+      let result = text;
+
+      normTokens.forEach(token => {
+        const pattern = Array.from(token)
+          .map(ch => ch + "[\\u0610-\\u061A\\u064B-\\u065F\\u06D6-\\u06ED\\u0640]*")
+          .join("");
+        const regex = new RegExp(pattern, "gi");
+        result = result.replace(regex, match => `<mark>${match}</mark>`);
+      });
+
+      return result;
+    }
+    
+    // ============================================
+    // DROPDOWN DISPLAY
+    // ============================================
+    function showDropdown(results, query) {
+      dropdownData = results;
+      dropdownPage = 0;
+      renderDropdown(query);
+      dropdown.classList.add('visible');
+    }
+    
+    function renderDropdown(query) {
+      const start = 0;
+      const end = (dropdownPage + 1) * DROPDOWN_PAGE_SIZE;
+      const items = dropdownData.slice(start, end);
+      
+      let html = items.map(r => `
+        <div class="dropdown-item" data-poem-id="${r.poem_id}">
+          <div class="dropdown-title">${highlight(r.title_raw, query)}</div>
+          <div class="dropdown-poem">${highlight(r.line_raw, query)}</div>
+        </div>
+      `).join('');
+      
+      if (end < dropdownData.length) {
+        html += `<div class="load-more">مرر لأسفل لعرض ${dropdownData.length - end} نتيجة أخرى...</div>`;
+      }
+      
+      dropdown.innerHTML = html;
+      
+      // Click handlers
+      dropdown.querySelectorAll('.dropdown-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const poemId = el.getAttribute('data-poem-id');
+          openPoemWidget(poemId, query);
+        });
+      });
+    }
+    
+    // Scroll to load more
+    dropdown.addEventListener('scroll', () => {
+      if (dropdown.scrollTop + dropdown.clientHeight >= dropdown.scrollHeight - 10) {
+        if ((dropdownPage + 1) * DROPDOWN_PAGE_SIZE < dropdownData.length) {
+          dropdownPage++;
+          renderDropdown(searchInput.value);
+        }
+      }
+    });
+    
+    // ============================================
+    // EXACT SEARCH (on Enter)
+    // ============================================
+    async function exactSearch(query) {
+      dropdown.classList.remove('visible');
+      exactResults.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">جاري البحث...</div>';
+      
+      try {
+        const threshold = query.trim().split(/\s+/).length === 1 ? 0.4 : 0.3;
+        
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/smart_exact_search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          },
+          body: JSON.stringify({
+            query_text: query,
+            match_count: 50,
+            score_threshold: threshold
+          })
+        });
+
+        const data = await response.json();
+        displayExactResults(data, query);
+      } catch (error) {
+        exactResults.innerHTML = `<div style="color:red;">خطأ: ${error.message}</div>`;
+      }
+    }
+    
+    function displayExactResults(results, query) {
+      if (!results || results.length === 0) {
+        exactResults.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">لا توجد نتائج</div>';
+        return;
+      }
+
+      const uniquePoems = new Set(results.map(r => r.poem_id)).size;
+      const visibleMatches = results.filter(r => {
+        const fields = r.source_fields || [];
+        return fields.some(f => ['title', 'poem', 'summary'].includes(f));
+      }).length;
+
+      let html = `
+        <div class="analytics">
+          <div><span style="color:#666;">النتائج:</span> <strong>${results.length}</strong></div>
+          <div><span style="color:#666;">القصائد:</span> <strong>${uniquePoems}</strong></div>
+          <div><span style="color:#666;">تطابق نصي:</span> <strong>${visibleMatches}</strong></div>
+        </div>
+      `;
+
+      html += results.map((r, idx) => {
+        const hasVisibleMatch = (r.source_fields || []).some(f => ['title', 'poem', 'summary'].includes(f));
+        const score = parseFloat(r.final_score || 0);
+        const displayScore = hasVisibleMatch ? (score - 500).toFixed(1) : score.toFixed(1);
+        const icon = hasVisibleMatch ? "🎯" : "📋";
+        
+        let metaKeywordHTML = '';
+        if (!hasVisibleMatch && r.metadata_keyword) {
+          metaKeywordHTML = `
+            <div style="margin-top:8px;padding:8px 12px;background:#fff3e0;border-radius:8px;border-left:3px solid #ff9800;">
+              <span style="font-size:11px;color:#e65100;font-weight:600;">🔍 الكلمة المفتاحية:</span>
+              <span style="font-size:13px;color:#f57c00;margin-right:6px;">${r.metadata_keyword}</span>
+            </div>
+          `;
+        }
+        
+        return `
+          <div class="result" data-index="${idx}">
+            <div style="font-weight:700;font-size:18px;margin-bottom:10px;">${highlight(r.title_raw, query)}</div>
+            <div style="line-height:1.9;font-size:18px;">${highlight(r.poem_line_raw, query)}</div>
+            ${metaKeywordHTML}
+            <div style="margin-top:10px;font-size:12px;color:#666;">
+              <span style="background:#e3f2fd;padding:4px 10px;border-radius:12px;margin-left:4px;">قصيدة #${r.poem_id}</span>
+              <span style="padding:4px 10px;border-radius:12px;margin-left:4px;">${icon} ${displayScore}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      exactResults.innerHTML = html;
+      
+      exactResults.querySelectorAll('.result').forEach((el, idx) => {
+        el.addEventListener('click', () => {
+          openPoemWidget(results[idx].poem_id, query);
+        });
+      });
+    }
+    
+    // ============================================
+    // POEM WIDGET (placeholder - copy from V6/V8)
+    // ============================================
+    function openPoemWidget(poemId, query) {
+      alert(`Open poem #${poemId}\nTODO: Copy poem widget code from V6 or V8`);
+    }
+    
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value;
+      exactResults.innerHTML = '';
+      
+      if (!query.trim()) {
+        dropdown.classList.remove('visible');
+        return;
+      }
+      
+      const results = liveSearch(query);
+      showDropdown(results, query);
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        exactSearch(e.target.value);
+      }
+    });
+    
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      dropdown.classList.remove('visible');
+      exactResults.innerHTML = '';
+    });
+    
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.remove('visible');
+      }
+    });
+    
+    // ============================================
+    // INIT
+    // ============================================
+    (async function init() {
+      try {
+        statusDiv.textContent = "جاري تحميل البيانات...";
+        const rows = await loadCSV(CSV_FILE);
+        buildIndex(rows);
+        statusDiv.textContent = `✅ تم تحميل ${rows.length} سطر`;
+        searchInput.disabled = false;
+      } catch (error) {
+        statusDiv.textContent = "❌ فشل التحميل: " + error.message;
+      }
+    })();
+    
+  </script>
+</body>
+</html>

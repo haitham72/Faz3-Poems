@@ -1,4 +1,4 @@
-const BOOSTED_WORDS = [
+export const BOOSTED_WORDS = [
   // Immediate Family & Close Relations
   "محمد",
   "راشد",
@@ -147,7 +147,7 @@ const BOOSTED_WORDS = [
 ];
 
 // Latin to Arabic mapping
-const LATIN_TO_ARABIC = {
+export const LATIN_TO_ARABIC = {
   // Names & Family
   mohamed: "محمد",
   mohammad: "محمد",

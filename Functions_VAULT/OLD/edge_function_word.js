@@ -1,10 +1,8 @@
-# Edge-function-exact
+// Edge-function-exact (SIMPLIFIED - NO EMBEDDINGS)
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import OpenAI from 'npm:openai'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
 
 Deno.serve(async (req) => {
   try {
@@ -19,39 +17,41 @@ Deno.serve(async (req) => {
 
     const cleanQuery = query.trim()
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-    const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // Generate embedding
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: cleanQuery,
-      dimensions: 1536,
-    })
-    const [{ embedding }] = embeddingResponse.data
-
-    // Call hybrid_search_exact function
+    // Call hybrid_search_exact function (NO EMBEDDING)
     const { data: exactResults, error: exactError } = await supabase.rpc('hybrid_search_exact', {
       query_text: cleanQuery,
-      query_embedding: embedding,
       match_count: match_count
+      // REMOVED: query_embedding
     })
 
     if (exactError) throw exactError
 
-    // Format results
+    const normalizeScore = (score) => {
+      if (!score || score === 0) return 0
+      return Math.max(0, Math.min(1, score))
+    }
+
     const formattedResults = (exactResults || []).map(doc => ({
       id: doc.id,
       poem_name: doc.metadata?.poem_name || 'Unknown',
+      poem_id: doc.metadata?.poem_id || null,
+      people: doc.metadata?.people || '',
+      places: doc.metadata?.places || '',
+      qafya: doc.metadata?.qafya || '',
+      bahr: doc.metadata?.bahr || '',
+      sentiments: doc.metadata?.sentiments || '',
+      Poem_Raw: doc.metadata?.Poem_Raw || doc.metadata?.poem || '',
       content: doc.content.split('-----')[1]?.trim() || doc.content,
       match_type: doc.match_type,
+      
       scores: {
-        vector: doc.vector_score,
-        keyword: doc.keyword_score,
-        pattern: doc.pattern_score,
-        trigram: doc.trigram_score,
-        final: doc.final_score
-      },
-      metadata: doc.metadata
+        // REMOVED: vector score (not in function)
+        keyword: normalizeScore(doc.keyword_score),
+        pattern: normalizeScore(doc.pattern_score),
+        trigram: normalizeScore(doc.trigram_score),
+        final: normalizeScore(doc.final_score)
+      }
     }))
 
     return new Response(

@@ -27,6 +27,7 @@ export const BOOSTED_WORDS = [
   "سعود",
   "صقر",
   "حميد",
+  "نائب",
   "راشد بن سعيد",
   "مكتوم بن راشد",
   "زايد بن سلطان",
@@ -36,7 +37,7 @@ export const BOOSTED_WORDS = [
   "حاكم الفجيرة",
   "حاكم رأس الخيمة",
   "حاكم عجمان",
-  "نائب رئيس الدولة",
+  "رئيس الدولة",
   "رئيس الوزراء",
 
   // Core National & Pride Terms
@@ -168,6 +169,7 @@ export const LATIN_TO_ARABIC = {
   saud: "سعود",
   saqr: "صقر",
   hamid: "حميد",
+  rashed: "راشد",
   rashid: "راشد",
   "rashid bin said": "راشد بن سعيد",
   "maktoum bin rashid": "مكتوم بن راشد",

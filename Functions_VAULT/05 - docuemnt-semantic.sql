@@ -32,4 +32,4 @@ CREATE INDEX document_semantic_content_trgm_idx ON document_semantic USING gin(c
 
 -- Metadata field indexes for fast filtering
 CREATE INDEX document_semantic_poem_id_idx ON document_semantic((metadata->>'poem_id'));
-CREATE INDEX document_semantic_title_trgm_idx ON document_semantic USING gin((metadata->>'Title_raw') gin_trgm_ops);
+CREATE INDEX document_semantic_title_trgm_idx ON document_semantic USING gin((metadata->>'Title_raw') gin_trgm_ops);a

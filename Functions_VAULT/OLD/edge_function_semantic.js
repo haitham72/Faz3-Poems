@@ -1,4 +1,4 @@
-# Edge-function-Semantic
+// Edge-function-Semantic (FIXED)
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import OpenAI from 'npm:openai'
 
@@ -9,15 +9,18 @@ const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
 Deno.serve(async (req) => {
   try {
     const { 
+      query,              // ACCEPT 'query' OR 'original_query'
       original_query,
-      expanded_entities,  // Pre-expanded by your AI agent
-      sentiments,         // Pre-expanded by your AI agent
+      expanded_entities,
+      sentiments,
       match_count = 20 
     } = await req.json()
    
-    if (!original_query) {
+    const finalQuery = original_query || query  // USE EITHER
+    
+    if (!finalQuery) {
       return new Response(
-        JSON.stringify({ error: 'original_query is required' }),
+        JSON.stringify({ error: 'query or original_query is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
@@ -25,11 +28,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // Use provided expansions OR fall back to internal GPT expansion
     let finalEntities = expanded_entities || ''
     let finalSentiments = sentiments || ''
 
-    // If no external expansions provided, do internal expansion
+    // Internal GPT expansion if needed
     if (!expanded_entities && !sentiments) {
       console.log('No external expansions, using internal GPT...')
       
@@ -51,7 +53,7 @@ Examples:
           },
           {
             role: 'user',
-            content: original_query
+            content: finalQuery
           }
         ],
         temperature: 0.3,
@@ -67,45 +69,68 @@ Examples:
       }
     }
 
-    // Generate embedding from original query
+    // Generate embedding
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
-      input: original_query,
+      input: finalQuery,
       dimensions: 1536,
     })
     const [{ embedding }] = embeddingResponse.data
 
-    // Call semantic_hybrid_search function
+    // Call semantic_hybrid_search
     const { data: semanticResults, error: semanticError } = await supabase.rpc('semantic_hybrid_search', {
-      original_query: original_query,
+      original_query: finalQuery,
       expanded_entities: finalEntities,
       sentiments: finalSentiments,
       query_embedding: embedding,
       match_count: match_count
     })
 
-    if (semanticError) throw semanticError
+    if (semanticError) {
+      console.error('Supabase RPC Error:', semanticError)
+      throw semanticError
+    }
 
-    // Format results
+    // Normalize score helper
+    const normalizeScore = (score) => {
+      if (!score || score === 0) return 0
+      return Math.max(0, Math.min(1, score))
+    }
+
+    // Format results with Poem_Raw and normalized scores
     const formattedResults = (semanticResults || []).map(doc => ({
       id: doc.id,
+      
+      // Essential metadata fields
       poem_name: doc.metadata?.poem_name || 'Unknown',
+      poem_id: doc.metadata?.poem_id || null,
+      people: doc.metadata?.people || '',
+      places: doc.metadata?.places || '',
+      qafya: doc.metadata?.qafya || '',
+      bahr: doc.metadata?.bahr || '',
+      sentiments: doc.metadata?.sentiments || '',
+      
+      // ✅ Raw poem with tashkeel/tatweel
+      Poem_Raw: doc.metadata?.Poem_Raw || doc.metadata?.poem || '',
+      
+      // Chunk content for display
       content: doc.content.split('-----')[1]?.trim() || doc.content,
+      
+      // ✅ Normalized scores (0-1 range)
       scores: {
-        vector: doc.vector_score,
-        entity: doc.entity_score,
-        sentiment: doc.sentiment_score,
-        trigram: doc.trigram_score,
-        final: doc.final_score
-      },
-      metadata: doc.metadata
+        vector: normalizeScore(doc.vector_score),
+        entity: normalizeScore(doc.entity_score),
+        sentiment: normalizeScore(doc.sentiment_score),
+        trigram: normalizeScore(doc.trigram_score),
+        final: normalizeScore(doc.final_score)
+      }
     }))
 
     return new Response(
       JSON.stringify({
         results: formattedResults,
         query_info: {
-          original_query: original_query,
+          original_query: finalQuery,
           expanded_entities: finalEntities,
           sentiments: finalSentiments,
           expansion_source: (expanded_entities || sentiments) ? 'external_agent' : 'internal_gpt',
@@ -126,7 +151,7 @@ Examples:
     return new Response(
       JSON.stringify({
         error: error.message,
-        details: error.details,
+        details: error.details || error.hint || '',
         stack: error.stack
       }),
       {

@@ -1,6 +1,5 @@
 DROP TABLE IF EXISTS "Exact_search" CASCADE;
 
--- Extensions FIRST
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE "Exact_search" (
@@ -21,21 +20,27 @@ CREATE TABLE "Exact_search" (
     sentiments TEXT,
     "أحداث" JSONB,
     "دين" JSONB,
-    "مواضيع" TEXT[],
+    
+    -- JSONB - no conversion needed!
+    "مواضيع" JSONB,
+    
     "أماكن" JSONB,
     "تصنيف" TEXT,
-    
-    -- Regular column, not GENERATED
     مواضيع_tsv tsvector,
-    
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Trigger to auto-update the tsvector column
+-- Trigger for JSONB array
 CREATE OR REPLACE FUNCTION update_مواضيع_tsv()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.مواضيع_tsv := to_tsvector('arabic', COALESCE(array_to_string(NEW."مواضيع", ' '), ''));
+    NEW.مواضيع_tsv := to_tsvector('arabic', 
+        COALESCE(
+            (SELECT string_agg(value::text, ' ') 
+             FROM jsonb_array_elements_text(NEW."مواضيع")),
+            ''
+        )
+    );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -50,6 +55,7 @@ EXECUTE FUNCTION update_مواضيع_tsv();
 CREATE INDEX idx_exact_poem_id ON "Exact_search" (poem_id);
 CREATE INDEX idx_exact_entities ON "Exact_search" USING GIN ("شخص");
 CREATE INDEX idx_exact_places ON "Exact_search" USING GIN ("أماكن");
+CREATE INDEX idx_exact_مواضيع ON "Exact_search" USING GIN ("مواضيع");
 CREATE INDEX idx_exact_topics_fts ON "Exact_search" USING GIN (مواضيع_tsv);
 CREATE INDEX idx_exact_fts_line ON "Exact_search" USING GIN (to_tsvector('arabic', "Poem_line_cleaned"));
 CREATE INDEX idx_exact_trigram_line ON "Exact_search" USING GIN ("Poem_line_cleaned" gin_trgm_ops);

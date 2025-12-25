@@ -1,266 +1,292 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>بحث القصائد - Poetry Search</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        .search-box {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-        
-        .search-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        input[type="text"] {
-            flex: 1;
-            padding: 15px;
-            font-size: 18px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        
-        input[type="text"]:focus {
-            border-color: #667eea;
-        }
-        
-        button {
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .results {
-            display: none;
-        }
-        
-        .results.show {
-            display: block;
-        }
-        
-        .result-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .result-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        
-        .result-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 15px;
-            line-height: 1.4;
-        }
-        
-        .result-poem {
-            font-size: 18px;
-            color: #333;
-            line-height: 1.8;
-            margin-bottom: 15px;
-        }
-        
-        .result-meta {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            font-size: 14px;
-            color: #666;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .meta-item {
-            background: #f5f5f5;
-            padding: 5px 12px;
-            border-radius: 15px;
-        }
-        
-        .score {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: bold;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 12px;
-            color: #666;
-            font-size: 18px;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: white;
-            font-size: 20px;
-            display: none;
-        }
-        
-        .loading.show {
-            display: block;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .search-box {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 2em;
+      }
+
+      .search-input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 15px;
+        font-size: 18px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus {
+        border-color: #667eea;
+      }
+
+      button {
+        padding: 15px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .results {
+        display: none;
+      }
+
+      .results.show {
+        display: block;
+      }
+
+      .result-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .result-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .result-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 15px;
+        line-height: 1.4;
+      }
+
+      .result-poem {
+        font-size: 18px;
+        color: #333;
+        line-height: 1.8;
+        margin-bottom: 15px;
+      }
+
+      .result-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        font-size: 14px;
+        color: #666;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+
+      .meta-item {
+        background: #f5f5f5;
+        padding: 5px 12px;
+        border-radius: 15px;
+      }
+
+      .score {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: bold;
+      }
+
+      .no-results {
+        text-align: center;
+        padding: 40px;
+        background: white;
+        border-radius: 12px;
+        color: #666;
+        font-size: 18px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: white;
+        font-size: 20px;
+        display: none;
+      }
+
+      .loading.show {
+        display: block;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="search-box">
-            <h1>🔍 بحث في ديوان الشعر</h1>
-            <div class="search-input-group">
-                <input type="text" id="searchQuery" placeholder="ابحث في القصائد... (مثال: محمد بن راشد)" />
-                <button onclick="searchPoems()">بحث</button>
-            </div>
+      <div class="search-box">
+        <h1>🔍 بحث في ديوان الشعر</h1>
+        <div class="search-input-group">
+          <input
+            type="text"
+            id="searchQuery"
+            placeholder="ابحث في القصائد... (مثال: محمد بن راشد)"
+          />
+          <button onclick="searchPoems()">بحث</button>
         </div>
-        
-        <div class="loading" id="loading">⏳ جاري البحث...</div>
-        
-        <div class="results" id="results"></div>
+      </div>
+
+      <div class="loading" id="loading">⏳ جاري البحث...</div>
+
+      <div class="results" id="results"></div>
     </div>
 
     <script>
-        // Enter key to search
-        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') searchPoems();
+      // Enter key to search
+      document
+        .getElementById("searchQuery")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") searchPoems();
         });
 
-        async function searchPoems() {
-            const query = document.getElementById('searchQuery').value.trim();
-            const resultsDiv = document.getElementById('results');
-            const loadingDiv = document.getElementById('loading');
-            
-            if (!query) {
-                alert('الرجاء إدخال كلمة البحث');
-                return;
-            }
-            
-            // Show loading
-            loadingDiv.classList.add('show');
-            resultsDiv.classList.remove('show');
-            resultsDiv.innerHTML = '';
-            
-            try {
-                // Replace with your actual API endpoint
-                const response = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        query: query,
-                        limit: 20
-                    })
-                });
-                
-                const data = await response.json();
-                
-                // Hide loading
-                loadingDiv.classList.remove('show');
-                
-                if (data.results && data.results.length > 0) {
-                    displayResults(data.results);
-                } else {
-                    resultsDiv.innerHTML = '<div class="no-results">😔 لم يتم العثور على نتائج</div>';
-                    resultsDiv.classList.add('show');
-                }
-                
-            } catch (error) {
-                loadingDiv.classList.remove('show');
-                resultsDiv.innerHTML = '<div class="no-results">❌ حدث خطأ في البحث</div>';
-                resultsDiv.classList.add('show');
-                console.error('Search error:', error);
-            }
+      async function searchPoems() {
+        const query = document.getElementById("searchQuery").value.trim();
+        const resultsDiv = document.getElementById("results");
+        const loadingDiv = document.getElementById("loading");
+
+        if (!query) {
+          alert("الرجاء إدخال كلمة البحث");
+          return;
         }
-        
-        function displayResults(results) {
-            const resultsDiv = document.getElementById('results');
-            
-            let html = '';
-            results.forEach((result, index) => {
-                html += `
-                    <div class="result-card">
-                        <div class="result-title">${result.title_raw}</div>
-                        <div class="result-poem">${result.poem_line_raw}</div>
-                        <div class="result-meta">
-                            <span class="meta-item score">نقاط: ${result.score}</span>
-                            <span class="meta-item">رقم القصيدة: ${result.poem_id}</span>
-                            <span class="meta-item">موقع: ${result.match_location === 'title' ? 'العنوان' : 'البيت'}</span>
-                            <span class="meta-item">نوع: ${translateMatchType(result.match_type)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            resultsDiv.innerHTML = html;
-            resultsDiv.classList.add('show');
+
+        // Show loading
+        loadingDiv.classList.add("show");
+        resultsDiv.classList.remove("show");
+        resultsDiv.innerHTML = "";
+
+        try {
+          // Replace with your actual API endpoint
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: query,
+              limit: 100,
+            }),
+          });
+
+          const data = await response.json();
+
+          // Hide loading
+          loadingDiv.classList.remove("show");
+
+          if (data.results && data.results.length > 0) {
+            displayResults(data.results, data); // Pass full data object
+          } else {
+            resultsDiv.innerHTML =
+              '<div class="no-results">😔 لم يتم العثور على نتائج</div>';
+            resultsDiv.classList.add("show");
+          }
+        } catch (error) {
+          loadingDiv.classList.remove("show");
+          resultsDiv.innerHTML =
+            '<div class="no-results">❌ حدث خطأ في البحث</div>';
+          resultsDiv.classList.add("show");
+          console.error("Search error:", error);
         }
-        
-        function translateMatchType(type) {
-            const translations = {
-                'exact_phrase': 'مطابقة تامة',
-                'normalized_phrase': 'مطابقة بعد التطبيع',
-                'all_words': 'جميع الكلمات',
-                'partial_words': 'بعض الكلمات',
-                'fuzzy': 'تقريبية'
-            };
-            return translations[type] || type;
-        }
+      }
+
+      function displayResults(results, data) {
+        const resultsDiv = document.getElementById("results");
+
+        // Add summary header
+        let html = `
+        <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div style="font-size: 20px; font-weight: bold;">
+                📊 النتائج: ${data.total_matches} قصيدة
+            </div>
+            <div style="margin-top: 10px; font-size: 16px;">
+                📝 مطابقات العنوان: ${data.title_matches} | 
+                ✍️ مطابقات البيت: ${data.poem_matches}
+            </div>
+        </div>
+    `;
+
+        results.forEach((result) => {
+          html += `
+            <div class="result-card">
+                <div class="result-title">${result.title_raw}</div>
+                <div class="result-poem">${result.poem_line_raw}</div>
+                <div class="result-meta">
+                    <span class="meta-item score">نقاط: ${result.score}</span>
+                    <span class="meta-item">رقم القصيدة: ${
+                      result.poem_id
+                    }</span>
+                    <span class="meta-item">رقم السطر: ${result.row_id}</span>
+                    <span class="meta-item">موقع: ${
+                      result.match_location === "title" ? "العنوان" : "البيت"
+                    }</span>
+                    <span class="meta-item">نوع: ${translateMatchType(
+                      result.match_type
+                    )}</span>
+                </div>
+            </div>
+        `;
+        });
+
+        resultsDiv.innerHTML = html;
+        resultsDiv.classList.add("show");
+      }
+
+      function translateMatchType(type) {
+        const translations = {
+          exact_phrase: "مطابقة تامة",
+          normalized_phrase: "مطابقة بعد التطبيع",
+          all_words: "جميع الكلمات",
+          partial_words: "بعض الكلمات",
+          fuzzy: "تقريبية",
+        };
+        return translations[type] || type;
+      }
     </script>
-</body>
+  </body>
 </html>

@@ -19,7 +19,7 @@ DB_CONFIG = {
 def search():
     data = request.json
     query = data.get('query', '')
-    limit = data.get('limit', 10)
+    limit = data.get('limit', 100)
     
     if not query:
         return jsonify({'error': 'Query required'}), 400
@@ -27,17 +27,32 @@ def search():
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        print(f"Query: {query}, Limit: {limit}")  # Before execute
         
         cur.execute("""
             SELECT * FROM hybrid_search_v1_core(%s, %s)
         """, (query, limit))
         
         results = cur.fetchall()
+
+        print(f"Fetched rows: {len(results)}")    # After fetchall
+
+        title_matches = sum(1 for r in results if 'title' in r['match_location'])
+        poem_matches = sum(1 for r in results if 'poem_line' in r['match_location'])
+
+        
+        
         
         cur.close()
         conn.close()
         
-        return jsonify({'results': results, 'count': len(results)})
+        return jsonify({
+            'results': results,
+            'total_matches': len(results),
+            'title_matches': title_matches,
+            'poem_matches': poem_matches
+        })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -284,19 +284,3 @@ $$;
 
 -- Grant permissions
 GRANT EXECUTE ON FUNCTION public.smart_exact_search(text, integer, numeric) TO anon, authenticated;
-
--- ═══════════════════════════════════════════════════════════════
--- USAGE EXAMPLES:
--- ═══════════════════════════════════════════════════════════════
-
--- Example 1: Simple search
--- SELECT * FROM smart_exact_search('رمضان', 20, 0.3);
-
--- Example 2: AI-expanded query (first word weighted highest)
--- SELECT * FROM smart_exact_search('بن زايد محمد رئيس الدولة أبوظبي', 30, 0.4);
-
--- Example 3: Strict matching (higher threshold)
--- SELECT * FROM smart_exact_search('حب', 50, 0.5);
-
--- Example 4: Loose matching (lower threshold)
--- SELECT * FROM smart_exact_search('الوطن', 20, 0.2);

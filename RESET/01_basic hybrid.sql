@@ -97,6 +97,14 @@ BEGIN
                         WHERE position(lower(w) IN lower(e."Title_cleaned")) > 0
                            OR position(normalize_arabic(w) IN normalize_arabic(e."Title_cleaned")) > 0
                     )
+                WHEN EXISTS (
+                    SELECT 1 FROM unnest(meaningful_words) w
+                    WHERE similarity(w, e."Title_cleaned") > 0.5
+                )
+                    THEN 8.5 + 0.5 * (
+                        SELECT MAX(similarity(w, e."Title_cleaned"))
+                        FROM unnest(meaningful_words) w
+                    )
                 ELSE 0
             END)::numeric as field_score,
             
@@ -109,31 +117,37 @@ BEGIN
                 ELSE 'no_match'
             END)::text as match_type,
             
-            -- [JSON] Title highlighting with full word fallback
-            COALESCE((
-                SELECT jsonb_agg(jsonb_build_object(
-                    'text', match_info.pw,
-                    'positions', (match_info.pos[1])::text,
-                    'score', match_info.scr
-                ) ORDER BY match_info.scr DESC)
-                FROM (
-                    SELECT 
-                        pw, array_agg(idx-1) as pos, 
-                        CASE WHEN position(q_norm IN normalize_arabic(e."Title_cleaned")) > 0 THEN 110 ELSE 50 END as scr
-                    FROM unnest(string_to_array(e."Title_cleaned", ' ')) WITH ORDINALITY AS u(pw, idx)
-                    WHERE pw <> '' 
-                    AND (
-                        position(normalize_arabic(pw) IN q_norm) > 0 
-                        OR position(q_norm IN normalize_arabic(pw)) > 0
-                        OR EXISTS (SELECT 1 FROM unnest(meaningful_words) mw WHERE normalize_arabic(pw) LIKE '%'||normalize_arabic(mw)||'%')
-                    )
-                    GROUP BY pw
-                ) match_info
-            ), '[]'::jsonb) as matches_json
+            -- Include both query_text AND meaningful_words for highlighting
+            CASE 
+                WHEN position(lower(query_text) IN lower(e."Title_cleaned")) > 0 
+                     OR position(query_normalized IN normalize_arabic(e."Title_cleaned")) > 0
+                THEN array_prepend(query_text, ARRAY(
+                    SELECT w FROM unnest(meaningful_words) w
+                    WHERE position(lower(w) IN lower(e."Title_cleaned")) > 0
+                       OR position(normalize_arabic(w) IN normalize_arabic(e."Title_cleaned")) > 0
+                       OR similarity(w, e."Title_cleaned") > 0.5
+                ))
+                ELSE ARRAY(
+                    SELECT w FROM unnest(meaningful_words) w
+                    WHERE position(lower(w) IN lower(e."Title_cleaned")) > 0
+                       OR position(normalize_arabic(w) IN normalize_arabic(e."Title_cleaned")) > 0
+                       OR similarity(w, e."Title_cleaned") > 0.5
+                )
+            END as matched_fragments
             
         FROM "Exact_search" e
-        WHERE position(lower(query_text) IN lower(e."Title_cleaned")) > 0 OR position(q_norm IN normalize_arabic(e."Title_cleaned")) > 0 OR EXISTS (SELECT 1 FROM unnest(meaningful_words) w WHERE position(lower(w) IN lower(e."Title_cleaned")) > 0 OR position(normalize_arabic(w) IN normalize_arabic(e."Title_cleaned")) > 0)
-        ORDER BY e.poem_id, field_score DESC
+        WHERE 
+            position(lower(query_text) IN lower(e."Title_cleaned")) > 0
+            OR position(query_normalized IN normalize_arabic(e."Title_cleaned")) > 0
+            OR similarity(query_text, e."Title_cleaned") > 0.5
+            OR EXISTS (
+                SELECT 1 FROM unnest(meaningful_words) w
+                WHERE position(lower(w) IN lower(e."Title_cleaned")) > 0
+                   OR position(normalize_arabic(w) IN normalize_arabic(e."Title_cleaned")) > 0
+                   OR similarity(w, e."Title_cleaned") > 0.4
+            )
+        ORDER BY e.poem_id, 
+                 (CASE WHEN position(lower(query_text) IN lower(e."Title_cleaned")) > 0 THEN 10.0 ELSE 0 END) DESC
     ),
     
     poem_matches AS (
@@ -198,38 +212,35 @@ BEGIN
                 ELSE 'no_match'
             END)::text as match_type,
             
-            -- [JSON] Poem highlighting
-            jsonb_build_object(
-                'row_id', e."Row_ID",
-                'matched_words', COALESCE((
-                    SELECT jsonb_agg(jsonb_build_object(
-                        'text', mi.pw,
-                        'positions', CASE WHEN array_length(mi.pos, 1) > 1 THEN (mi.pos[1])::text || '-' || (mi.pos[array_length(mi.pos, 1)])::text ELSE (mi.pos[1])::text END,
-                        'score', mi.scr
-                    ) ORDER BY mi.scr DESC)
-                    FROM (
-                        SELECT 
-                            pw, array_agg(idx-1) as pos,
-                            CASE 
-                                WHEN position(q_norm IN normalize_arabic(e."Poem_line_cleaned")) > 0 THEN 100
-                                WHEN (' '||normalize_arabic(pw)||' ') LIKE ('% '||q_norm||' %') THEN 100
-                                ELSE 50
-                            END as scr
-                        FROM unnest(string_to_array(e."Poem_line_cleaned", ' ')) WITH ORDINALITY AS u(pw, idx)
-                        WHERE pw <> '' 
-                        AND (
-                            (position(q_norm IN normalize_arabic(e."Poem_line_cleaned")) > 0 AND position(normalize_arabic(pw) IN q_norm) > 0)
-                            OR normalize_arabic(pw) LIKE '%' || q_norm || '%'
-                            OR EXISTS (SELECT 1 FROM unnest(meaningful_words) mw WHERE normalize_arabic(pw) LIKE '%'||normalize_arabic(mw)||'%')
-                        )
-                        AND (length(normalize_arabic(pw)) > 1) 
-                        GROUP BY pw
-                    ) mi
-                ), '[]'::jsonb)
-            ) as matches_json
+            -- Include both query_text AND meaningful_words for highlighting
+            CASE 
+                WHEN position(lower(query_text) IN lower(e."Poem_line_cleaned")) > 0 
+                     OR position(query_normalized IN normalize_arabic(e."Poem_line_cleaned")) > 0
+                THEN array_prepend(query_text, ARRAY(
+                    SELECT w FROM unnest(meaningful_words) w
+                    WHERE position(lower(w) IN lower(e."Poem_line_cleaned")) > 0
+                       OR position(normalize_arabic(w) IN normalize_arabic(e."Poem_line_cleaned")) > 0
+                       OR similarity(w, e."Poem_line_cleaned") > 0.6
+                ))
+                ELSE ARRAY(
+                    SELECT w FROM unnest(meaningful_words) w
+                    WHERE position(lower(w) IN lower(e."Poem_line_cleaned")) > 0
+                       OR position(normalize_arabic(w) IN normalize_arabic(e."Poem_line_cleaned")) > 0
+                       OR similarity(w, e."Poem_line_cleaned") > 0.6
+                )
+            END as matched_fragments
             
         FROM "Exact_search" e
-        WHERE position(lower(query_text) IN lower(e."Poem_line_cleaned")) > 0 OR position(q_norm IN normalize_arabic(e."Poem_line_cleaned")) > 0 OR EXISTS (SELECT 1 FROM unnest(meaningful_words) w WHERE position(lower(w) IN lower(e."Poem_line_cleaned")) > 0 OR position(normalize_arabic(w) IN normalize_arabic(e."Poem_line_cleaned")) > 0)
+        WHERE 
+            position(lower(query_text) IN lower(e."Poem_line_cleaned")) > 0
+            OR position(query_normalized IN normalize_arabic(e."Poem_line_cleaned")) > 0
+            OR similarity(query_text, e."Poem_line_cleaned") > 0.6
+            OR EXISTS (
+                SELECT 1 FROM unnest(meaningful_words) w
+                WHERE position(lower(w) IN lower(e."Poem_line_cleaned")) > 0
+                   OR position(normalize_arabic(w) IN normalize_arabic(e."Poem_line_cleaned")) > 0
+                   OR similarity(w, e."Poem_line_cleaned") > 0.6
+            )
     ),
     
     all_matches AS (
@@ -248,9 +259,21 @@ BEGIN
             array_agg(DISTINCT unnest_val) as match_locations,
             (array_agg(am.match_type ORDER BY am.score DESC))[1] as match_type,
             jsonb_build_object(
-                'title', COALESCE((SELECT matches_json FROM all_matches a2 WHERE a2.poem_id = am.poem_id AND 'title' = ANY(a2.loc) ORDER BY a2.score DESC LIMIT 1), '[]'::jsonb),
-                'poem_line', COALESCE((SELECT matches_json FROM all_matches a3 WHERE a3.poem_id = am.poem_id AND 'poem_line' = ANY(a3.loc) AND (a3.row_id = (array_agg(am.row_id ORDER BY CASE WHEN 'poem_line' = ANY(am.loc) THEN 1 ELSE 0 END DESC, am.score DESC))[1]) LIMIT 1), '{}'::jsonb)
-            ) as match
+                'title', COALESCE(
+                    (SELECT jsonb_build_object(
+                        'words', to_jsonb(am3.matched_fragments),
+                        'text', am3.title_raw
+                    ) FROM all_matches am3 WHERE am3.poem_id = am.poem_id AND 'title' = ANY(am3.match_location) LIMIT 1),
+                    '{"words":[], "text":""}'::jsonb
+                ),
+                'poem_line', COALESCE(
+                    (SELECT jsonb_build_object(
+                        'words', to_jsonb(am4.matched_fragments),
+                        'text', am4.poem_line_raw
+                    ) FROM all_matches am4 WHERE am4.poem_id = am.poem_id AND 'poem_line' = ANY(am4.match_location) LIMIT 1),
+                    '{"words":[], "text":""}'::jsonb
+                )
+            ) as highlights
         FROM all_matches am
         CROSS JOIN LATERAL unnest(am.loc) as unnest_val
         WHERE am.score >= min_score

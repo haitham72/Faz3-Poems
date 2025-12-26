@@ -115,6 +115,7 @@
         // 1. Extract Words to Highlight (Ignore Indices)
         let wordsToHighlight = new Set();
 
+<<<<<<< HEAD
         if (Array.isArray(matchData)) {
             // Title Format (Array of Objects)
             matchData.forEach(m => wordsToHighlight.add(normalizeForComparison(m.text)));
@@ -131,6 +132,17 @@
         // 2. Tokenize and Scan (Content-Based, not Index-Based)
         // Split by whitespace but keep delimiters to preserve formatting
         const tokens = rawText.split(/(\s+)/); 
+=======
+        // Sort by word count (phrases first: "محمد بن زايد" before "محمد")
+        const sortedWords = [...matchedWords].sort(
+          (a, b) => b.split(" ").length - a.split(" ").length
+        );
+
+        let textWords = rawText.split(" ");
+
+        sortedWords.forEach((searchPhrase) => {
+          const searchWords = searchPhrase.split(" ");
+>>>>>>> d0cb3c4 (dont do it)
 
         return tokens.map((token) => {
             if (!token.trim()) return token; // Preserve spaces/tabs
@@ -151,20 +163,41 @@
                     return `<mark>${token}</mark>`;
                 }
             }
+<<<<<<< HEAD
 
             return token;
         }).join("");
+=======
+          }
+        });
+
+        return textWords.join(" ");
+>>>>>>> d0cb3c4 (dont do it)
       }
 
       function displayResults(results, data) {
         const resultsDiv = document.getElementById("results");
+<<<<<<< HEAD
         let html = `
           <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
             <b>📊 النتائج: ${data.total_matches || results.length} قصيدة</b>
+=======
+
+        let html = `
+          <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div style="font-size: 20px; font-weight: bold;">
+              📊 النتائج: ${data.total_matches} قصيدة
+            </div>
+            <div style="margin-top: 10px; font-size: 16px;">
+              📝 مطابقات العنوان: ${data.title_matches} | 
+              ✍️ مطابقات البيت: ${data.poem_matches}
+            </div>
+>>>>>>> d0cb3c4 (dont do it)
           </div>
         `;
 
         results.forEach((result) => {
+<<<<<<< HEAD
           // No replace needed, regex split handles spaces
           const titleHighlighted = highlightText(
              result.title_raw, 
@@ -176,6 +209,21 @@
             result.poem_line_raw,
             result.match.poem_line,
             result.row_id
+=======
+          const poemFormatted = result.poem_line_raw.replace(
+            /\s{5,}/g,
+            "      "
+          );
+
+          const titleHighlighted = highlightText(
+            result.title_raw,
+            result.highlights.title || []
+          );
+
+          const poemHighlighted = highlightText(
+            poemFormatted,
+            result.highlights.poem_line || []
+>>>>>>> d0cb3c4 (dont do it)
           );
 
           html += `
@@ -184,8 +232,19 @@
               <div class="result-poem">${poemHighlighted}</div>
               <div class="result-meta">
                 <span class="meta-item score">نقاط: ${result.score}</span>
+<<<<<<< HEAD
                 <span class="meta-item">سطر: ${result.row_id}</span>
                 <span class="meta-item">${translateMatchType(result.match_type)}</span>
+=======
+                <span class="meta-item">رقم القصيدة: ${result.poem_id}</span>
+                <span class="meta-item">رقم السطر: ${result.row_id}</span>
+                <span class="meta-item">موقع: ${
+                  result.match_location.includes("title") ? "العنوان" : "البيت"
+                }</span>
+                <span class="meta-item">نوع: ${translateMatchType(
+                  result.match_type
+                )}</span>
+>>>>>>> d0cb3c4 (dont do it)
               </div>
             </div>
           `;

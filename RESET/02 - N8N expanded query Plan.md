@@ -62,6 +62,13 @@ json{
         "tag": "خالد بن محمد بن زايد",
         "confidence_score": 40, // score is very low as most likely user didn't mean this query, but its a proposed query
         "reason": "family_relation"
+      },
+      {
+        "query": "القيادة والزعماء", "المجد والعز",
+        "column": "مواضيع",
+        "tag": "القائد", //tag is proposed filter tag from N8N
+        "confidence_score": 50, // score is low as user didn't explicitly ask for these topics
+        "reason": "extracted_entities"
       }
     ],
     "indiviual_Limit": 10,
@@ -77,8 +84,10 @@ SELECT * FROM hybrid_search_v1_core('رئيس الدولة', 85);
 SELECT * FROM hybrid_search_v1_core('زايد', 60);
 SELECT * FROM hybrid_search_v1_core('نصير الدين', 60);
 SELECT * FROM hybrid_search_v1_core('خالد بن محمد بن زايد', 40);
+SELECT * FROM hybrid_search_v1_core('القيادة والزعماء', 50);
+SELECT * FROM hybrid_search_v1_core('المجد والعز', 50);
 -- ... etc
-## 5. Sample ROW from SQL Function Call
+## 5. Sample ROW from postgres table
 [
   {
     "id": 642,
@@ -132,7 +141,7 @@ SELECT * FROM hybrid_search_v1_core('خالد بن محمد بن زايد', 40);
   "poems": 43,
   "lines": 120,
   "words": 1240,
-  "tags": "بو خالد, محمد بن زايد, رئيس الدولة, زايد, نصير الدين, خالد بن محمد بن زايد",
+  "tags": "بو خالد, محمد بن زايد, رئيس الدولة, زايد, نصير الدين, خالد بن محمد بن زايد, القائد",
   "Exact_query_results": [
     {
       "poem_id": 44,
@@ -200,18 +209,33 @@ SELECT * FROM hybrid_search_v1_core('خالد بن محمد بن زايد', 40);
       "title_raw": "أمجاد الجدود",
       "poem_line_raw": "يـنصاك ياشـبل الأسـود العـنيده      يا ابن الكـريم ويا سلاله كريمه",
       "score": 60.0,
-      "match_location": ["poem_line", "شخص"],
-      "match_type": "entity_resolution", // matched via knowledge graph: 'ياشبل الاسود' -> 'mbz_001' -> 'محمد بن زايد'
-      "tag": "محمد بن زايد", //same as query tag from N8N
+      "match_location": ["poem_line", "شخص", "مواضيع"],
+      "match_type": "hybrid_match", // Combined entity_resolution and entity extraction
+      "tag": "محمد بن زايد, القائد", // Tags combined, notice how it's the same shared tag as the previous poem
       "match": {
-        "title": [], // no match hence the lower 60 score and not exact match
+        "title": [],
         "poem_line": {
           "row_id": 642,
           "matched_words": [
             {
               "text": "ياشبل الاسود",
-              "score": 60, //this score because it matched via 'شخص' column only
+              "score": 60,
               "positions": "[1-2]"
+            },
+            {
+              "text": "ابن الكريم", 
+              "score": 60,
+              "positions": "[5-6]"
+            },
+            {
+              "text": "القيادة والزعماء",
+              "score": 50, 
+              "positions": "metadata"
+            },
+            {
+              "text": "المجد والعز", 
+              "score": 50,
+              "positions": "metadata" 
             }
           ]
         }

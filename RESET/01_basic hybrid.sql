@@ -67,7 +67,7 @@ BEGIN
         FOREACH current_word IN ARRAY query_words
         LOOP
             IF NOT is_common_particle(current_word) 
-               AND normalize_arabic(current_word) NOT IN ('بن', 'ابن', 'بو', 'ابو', 'ال') 
+               AND normalize_arabic(current_word) NOT IN ('بن', 'ابن', 'ال') 
             THEN
                 meaningful_words := array_append(meaningful_words, current_word);
             END IF;
@@ -79,7 +79,6 @@ BEGIN
         
         all_tags := array_append(all_tags, current_tag);
         
-        -- Execute exact query search
         FOR result_row IN (
             SELECT * FROM process_single_query(
                 current_query, q_norm, meaningful_words, current_column, 
@@ -89,7 +88,6 @@ BEGIN
             temp_results := temp_results || jsonb_build_array(result_row.result_json);
             total_poems := total_poems + 1;
             total_lines := total_lines + 1;
-            -- Estimate words (approximate)
             total_words := total_words + array_length(string_to_array(result_row.poem_line_raw, ' '), 1);
         END LOOP;
     END IF;
@@ -116,7 +114,7 @@ BEGIN
             FOREACH current_word IN ARRAY query_words
             LOOP
                 IF NOT is_common_particle(current_word) 
-                   AND normalize_arabic(current_word) NOT IN ('بن', 'ابن', 'بو', 'ابو', 'ال') 
+                   AND normalize_arabic(current_word) NOT IN ('بن', 'ابن', 'ال') 
                 THEN
                     meaningful_words := array_append(meaningful_words, current_word);
                 END IF;
@@ -153,7 +151,7 @@ BEGIN
         CASE WHEN exact_q IS NOT NULL THEN 'exact' ELSE 'expanded' END::TEXT,
         COALESCE(exact_q->>'Exact_query', 'N/A')::TEXT,
         current_confidence,
-        10, -- entity_boost constant
+        10,
         array_to_string(all_tags, ', ')::TEXT,
         total_poems,
         total_lines,
@@ -485,3 +483,8 @@ BEGIN
     match_limit);
 END;
 $$;
+
+ALTER FUNCTION hybrid_search_v2_entity_aware(JSONB, INT, NUMERIC) SECURITY DEFINER;
+ALTER FUNCTION process_single_query(TEXT, TEXT, TEXT[], TEXT, TEXT, NUMERIC, INT, NUMERIC) SECURITY DEFINER;
+ALTER FUNCTION get_text_matches(TEXT, TEXT, TEXT[], INT, NUMERIC) SECURITY DEFINER;
+ALTER FUNCTION get_entity_matches(TEXT, TEXT[], TEXT, TEXT, NUMERIC, INT, NUMERIC) SECURITY DEFINER;

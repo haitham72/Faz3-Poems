@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>بحث هجين - Hybrid Search</title>
+    <title>Hybrid Search - Production</title>
     <style>
       * {
         margin: 0;
@@ -12,7 +12,7 @@
       }
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         min-height: 100vh;
         padding: 20px;
       }
@@ -20,11 +20,13 @@
         max-width: 900px;
         margin: 0 auto;
       }
+
+      /* Search Box */
       .search-box {
         background: white;
         padding: 30px;
         border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         margin-bottom: 30px;
       }
       h1 {
@@ -36,7 +38,6 @@
       .search-input-group {
         display: flex;
         gap: 10px;
-        margin-bottom: 15px;
       }
       input[type="text"] {
         flex: 1;
@@ -52,70 +53,75 @@
       }
       button {
         padding: 15px 30px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #667eea;
         color: white;
         border: none;
         border-radius: 8px;
         font-size: 18px;
         font-weight: bold;
         cursor: pointer;
-        transition: transform 0.2s;
       }
-      button:hover {
-        transform: translateY(-2px);
-      }
+
+      /* Results */
       .result-card {
         background: white;
         padding: 25px;
         border-radius: 12px;
         margin-bottom: 20px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        border-right: 5px solid #667eea;
       }
       .result-title {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: bold;
-        color: #667eea;
+        color: #2d3748;
         margin-bottom: 10px;
       }
       .result-poem {
         font-size: 18px;
-        color: #333;
+        color: #4a5568;
         line-height: 1.8;
         margin-bottom: 15px;
-        white-space: pre-wrap;
       }
+
+      /* Metadata Tags */
       .result-meta {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
-        font-size: 14px;
-        color: #666;
+        font-size: 0.85rem;
         padding-top: 15px;
         border-top: 1px solid #eee;
       }
-      .meta-item {
-        background: #f5f5f5;
-        padding: 5px 12px;
-        border-radius: 15px;
+      .tag {
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #edf2f7;
+        color: #4a5568;
+        font-weight: 500;
       }
-      .score {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      .tag.score {
+        background: #667eea;
         color: white;
-        font-weight: bold;
       }
+      .tag.source {
+        background: #feebc8;
+        color: #744210;
+      } /* For N8N Tags */
+
+      /* Highlighting */
       mark {
-        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
-        color: white;
-        padding: 0 4px;
-        border-radius: 4px;
+        background: linear-gradient(120deg, #ffd89b 0%, #19547b 100%);
+        background-size: 100% 40%;
+        background-repeat: no-repeat;
+        background-position: 0 90%;
+        color: inherit;
+        padding: 0 2px;
       }
-      .no-results,
+
       .loading {
         text-align: center;
-        padding: 40px;
-        color: white;
-        font-size: 18px;
+        padding: 20px;
         display: none;
       }
       .show {
@@ -126,86 +132,46 @@
   <body>
     <div class="container">
       <div class="search-box">
-        <h1>🔍 البحث الهجين</h1>
+        <h1>🔍 محرك البحث الهجين</h1>
         <div class="search-input-group">
           <input
             type="text"
             id="searchQuery"
-            placeholder="ابحث في القصائد..."
+            placeholder="أدخل كلمة البحث..."
           />
           <button onclick="searchPoems()">بحث</button>
         </div>
       </div>
       <div class="loading" id="loading">⏳ جاري البحث...</div>
-      <div class="results" id="results"></div>
+      <div id="results"></div>
     </div>
 
     <script>
-      document
-        .getElementById("searchQuery")
-        .addEventListener("keypress", function (e) {
-          if (e.key === "Enter") searchPoems();
-        });
-
-      async function searchPoems() {
-        const query = document.getElementById("searchQuery").value.trim();
-        const resultsDiv = document.getElementById("results");
-        const loadingDiv = document.getElementById("loading");
-
-        if (!query) return alert("الرجاء إدخال كلمة البحث");
-
-        loadingDiv.classList.add("show");
-        resultsDiv.innerHTML = "";
-
-        try {
-          const response = await fetch("/api/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: query, limit: 100 }),
-          });
-          const data = await response.json();
-          loadingDiv.classList.remove("show");
-
-          if (data.results && data.results.length > 0) {
-            displayResults(data.results, data);
-          } else {
-            resultsDiv.innerHTML =
-              '<div class="no-results">😔 لم يتم العثور على نتائج</div>';
-            resultsDiv.classList.add("show");
-          }
-        } catch (error) {
-          loadingDiv.classList.remove("show");
-          resultsDiv.innerHTML =
-            '<div class="no-results">❌ حدث خطأ في البحث</div>';
-          resultsDiv.classList.add("show");
-        }
-      }
-
-      // --- ROBUST NORMALIZATION ---
-      // Ensures "إبن" matches "ابن", "زايــد" matches "زايد", etc.
+      // --- YOUR ORIGINAL NORMALIZATION LOGIC (PRESERVED) ---
       function normalizeForComparison(text) {
         if (!text) return "";
         return text
-          .replace(/[^\u0600-\u06FFa-zA-Z]/g, "") // Strip Punctuation, Brackets, Spaces
-          .replace(/[\u0640]/g, "") // Strip Tatweel (Kashida)
-          .replace(/[أإآ]/g, "ا") // Unify Alif
-          .replace(/[ى]/g, "ي") // Unify Yaa
-          .replace(/[ة]/g, "ه"); // Unify Ta Marbuta
+          .replace(/[^\u0600-\u06FFa-zA-Z]/g, "") // Strip symbols
+          .replace(/[\u0640]/g, "") // Strip Tatweel
+          .replace(/[أإآ]/g, "ا")
+          .replace(/[ى]/g, "ي")
+          .replace(/[ة]/g, "ه");
       }
 
-      // --- TEXT SCANNING HIGHLIGHTER (Index-Free) ---
+      // --- YOUR ORIGINAL HIGHLIGHT LOGIC (PRESERVED) ---
+      // Uses client-side logic to scan text, providing the "Visual Fallback" you wanted
       function highlightText(rawText, matchData, displayRowId) {
         let wordsToHighlight = new Set();
 
-        // 1. Extract Words
+        // 1. Extract Words from JSON
         if (Array.isArray(matchData)) {
-          // Title Format
+          // Title Format (Array of objects)
           matchData.forEach((m) =>
             wordsToHighlight.add(normalizeForComparison(m.text))
           );
         } else if (matchData && matchData.matched_words) {
-          // Poem Format (Context Check)
-          // If displayRowId is null, we skip the check (used for Title Fallback)
+          // Poem Format (Object with matched_words array)
+          // Context safety check: Only highlight if row_ids match (or if checking title)
           if (
             displayRowId === null ||
             (matchData.row_id && matchData.row_id === displayRowId)
@@ -218,65 +184,75 @@
 
         if (wordsToHighlight.size === 0) return rawText;
 
-        // 2. Tokenize and Scan
-        // Split by whitespace but keep delimiters to preserve formatting
+        // 2. Tokenize and Reconstruct (Safe HTML generation)
         const tokens = rawText.split(/(\s+)/);
-
         return tokens
           .map((token) => {
-            if (!token.trim()) return token; // Preserve spaces/tabs
-
+            if (!token.trim()) return token;
             const tokenNorm = normalizeForComparison(token);
 
-            // A. Direct Match
-            if (wordsToHighlight.has(tokenNorm)) {
-              return `<mark>${token}</mark>`;
-            }
+            // Direct Match or Substring Match (Robust)
+            if (wordsToHighlight.has(tokenNorm)) return `<mark>${token}</mark>`;
 
-            // B. Substring Fallback (e.g. "وبمحمد")
             for (let target of wordsToHighlight) {
-              // Only match substrings if target is significant (length > 2)
-              if (target.length > 2 && tokenNorm.includes(target)) {
+              if (target.length > 2 && tokenNorm.includes(target))
                 return `<mark>${token}</mark>`;
-              }
             }
-
             return token;
           })
           .join("");
       }
 
-      function displayResults(results, data) {
+      async function searchPoems() {
+        const query = document.getElementById("searchQuery").value.trim();
         const resultsDiv = document.getElementById("results");
-        let html = `
-          <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <b>📊 النتائج: ${data.total_matches || results.length} قصيدة</b>
-          </div>
-        `;
+        const loadingDiv = document.getElementById("loading");
 
+        if (!query) return;
+
+        loadingDiv.classList.add("show");
+        resultsDiv.innerHTML = "";
+
+        try {
+          // In production, this calls N8N. Here we simulate the response structure.
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query }),
+          });
+          const data = await response.json();
+          loadingDiv.classList.remove("show");
+
+          if (data.results) displayResults(data.results);
+        } catch (error) {
+          console.error(error);
+          loadingDiv.classList.remove("show");
+        }
+      }
+
+      function displayResults(results) {
+        const resultsDiv = document.getElementById("results");
+
+        if (results.length === 0) {
+          resultsDiv.innerHTML =
+            '<div style="text-align:center">لا توجد نتائج</div>';
+          return;
+        }
+
+        let html = "";
         results.forEach((result) => {
           // --- VISUAL FALLBACK LOGIC ---
-          // If title match is empty, borrow poem match words to check title visually
+          // If title match is empty, try to use poem words to highlight title
           let titleMatches = result.match.title;
-
           if (
             (!titleMatches || titleMatches.length === 0) &&
-            result.match.poem_line &&
-            result.match.poem_line.matched_words
+            result.match.poem_line
           ) {
             titleMatches = result.match.poem_line;
           }
-          // -----------------------------
 
-          // Pass 'null' as row_id for title to allow the fallback object
-          const titleHighlighted = highlightText(
-            result.title_raw,
-            titleMatches,
-            null
-          );
-
-          // Pass actual row_id for poem to enforce context safety
-          const poemHighlighted = highlightText(
+          const titleHtml = highlightText(result.title_raw, titleMatches, null);
+          const poemHtml = highlightText(
             result.poem_line_raw,
             result.match.poem_line,
             result.row_id
@@ -284,17 +260,27 @@
 
           html += `
             <div class="result-card">
-              <div class="result-title">${titleHighlighted}</div>
-              <div class="result-poem">${poemHighlighted}</div>
+              <div class="result-title">${titleHtml}</div>
+              <div class="result-poem">${poemHtml}</div>
               <div class="result-meta">
-                <span class="meta-item score">نقاط: ${result.score}</span>
-                <span class="meta-item">سطر: ${result.row_id}</span>
-                <span class="meta-item">${translateMatchType(
-                  result.match_type
+                <span class="tag score">Score: ${Math.round(
+                  result.score
                 )}</span>
+                <span class="tag">Line: ${result.row_id}</span>
+                ${
+                  result.query_tag
+                    ? `<span class="tag source">Tag: ${result.query_tag}</span>`
+                    : ""
+                }
+                ${
+                  result.match_type
+                    ? `<span class="tag">${translateMatchType(
+                        result.match_type
+                      )}</span>`
+                    : ""
+                }
               </div>
-            </div>
-          `;
+            </div>`;
         });
 
         resultsDiv.innerHTML = html;
@@ -302,12 +288,10 @@
 
       function translateMatchType(type) {
         const map = {
-          exact_phrase: "مطابقة تامة (100)",
-          extended_phrase: "عبارة ممتدة (95)",
-          compound_words: "كلمات مركبة (70)",
+          exact_phrase: "مطابقة تامة",
           partial_match: "مطابقة جزئية",
-          partial_words: "كلمات مفردة (50)",
-          no_match: "بدون مطابقة",
+          partial_words: "كلمات متفرقة",
+          consecutive_words: "كلمات متتالية",
         };
         return map[type] || type;
       }

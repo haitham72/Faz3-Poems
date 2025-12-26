@@ -1,0 +1,48 @@
+[33mabc3b1b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain-branch[m[33m, [m[1;31morigin/main-branch[m[33m)[m N8N plann ready to share with claud
+[33m8ebc169[m plan for other columns
+[33m266b614[m finalized exactMatch - TODO expanded query
+[33md2929ed[m perfect exactMatch - TODO expanded query
+[33m447e311[m last claud in match
+[33mf261c5d[m exact match working
+[33m44a1bb5[m HARD RESET -- exact match on clean title and lines
+[33m6f92a88[m FULL RESET
+[33maab039b[m edge function for exactMatch before testin
+[33m7003e11[m exact word search hybrid search working - next edge function - next N8N system prompt
+[33mc07dd42[m entity enhanced
+[33m78276d7[m upload exact search for supabase - entity enhanced
+[33m6d04114[m uploaded final exact + semantic
+[33m62cfe24[m apis and edge functions
+[33m3a505fc[m Merge branch 'main' of https://github.com/haitham72/Faz3-Poems
+[33me051ccd[m 07 - datascience i\on exact word
+[33me895617[m entities reviewed - TODO test quality on sql
+[33m310ea3e[m final files to review - ANCHOR BACKUP
+[33m9c90eea[m all data inserted in tables-ready for review
+[33m164e009[m final data transformation  - ready for testing quality
+[33md733768[m final - html only -> app
+[33m125e8c7[m full cycle for fine tune
+[33m1410d2e[m v2 implemented, waiting for edge
+[33m9f9c7be[m backup
+[33ma4ce12a[m docuemnts-semantic
+[33m15c67b8[m table name chantge
+[33m6b5f306[m starting to work on semantic - table upload
+[33me266c05[m working online and offline TODO hybrid search for local
+[33m829c8ba[m merged files frofm - claud that is not working, musk ask for files again
+[33mab9a93b[m pushin gto finalize the semantic
+[33m9856f56[m exact word-supabase + local
+[33m224ebe5[m amazing live-search final
+[33me8ec765[m live search is exquisite
+[33m75fb546[m finished all dataset - maybe will go back and finetune
+[33m5ef0c34[m fuzzy-exact search-full highlights
+[33m599d23e[m fuzzy
+[33m9f90ded[m english -> arabic highlight
+[33m60e95e7[m Merge branch 'main' of https://github.com/haitham72/Faz3-Poems
+[33mfc42685[m amazing local fuzzy
+[33m87c5c11[m garabge collection
+[33md424f19[m re importing of dataset and cleaning it
+[33m093b3a3[m finalize the search
+[33m840a1a0[m backup for final dataset
+[33m5c02fee[m edge func _updated for more meta
+[33m7f02e47[m video - thumbnail
+[33m444d324[m final - backend
+[33m990cc07[m added N8N
+[33m503c54d[m Initial clean upload without large files

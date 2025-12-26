@@ -1,0 +1,435 @@
+[
+  {
+    "poem_id": 135,
+    "row_id": 1865,
+    "title_raw": "عوّضـوك بغـيابي",
+    "poem_line_raw": "بس يكـفي كـفـايـه لا تـمادى عرفـتك      خايـن الـحب مالـه في فـوادي حـنيني",
+    "score": "100.0",
+    "match_location": [
+      "poem_line",
+      "title"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 247,
+    "row_id": 3436,
+    "title_raw": "رد حمدان بن محمد على أبيات:ضاحي خلفان",
+    "poem_line_raw": "مرحبا ياللي فهم قبل الإشاره      ضاحي اللي مركزه فوق القمم",
+    "score": "100.0",
+    "match_location": [
+      "title"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ],
+      "poem_line": []
+    }
+  },
+  {
+    "poem_id": 14,
+    "row_id": 159,
+    "title_raw": "ديــوان العــرب",
+    "poem_line_raw": "ليس مثـلي من قصيده ترفّـع مسـتواه      لو من الـمرجان واللول صغـت ابياتها",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 23,
+    "row_id": 355,
+    "title_raw": "إيمـــان الشـــعوب",
+    "poem_line_raw": "يمـوت الرَّجْـل فـينا وَجْـهَـهَ ابْـيض واللـيـالي سـود      حَـيـاة الـرجْــل مـن دون الـمَـعَــزَّه مـا لـهـا خَــانـه",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 33,
+    "row_id": 528,
+    "title_raw": "أزعـل عـليــك",
+    "poem_line_raw": "إنطبع في خفوقي إسمك بحرف لام      وفي عيوني عشقتك وفي حياتي أبيك",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 48,
+    "row_id": 702,
+    "title_raw": "إنتـبــاه",
+    "poem_line_raw": "والناس ترحـل بس وجـه الله يْـدوم      والشح في قـلوب المهابيـل عاهه",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 61,
+    "row_id": 868,
+    "title_raw": "الغـول و العنـقاء",
+    "poem_line_raw": "ترى مـصابيح السحر تحت يدي مـفروكه      وانا ماني بْـمصباح لجل انّك تجي تفركني",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 62,
+    "row_id": 874,
+    "title_raw": "الفصـول الأربعـة",
+    "poem_line_raw": "تـنتـابني ذكـراك مابين الوعـي واللاوعـي      ما كنـّك الاّ بحر حلمي والمشاعر الاشرعه",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 78,
+    "row_id": 1070,
+    "title_raw": "تعــال واسـألنـي",
+    "poem_line_raw": "ما ابيك لا انته ولاغـيرك يـجاملني      أنا اكبر مْن النفـوس وْمن محاباها",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 87,
+    "row_id": 1217,
+    "title_raw": "حـارث البـحـر",
+    "poem_line_raw": "يصـوم مْن القصايـد خاطرك لكن متى ما صام      ما يفـطـر غـير بابـياتٍ هـل الطـولات تـفهـمها",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 90,
+    "row_id": 1245,
+    "title_raw": "حــرّاس قلــبي",
+    "poem_line_raw": "النـاس أجـناس .. ولكـن أبي نـاس      أخـط شاربـهـم مثـل خـطّـت المــوس",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": [
+            4
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 91,
+    "row_id": 1251,
+    "title_raw": "حـصـّــة",
+    "poem_line_raw": "روّضت أحاسيسي من الفرحه وهي تجمح جماح      وْصَـوَّرْتها لك في قـصـيده ماتموت أبياتها",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 98,
+    "row_id": 1343,
+    "title_raw": "دراهـم",
+    "poem_line_raw": "إنت القمر والشـَّمس والا احَداهم      إنـْت الـورود الـيـانـعـه واليـنـابـيـــــع",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 101,
+    "row_id": 1370,
+    "title_raw": "دمـوع الـمـحـبّـين",
+    "poem_line_raw": "أبي أشوف العـيد في مقـلتـيـني      وآركـّـب لقـلبي جـناحـين وآطـير",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": [
+            0
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 102,
+    "row_id": 1387,
+    "title_raw": "خــير الكــلام",
+    "poem_line_raw": "أنا سـدّي حـفـظ سـر الكـلام ولا أحـب آبـيـح      وعـذالي تعـرف ش قيمتي في روح مغـبونه",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 106,
+    "row_id": 1522,
+    "title_raw": "رَجُـل مـثـالـي",
+    "poem_line_raw": "لكـن نظـرات أفـكـاري بعـيده      أبـي ذكـرٍ يـسـمّى لي لحـالي",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": [
+            9
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 116,
+    "row_id": 1660,
+    "title_raw": "شـاعـر مشـاعـر",
+    "poem_line_raw": "إبتسم لك وابتسم لي وبس هذا اللي أبيه      لا تخلّي الحب يذبح شاعرك ويموت فيك",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 126,
+    "row_id": 1736,
+    "title_raw": "ضـرس و نــاب",
+    "poem_line_raw": "والله انها صنعة الخلاّق في بعض الخليقه      واعـذابي لو تـشوف جروح قلبي وا عذابي",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 132,
+    "row_id": 1823,
+    "title_raw": "عـذروبها",
+    "poem_line_raw": "طلـّت وجوّي بالفرح والسعد هَل      واستانـست عيني بشوف المحابـيب",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  },
+  {
+    "poem_id": 133,
+    "row_id": 1834,
+    "title_raw": "على الخـطا",
+    "poem_line_raw": "ما ابيك والله صرت ما ابيك      لالا نـجـيــك وْ لا تـجـيـنـا",
+    "score": "95.0",
+    "match_location": [
+      "poem_line"
+    ],
+    "match_type": "exact_phrase",
+    "match": {
+      "title": [],
+      "poem_line": [
+        {
+          "text": "ابي",
+          "score": 100,
+          "positions": []
+        }
+      ]
+    }
+  }
+]

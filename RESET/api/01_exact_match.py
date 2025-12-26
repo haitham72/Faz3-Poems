@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return send_file('../01_exact_match.html')
+    return send_file('../test.html')
 
 DB_CONFIG = {
     'host': 'aws-1-ap-south-1.pooler.supabase.com',

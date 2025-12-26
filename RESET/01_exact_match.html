@@ -1,175 +1,496 @@
+<!-- prettier-ignore-start -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>بحث هجين - Hybrid Search</title>
+    <title>بحث ذكي - Entity-Aware Search</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh; padding: 20px;
+        min-height: 100vh;
+        padding: 20px;
       }
-      .container { max-width: 900px; margin: 0 auto; }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
       .search-box {
-        background: white; padding: 30px; border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); margin-bottom: 30px;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin-bottom: 30px;
       }
-      h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 2em; }
-      .search-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 2em;
+      }
+      .search-input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
       input[type="text"] {
-        flex: 1; padding: 15px; font-size: 18px; border: 2px solid #ddd;
-        border-radius: 8px; outline: none; transition: border-color 0.3s;
+        flex: 1;
+        padding: 15px;
+        font-size: 18px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.3s;
       }
-      input[type="text"]:focus { border-color: #667eea; }
+      input[type="text"]:focus {
+        border-color: #667eea;
+      }
       button {
-        padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white; border: none; border-radius: 8px; font-size: 18px;
-        font-weight: bold; cursor: pointer; transition: transform 0.2s;
+        padding: 15px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
       }
-      button:hover { transform: translateY(-2px); }
+      button:hover {
+        transform: translateY(-2px);
+      }
+
+      /* Summary Stats */
+      .summary-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+      }
+      .stat-item {
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+      }
+      .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      /* Tag Pills */
+      .tags-container {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .tag-pill {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* Result Cards */
       .result-card {
-        background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); transition: transform 0.2s;
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+        border-right: 5px solid #667eea;
       }
-      .result-title { font-size: 24px; font-weight: bold; color: #667eea; margin-bottom: 10px; }
-      .result-poem { font-size: 18px; color: #333; line-height: 1.8; margin-bottom: 15px; white-space: pre-wrap; }
+      .result-card:hover {
+        transform: translateX(-5px);
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .result-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #667eea;
+        flex: 1;
+      }
+      .result-score {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .result-poem {
+        font-size: 18px;
+        color: #333;
+        line-height: 2;
+        margin-bottom: 15px;
+        white-space: pre-wrap;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+      }
+
       .result-meta {
-        display: flex; gap: 10px; flex-wrap: wrap; font-size: 14px; color: #666;
-        padding-top: 15px; border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: #666;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
       }
-      .meta-item { background: #f5f5f5; padding: 5px 12px; border-radius: 15px; }
-      .score { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; }
+      .meta-item {
+        background: #f5f5f5;
+        padding: 5px 12px;
+        border-radius: 15px;
+      }
+      .meta-tag {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        color: #333;
+        font-weight: 600;
+      }
+      .meta-location {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        color: #333;
+        font-weight: 600;
+      }
+
       mark {
         background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
-        color: white; padding: 0 4px; border-radius: 4px;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
       }
-      .no-results, .loading { text-align: center; padding: 40px; color: white; font-size: 18px; display: none; }
-      .show { display: block; }
+
+      .no-results,
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: white;
+        font-size: 18px;
+        display: none;
+      }
+      .show {
+        display: block;
+      }
+
+      /* Skeleton Loading */
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          #f0f0f0 25%,
+          #e0e0e0 50%,
+          #f0f0f0 75%
+        );
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+      .skeleton-title {
+        height: 30px;
+        width: 60%;
+        margin-bottom: 15px;
+      }
+      .skeleton-poem {
+        height: 80px;
+        width: 100%;
+        margin-bottom: 15px;
+      }
+      .skeleton-meta {
+        height: 25px;
+        width: 40%;
+      }
+
+      @keyframes loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="search-box">
-        <h1>🔍 البحث الهجين</h1>
+        <h1>🔍 البحث الذكي بالكيانات</h1>
         <div class="search-input-group">
-          <input type="text" id="searchQuery" placeholder="ابحث في القصائد..." />
+          <input
+            type="text"
+            id="searchQuery"
+            placeholder="ابحث عن شخص، مكان، حدث..."
+          />
           <button onclick="searchPoems()">بحث</button>
         </div>
       </div>
-      <div class="loading" id="loading">⏳ جاري البحث...</div>
+
+      <div class="loading" id="loading">⏳ جاري البحث الذكي...</div>
+
+      <!-- Summary Stats -->
+      <div id="summaryContainer" style="display: none"></div>
+
+      <!-- Tags -->
+      <div id="tagsContainer" style="display: none"></div>
+
+      <!-- Results -->
       <div class="results" id="results"></div>
     </div>
 
     <script>
-      document.getElementById("searchQuery").addEventListener("keypress", function (e) {
-        if (e.key === "Enter") searchPoems();
-      });
+      const CONFIG = {
+        SUPABASE_URL: "https://uffjlburuvsnstvgyito.supabase.co",
+        SUPABASE_ANON_KEY:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MTczMTcsImV4cCI6MjA4MjA5MzMxN30.cywWITSP-aJfuXlzyBYHf9Ipnhu-6_mVCZ30h3b1-38",
+        N8N_WEBHOOK_URL: "https://ihisam002.app.n8n.cloud/webhook/N8N",
+      };
+
+      document
+        .getElementById("searchQuery")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") searchPoems();
+        });
 
       async function searchPoems() {
-        const query = document.getElementById("searchQuery").value.trim();
         const resultsDiv = document.getElementById("results");
         const loadingDiv = document.getElementById("loading");
-
-        if (!query) return alert("الرجاء إدخال كلمة البحث");
+        const summaryDiv = document.getElementById("summaryContainer");
+        const tagsDiv = document.getElementById("tagsContainer");
 
         loadingDiv.classList.add("show");
-        resultsDiv.innerHTML = "";
-        
+        resultsDiv.innerHTML = createSkeletonCards(3);
+
         try {
-          const response = await fetch("/api/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: query, limit: 100 }),
-          });
-          const data = await response.json();
+          // HARDCODED TEST - bypass N8N completely
+          const hardcodedPayload = {
+            N8N_query: {
+              Exact_query: "بو خالد",
+              column: "شخص",
+              tag: "بو خالد",
+              confidence_score: 100,
+              expanded_queries: [
+                {
+                  query: "محمد بن زايد",
+                  column: "شخص",
+                  tag: "محمد بن زايد",
+                  confidence_score: 95,
+                  reason: "related_entity",
+                },
+              ],
+              individual_Limit: 10,
+              total_limit: 50,
+            },
+          };
+
+          console.log(
+            "📤 Calling PostgreSQL with hardcoded payload:",
+            hardcodedPayload
+          );
+          const payload_key = "n8n_payload";
+          const limit_key = "total_limit";
+          const score_key = "min_score";
+
+          const pgResponse = await fetch(
+            `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v2_entity_aware`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: CONFIG.SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({
+                [payload_key]: hardcodedPayload,
+                [limit_key]: 50,
+                [score_key]: 0.3,
+              }),
+            }
+          );
+
+          if (!pgResponse.ok) {
+            throw new Error(`PostgreSQL error: ${pgResponse.status}`);
+          }
+
+          const pgData = await pgResponse.json();
+          console.log("📥 PostgreSQL Response:", pgData);
+
           loadingDiv.classList.remove("show");
 
-          if (data.results && data.results.length > 0) {
-            displayResults(data.results, data);
+          if (pgData && pgData.length > 0) {
+            const data = pgData[0];
+            const results = data.results;
+            console.log("🎯 Results:", results);
+
+            if (results && results.length > 0) {
+              displaySummary(data);
+              displayTags(data.tags);
+              displayResults(results);
+            } else {
+              resultsDiv.innerHTML =
+                '<div class="no-results">😔 لم يتم العثور على نتائج - results is null or empty</div>';
+            }
           } else {
-            resultsDiv.innerHTML = '<div class="no-results">😔 لم يتم العثور على نتائج</div>';
-            resultsDiv.classList.add("show");
+            resultsDiv.innerHTML =
+              '<div class="no-results">😔 pgData is empty</div>';
           }
         } catch (error) {
+          console.error("❌ Search error:", error);
           loadingDiv.classList.remove("show");
-          resultsDiv.innerHTML = '<div class="no-results">❌ حدث خطأ في البحث</div>';
-          resultsDiv.classList.add("show");
+          resultsDiv.innerHTML = `<div class="no-results">❌ حدث خطأ: ${error.message}</div>`;
         }
       }
+      function createSkeletonCards(count) {
+        let html = "";
+        for (let i = 0; i < count; i++) {
+          html += `
+                    <div class="result-card">
+                        <div class="skeleton skeleton-title"></div>
+                        <div class="skeleton skeleton-poem"></div>
+                        <div class="skeleton skeleton-meta"></div>
+                    </div>
+                `;
+        }
+        return html;
+      }
 
-      // --- AGGRESSIVE NORMALIZATION FOR COMPARISON ---
-      // Used to match "إبن" with "ابن" or "(محمد" with "محمد"
+      function displaySummary(data) {
+        const summaryDiv = document.getElementById("summaryContainer");
+        summaryDiv.innerHTML = `
+                <div class="summary-card">
+                    <div class="stat-item">
+                        <div class="stat-value">${data.poems || 0}</div>
+                        <div class="stat-label">قصيدة</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.lines || 0}</div>
+                        <div class="stat-label">بيت</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.words || 0}</div>
+                        <div class="stat-label">كلمة</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.results.length}</div>
+                        <div class="stat-label">نتيجة</div>
+                    </div>
+                </div>
+            `;
+        summaryDiv.style.display = "block";
+      }
+
+      function displayTags(tagsString) {
+        if (!tagsString) return;
+
+        const tagsDiv = document.getElementById("tagsContainer");
+        const tags = tagsString
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t);
+
+        if (tags.length === 0) return;
+
+        tagsDiv.innerHTML = `
+                <div class="tags-container">
+                    ${tags
+                      .map((tag) => `<span class="tag-pill">${tag}</span>`)
+                      .join("")}
+                </div>
+            `;
+        tagsDiv.style.display = "block";
+      }
+
       function normalizeForComparison(text) {
         if (!text) return "";
         return text
-            .replace(/[^\u0600-\u06FFa-zA-Z]/g, '') // Strip Punctuation/Brackets/Spaces
-            .replace(/[\u0640]/g, "") // Strip Tatweel
-            .replace(/[أإآ]/g, "ا")   // Unify Alif
-            .replace(/[ى]/g, "ي")     // Unify Yaa
-            .replace(/[ة]/g, "ه");    // Unify Ta Marbuta
+          .replace(/[^\u0600-\u06FFa-zA-Z]/g, "")
+          .replace(/[\u0640]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/[ى]/g, "ي")
+          .replace(/[ة]/g, "ه");
       }
 
       function highlightText(rawText, matchData, displayRowId) {
-        // 1. Extract Words to Highlight (Ignore Indices)
         let wordsToHighlight = new Set();
 
         if (Array.isArray(matchData)) {
-            // Title Format (Array of Objects)
-            matchData.forEach(m => wordsToHighlight.add(normalizeForComparison(m.text)));
+          matchData.forEach((m) => {
+            if (m.text) wordsToHighlight.add(normalizeForComparison(m.text));
+          });
         } else if (matchData && matchData.matched_words) {
-            // Poem Format (Context Check)
-            if (matchData.row_id && matchData.row_id !== displayRowId) return rawText;
-            matchData.matched_words.forEach(m => wordsToHighlight.add(normalizeForComparison(m.text)));
-        } else {
+          if (matchData.row_id && matchData.row_id !== displayRowId)
             return rawText;
+          matchData.matched_words.forEach((m) => {
+            if (m.text && m.positions !== "metadata") {
+              wordsToHighlight.add(normalizeForComparison(m.text));
+            }
+          });
+        } else {
+          return rawText;
         }
 
         if (wordsToHighlight.size === 0) return rawText;
 
-        // 2. Tokenize and Scan (Content-Based, not Index-Based)
-        // Split by whitespace but keep delimiters to preserve formatting
-        const tokens = rawText.split(/(\s+)/); 
+        const tokens = rawText.split(/(\s+)/);
+        return tokens
+          .map((token) => {
+            if (!token.trim()) return token;
 
-        return tokens.map((token) => {
-            if (!token.trim()) return token; // Preserve spaces/tabs
-
-            // Normalize the token from the raw text (e.g., removes '(' from '(محمد')
             const tokenNorm = normalizeForComparison(token);
 
-            // Check if this token matches any of our target words
             if (wordsToHighlight.has(tokenNorm)) {
-                return `<mark>${token}</mark>`;
-            } 
-            
-            // Fallback: Check for substring containment (for cases like "وبمحمد")
-            // Iterate through our target words to see if one is inside this token
+              return `<mark>${token}</mark>`;
+            }
+
             for (let target of wordsToHighlight) {
-                // Only match substrings if target is significant (length > 2)
-                if (target.length > 2 && tokenNorm.includes(target)) {
-                    return `<mark>${token}</mark>`;
-                }
+              if (target.length > 2 && tokenNorm.includes(target)) {
+                return `<mark>${token}</mark>`;
+              }
             }
 
             return token;
-        }).join("");
+          })
+          .join("");
       }
 
-      function displayResults(results, data) {
+      function displayResults(results) {
         const resultsDiv = document.getElementById("results");
-        let html = `
-          <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <b>📊 النتائج: ${data.total_matches || results.length} قصيدة</b>
-          </div>
-        `;
+        let html = "";
 
         results.forEach((result) => {
-          // No replace needed, regex split handles spaces
           const titleHighlighted = highlightText(
-             result.title_raw, 
-             result.match.title, 
-             null
+            result.title_raw,
+            result.match.title,
+            null
           );
 
           const poemHighlighted = highlightText(
@@ -178,17 +499,40 @@
             result.row_id
           );
 
+          // Extract metadata indicators
+          const hasMetadata =
+            result.match.poem_line?.matched_words?.some(
+              (w) => w.positions === "metadata"
+            ) || false;
+
           html += `
-            <div class="result-card">
-              <div class="result-title">${titleHighlighted}</div>
-              <div class="result-poem">${poemHighlighted}</div>
-              <div class="result-meta">
-                <span class="meta-item score">نقاط: ${result.score}</span>
-                <span class="meta-item">سطر: ${result.row_id}</span>
-                <span class="meta-item">${translateMatchType(result.match_type)}</span>
-              </div>
-            </div>
-          `;
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="result-title">${titleHighlighted}</div>
+                            <div class="result-score">${result.score}</div>
+                        </div>
+                        <div class="result-poem">${poemHighlighted}</div>
+                        <div class="result-meta">
+                            <span class="meta-item">سطر: ${result.row_id}</span>
+                            <span class="meta-item meta-location">
+                                ${result.match_location.join(" + ")}
+                            </span>
+                            <span class="meta-item">${translateMatchType(
+                              result.match_type
+                            )}</span>
+                            ${
+                              result.tag
+                                ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>`
+                                : ""
+                            }
+                            ${
+                              hasMetadata
+                                ? '<span class="meta-item" style="background: #ffe5b4;">📊 من البيانات الوصفية</span>'
+                                : ""
+                            }
+                        </div>
+                    </div>
+                `;
         });
 
         resultsDiv.innerHTML = html;
@@ -196,12 +540,14 @@
 
       function translateMatchType(type) {
         const map = {
-          exact_phrase: "مطابقة تامة (100)",
-          extended_phrase: "عبارة ممتدة (95)",
-          compound_words: "كلمات مركبة (70)",
+          exact_phrase: "مطابقة تامة",
           partial_match: "مطابقة جزئية",
-          partial_words: "كلمات مفردة (50)",
-          no_match: "بدون مطابقة"
+          consecutive_words: "كلمات متتالية",
+          all_words_scattered: "كلمات متفرقة",
+          partial_words: "كلمات مفردة",
+          entity_match: "مطابقة كيان",
+          hybrid_match: "مطابقة هجينة",
+          no_match: "بدون مطابقة",
         };
         return map[type] || type;
       }

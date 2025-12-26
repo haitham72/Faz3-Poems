@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>بحث القصائد - Poetry Search</title>
+    <title>بحث هجين - Hybrid Search</title>
     <style>
       * {
         margin: 0;
@@ -113,6 +113,7 @@
         color: #333;
         line-height: 1.8;
         margin-bottom: 15px;
+        white-space: pre-wrap;
       }
 
       .result-meta {
@@ -134,6 +135,14 @@
       .score {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        font-weight: bold;
+      }
+
+      mark {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
         font-weight: bold;
       }
 
@@ -162,7 +171,7 @@
   <body>
     <div class="container">
       <div class="search-box">
-        <h1>🔍 بحث في ديوان الشعر</h1>
+        <h1>🔍 البحث الهجين - Hybrid Search</h1>
         <div class="search-input-group">
           <input
             type="text"
@@ -179,7 +188,6 @@
     </div>
 
     <script>
-      // Enter key to search
       document
         .getElementById("searchQuery")
         .addEventListener("keypress", function (e) {
@@ -196,13 +204,11 @@
           return;
         }
 
-        // Show loading
         loadingDiv.classList.add("show");
         resultsDiv.classList.remove("show");
         resultsDiv.innerHTML = "";
 
         try {
-          // Replace with your actual API endpoint
           const response = await fetch("/api/search", {
             method: "POST",
             headers: {
@@ -216,11 +222,10 @@
 
           const data = await response.json();
 
-          // Hide loading
           loadingDiv.classList.remove("show");
 
           if (data.results && data.results.length > 0) {
-            displayResults(data.results, data); // Pass full data object
+            displayResults(data.results, data);
           } else {
             resultsDiv.innerHTML =
               '<div class="no-results">😔 لم يتم العثور على نتائج</div>';
@@ -235,41 +240,102 @@
         }
       }
 
+      function normalizeArabic(text) {
+        return text
+          .replace(/[ًٌٍَُِّْـ]/g, "")
+          .replace(/ة/g, "ه")
+          .replace(/[أإآٱ]/g, "ا")
+          .replace(/[ىي]/g, "ي")
+          .toLowerCase();
+      }
+
+      function highlightText(rawText, matchedWords) {
+        if (!matchedWords || matchedWords.length === 0) return rawText;
+
+        // Sort by word count (phrases first: "محمد إبن زايد" before "محمد")
+        const sortedWords = [...matchedWords].sort(
+          (a, b) => b.split(" ").length - a.split(" ").length
+        );
+
+        let result = rawText;
+
+        sortedWords.forEach((searchPhrase) => {
+          const searchWords = searchPhrase.split(" ");
+          const textWords = result.split(" ");
+
+          // Find matching sequences
+          for (let i = 0; i <= textWords.length - searchWords.length; i++) {
+            const sequence = textWords.slice(i, i + searchWords.length);
+
+            // Check if all words in sequence match (normalized)
+            const matches = sequence.every(
+              (word, idx) =>
+                normalizeArabic(word.replace(/<\/?mark>/g, "")) ===
+                normalizeArabic(searchWords[idx])
+            );
+
+            if (matches) {
+              // Highlight each word in the sequence
+              for (let j = 0; j < searchWords.length; j++) {
+                if (!textWords[i + j].includes("<mark>")) {
+                  textWords[i + j] = `<mark>${textWords[i + j]}</mark>`;
+                }
+              }
+            }
+          }
+
+          result = textWords.join(" ");
+        });
+
+        return result;
+      }
       function displayResults(results, data) {
         const resultsDiv = document.getElementById("results");
 
-        // Add summary header
+        // Summary header
         let html = `
-        <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <div style="font-size: 20px; font-weight: bold;">
-                📊 النتائج: ${data.total_matches} قصيدة
-            </div>
-            <div style="margin-top: 10px; font-size: 16px;">
-                📝 مطابقات العنوان: ${data.title_matches} | 
-                ✍️ مطابقات البيت: ${data.poem_matches}
-            </div>
+      <div class="result-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div style="font-size: 20px; font-weight: bold;">
+          📊 النتائج: ${data.total_matches} قصيدة
         </div>
+        <div style="margin-top: 10px; font-size: 16px;">
+          📝 مطابقات العنوان: ${data.title_matches} | 
+          ✍️ مطابقات البيت: ${data.poem_matches}
+        </div>
+      </div>
     `;
 
         results.forEach((result) => {
+          // Extract words from highlight object
+          const titleWords = result.highlights.title?.words || [];
+          const poemWords = result.highlights.poem_line?.words || [];
+
+          // Format poem line BEFORE highlighting (inside the loop!)
+          const poemFormatted = result.poem_line_raw.replace(
+            /\s{5,}/g,
+            "      "
+          );
+
+          // Apply highlights
+          const titleHighlighted = highlightText(result.title_raw, titleWords);
+          const poemHighlighted = highlightText(poemFormatted, poemWords);
+
           html += `
-            <div class="result-card">
-                <div class="result-title">${result.title_raw}</div>
-                <div class="result-poem">${result.poem_line_raw}</div>
-                <div class="result-meta">
-                    <span class="meta-item score">نقاط: ${result.score}</span>
-                    <span class="meta-item">رقم القصيدة: ${
-                      result.poem_id
-                    }</span>
-                    <span class="meta-item">رقم السطر: ${result.row_id}</span>
-                    <span class="meta-item">موقع: ${
-                      result.match_location === "title" ? "العنوان" : "البيت"
-                    }</span>
-                    <span class="meta-item">نوع: ${translateMatchType(
-                      result.match_type
-                    )}</span>
-                </div>
+          <div class="result-card">
+            <div class="result-title">${titleHighlighted}</div>
+            <div class="result-poem">${poemHighlighted}</div>
+            <div class="result-meta">
+              <span class="meta-item score">نقاط: ${result.score}</span>
+              <span class="meta-item">رقم القصيدة: ${result.poem_id}</span>
+              <span class="meta-item">رقم السطر: ${result.row_id}</span>
+              <span class="meta-item">موقع: ${
+                result.match_location.includes("title") ? "العنوان" : "البيت"
+              }</span>
+              <span class="meta-item">نوع: ${translateMatchType(
+                result.match_type
+              )}</span>
             </div>
+          </div>
         `;
         });
 

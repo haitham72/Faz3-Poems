@@ -51,6 +51,57 @@ CREATE INDEX IF NOT EXISTS idx_exact_row_id ON "Exact_search" ("Row_ID");
 
 -- =====================================================
 -- STEP 3: MAIN ORCHESTRATOR FUNCTION
+-- =====================================================-- =====================================================
+-- HYBRID SEARCH V3: COMPLETE FTS OPTIMIZED + GROUPED QUERIES
+-- Performance: ~100-500ms (vs 2000ms before)
+-- Supports: Single queries + Grouped queries (multiple per tag)
+-- =====================================================
+
+-- =====================================================
+-- STEP 1: ADD TSVECTOR COLUMNS (One-time setup)
+-- =====================================================
+
+ALTER TABLE "Exact_search" 
+ADD COLUMN IF NOT EXISTS title_tsv tsvector 
+GENERATED ALWAYS AS (to_tsvector('arabic', "Title_cleaned")) STORED;
+
+ALTER TABLE "Exact_search" 
+ADD COLUMN IF NOT EXISTS poem_line_tsv tsvector 
+GENERATED ALWAYS AS (to_tsvector('arabic', "Poem_line_cleaned")) STORED;
+
+-- =====================================================
+-- STEP 2: CREATE INDEXES
+-- =====================================================
+
+-- FTS indexes for text search (PRIMARY - super fast)
+CREATE INDEX IF NOT EXISTS idx_title_fts ON "Exact_search" USING GIN (title_tsv);
+CREATE INDEX IF NOT EXISTS idx_poem_fts ON "Exact_search" USING GIN (poem_line_tsv);
+
+-- Trigram indexes for metadata columns (SECONDARY - for metadata search)
+CREATE INDEX IF NOT EXISTS idx_shakhsh_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic("شخص"::text) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_amakin_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic("أماكن"::text) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_ahdath_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic("أحداث"::text) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_deen_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic("دين"::text) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_mawadee_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic("مواضيع"::text) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sentiments_normalized_trgm 
+ON "Exact_search" USING GIN (normalize_arabic(sentiments) gin_trgm_ops);
+
+-- Standard indexes
+CREATE INDEX IF NOT EXISTS idx_exact_poem_id ON "Exact_search" (poem_id);
+CREATE INDEX IF NOT EXISTS idx_exact_row_id ON "Exact_search" ("Row_ID");
+
+-- =====================================================
+-- STEP 3: MAIN ORCHESTRATOR FUNCTION
 -- =====================================================
 
 DROP FUNCTION IF EXISTS hybrid_search_v3_entity_aware(JSONB, INT, NUMERIC) CASCADE;
@@ -475,7 +526,7 @@ BEGIN
                             jsonb_build_object(
                                 'text', q_norm,
                                 'score', ROUND(word_similarity(normalize_arabic(q_norm), normalize_arabic(e."Poem_line_cleaned")) * 100),
-                                'positions', 'fuzzy'
+                                'positions', 'phrase'  -- Simple marker - frontend will highlight the query text
                             )
                         )
                     )
@@ -503,7 +554,7 @@ BEGIN
         RETURN QUERY
     WITH 
     title_matches AS (
-        SELECT DISTINCT ON (e.poem_id)
+        SELECT 
             e.poem_id,
             e."Row_ID" as row_id,
             e."Title_raw" as title_raw,

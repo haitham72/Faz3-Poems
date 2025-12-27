@@ -51,9 +51,9 @@ CREATE INDEX IF NOT EXISTS idx_exact_row_id ON "Exact_search" ("Row_ID");
 -- STEP 3: MAIN ORCHESTRATOR FUNCTION
 -- =====================================================
 
-DROP FUNCTION IF EXISTS hybrid_search_v3_entity_aware(JSONB, INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS hybrid_search_v2_entity_aware(JSONB, INT, NUMERIC) CASCADE;
 
-CREATE OR REPLACE FUNCTION hybrid_search_v3_entity_aware(
+CREATE OR REPLACE FUNCTION hybrid_search_v2_entity_aware(
     n8n_payload JSONB,
     total_limit INT DEFAULT 50,
     min_score NUMERIC DEFAULT 0.3
@@ -279,7 +279,7 @@ BEGIN
             mm.score as mm_score,
             mm.match_location as mm_match_location,
             mm.match_json as mm_match_json
-        FROM get_all_metadata_matches(q_norm, meaningful_words, match_limit, min_score) mm
+        FROM get_all_metadata_matches(q_norm, meaningful_words, tag, match_limit, min_score) mm
     ),
     
     combined AS (
@@ -634,10 +634,12 @@ $$;
 -- =====================================================
 
 DROP FUNCTION IF EXISTS get_all_metadata_matches(TEXT, TEXT[], INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches(TEXT, TEXT[], TEXT, INT, NUMERIC) CASCADE;
 
 CREATE OR REPLACE FUNCTION get_all_metadata_matches(
     q_norm TEXT,
     meaningful_words TEXT[],
+    current_tag TEXT,
     match_limit INT,
     min_score NUMERIC
 )
@@ -652,7 +654,22 @@ RETURNS TABLE(
 )
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
+DECLARE
+    tag_words TEXT[];
+    tag_norm TEXT;
 BEGIN
+    -- Extract significant words from tag for entity matching
+    -- Skip common particles: بن, ابن, ال, آل, بنت
+    IF current_tag IS NOT NULL AND current_tag != '' THEN
+        tag_norm := normalize_arabic(current_tag);
+        SELECT array_agg(word) INTO tag_words
+        FROM unnest(string_to_array(tag_norm, ' ')) word
+        WHERE word NOT IN ('بن', 'ابن', 'ال', 'آل', 'بنت', '')
+          AND length(word) > 0;
+    ELSE
+        tag_words := ARRAY[]::TEXT[];
+    END IF;
+    
     RETURN QUERY
     
     -- شخص column (name + resolved_from highlighting)
@@ -662,10 +679,10 @@ BEGIN
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
         
-        -- SCORE WITH CRITICAL SAFETY CHECK
+        -- SCORE WITH TAG-BASED ENTITY VERIFICATION
         CASE
-            -- CRITICAL: Even if entity name matches query, check if the fuzzy matched word
-            -- is actually in resolved_from! Otherwise "غضبي" could be associated with Sheikh!
+            -- CRITICAL SAFETY: Check if fuzzy matched word is in resolved_from
+            -- AND check if entity name matches the TAG (not just query)
             WHEN NOT EXISTS (
                 SELECT 1 
                 FROM jsonb_array_elements(e."شخص") person,
@@ -673,22 +690,22 @@ BEGIN
                 WHERE EXISTS (
                     SELECT 1 FROM unnest(meaningful_words) mw
                     WHERE 
-                        -- The matched word must actually be in resolved_from
                         (length(normalize_arabic(mw)) > 2 
                          AND normalize_arabic(rf) LIKE '%' || normalize_arabic(mw) || '%')
                         OR normalize_arabic(rf) = normalize_arabic(mw)
                 )
                 AND (
-                    -- AND entity name must match query
-                    (length(q_norm) > 2 AND position(q_norm IN normalize_arabic(person->>'name')) > 0)
-                    OR normalize_arabic(person->>'name') = q_norm
-                    OR EXISTS (
-                        SELECT 1 FROM unnest(meaningful_words) mw2
-                        WHERE length(normalize_arabic(mw2)) > 2 
-                           AND position(normalize_arabic(mw2) IN normalize_arabic(person->>'name')) > 0
+                    -- NEW: Match entity name against TAG, not query!
+                    -- Count significant words that match between entity name and tag
+                    array_length(tag_words, 1) IS NULL  -- No tag provided (fallback to old logic)
+                    OR normalize_arabic(person->>'name') = tag_norm  -- Exact match
+                    OR (
+                        SELECT COUNT(*) >= 2  -- At least 2 significant words match
+                        FROM unnest(tag_words) tw
+                        WHERE position(tw IN normalize_arabic(person->>'name')) > 0
                     )
                 )
-            ) THEN 10.0  -- CRITICAL: Fuzzy match NOT verified in resolved_from - DANGEROUS!
+            ) THEN 10.0  -- DANGEROUS: fuzzy match not verified OR entity doesn't match tag
             
             -- Penalize if ALL matched words are short (1-2 chars)
             WHEN (
@@ -701,6 +718,41 @@ BEGIN
                     WHERE normalize_arabic(rf) LIKE '%' || normalize_arabic(mw) || '%'
                 )
             ) THEN 40.0  -- Very low score for short words only
+            
+            -- TAG-BASED SCORING: Score based on how well entity name matches tag
+            WHEN array_length(tag_words, 1) > 0 THEN (
+                SELECT 
+                    CASE
+                        -- Exact match with tag
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            WHERE normalize_arabic(person->>'name') = tag_norm
+                        ) THEN 70.0
+                        
+                        -- 3+ significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            WHERE (
+                                SELECT COUNT(*) >= 3
+                                FROM unnest(tag_words) tw
+                                WHERE position(tw IN normalize_arabic(person->>'name')) > 0
+                            )
+                        ) THEN 65.0
+                        
+                        -- 2 significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            WHERE (
+                                SELECT COUNT(*) = 2
+                                FROM unnest(tag_words) tw
+                                WHERE position(tw IN normalize_arabic(person->>'name')) > 0
+                            )
+                        ) THEN 50.0
+                        
+                        -- Only 1 word matches (probably wrong person!)
+                        ELSE 15.0
+                    END
+            )
             
             ELSE 70.0  -- Safe - fuzzy match verified in resolved_from
         END as score,
@@ -764,10 +816,44 @@ BEGIN
         e."Row_ID" as row_id,
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
-        -- Entity relevance scoring (same logic as شخص)
+        -- TAG-BASED SCORING for places (similar to شخص logic)
         CASE
-            -- Place name doesn't match query (like "روس النصابي" for "محمد بن راشد" search)
-            -- This means the fuzzy match is probably garbage
+            -- If tag provided, check if place name matches tag
+            -- This prevents "محمد ابن راشد ابن مكتوم" (place) from matching "محمد بن زايد" tag
+            WHEN array_length(tag_words, 1) > 0 THEN (
+                SELECT 
+                    CASE
+                        -- Place name exactly matches tag
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            WHERE normalize_arabic(place->>'name') = tag_norm
+                        ) THEN 60.0
+                        
+                        -- 3+ significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            WHERE (
+                                SELECT COUNT(*) >= 3
+                                FROM unnest(tag_words) tw
+                                WHERE position(tw IN normalize_arabic(place->>'name')) > 0
+                            )
+                        ) THEN 50.0
+                        
+                        -- 2 significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            WHERE (
+                                SELECT COUNT(*) = 2
+                                FROM unnest(tag_words) tw
+                                WHERE position(tw IN normalize_arabic(place->>'name')) > 0
+                            )
+                        ) THEN 35.0
+                        
+                        -- Only 1 word matches (probably wrong place!)
+                        ELSE 15.0
+                    END
+            )
+            -- No tag provided - fallback to old logic
             WHEN NOT EXISTS (
                 SELECT 1 FROM jsonb_array_elements(e."أماكن") place
                 WHERE 
@@ -778,8 +864,8 @@ BEGIN
                         WHERE length(normalize_arabic(mw)) > 2 
                            AND normalize_arabic(place->>'name') LIKE '%' || normalize_arabic(mw) || '%'
                     )
-            ) THEN 15.0  -- Irrelevant place - fuzzy match is garbage
-            ELSE 60.0  -- Place name matches query - trust the fuzzy match
+            ) THEN 15.0  -- Irrelevant place
+            ELSE 60.0  -- Place matches query
         END as score,
         ARRAY['أماكن']::TEXT[] as match_location,
         jsonb_build_object(

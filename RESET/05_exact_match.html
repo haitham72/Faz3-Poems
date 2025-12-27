@@ -1,10 +1,9 @@
-<!-- prettier-ignore-start -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>بحث ذكي - Entity-Aware Search</title>
+    <title>بحث ذكي - Hybrid Search V3</title>
     <style>
       * {
         margin: 0;
@@ -18,7 +17,7 @@
         padding: 20px;
       }
       .container {
-        max-width: 1000px;
+        max-width: 1200px;
         margin: 0 auto;
       }
       .search-box {
@@ -64,6 +63,24 @@
       }
       button:hover {
         transform: translateY(-2px);
+      }
+      .test-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+      .test-btn {
+        padding: 10px 20px;
+        background: #f093fb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .test-btn:hover {
+        background: #f5576c;
       }
 
       /* Summary Stats */
@@ -125,7 +142,6 @@
       .result-card:hover {
         transform: translateX(-5px);
       }
-
       .result-header {
         display: flex;
         justify-content: space-between;
@@ -146,7 +162,6 @@
         font-weight: bold;
         font-size: 16px;
       }
-
       .result-poem {
         font-size: 18px;
         color: #333;
@@ -157,7 +172,6 @@
         padding: 15px;
         border-radius: 8px;
       }
-
       .result-meta {
         display: flex;
         gap: 10px;
@@ -182,7 +196,6 @@
         color: #333;
         font-weight: 600;
       }
-
       mark {
         background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
         color: white;
@@ -190,9 +203,16 @@
         border-radius: 4px;
         font-weight: bold;
       }
-
-      .no-results,
-      .loading {
+      mark.metadata-highlight {
+        background: linear-gradient(135deg, #ffe5b4 0%, #ff9966 100%);
+        color: #333;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: normal;
+        border: 1px dashed #ff6600;
+      }
+      .loading,
+      .no-results {
         text-align: center;
         padding: 40px;
         color: white;
@@ -202,8 +222,6 @@
       .show {
         display: block;
       }
-
-      /* Skeleton Loading */
       .skeleton {
         background: linear-gradient(
           90deg,
@@ -230,7 +248,6 @@
         height: 25px;
         width: 40%;
       }
-
       @keyframes loading {
         0% {
           background-position: 200% 0;
@@ -239,12 +256,30 @@
           background-position: -200% 0;
         }
       }
+      .performance-badge {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .fast {
+        color: #10b981;
+      }
+      .slow {
+        color: #ef4444;
+      }
     </style>
   </head>
   <body>
+    <div class="performance-badge" id="perfBadge" style="display: none"></div>
+
     <div class="container">
       <div class="search-box">
-        <h1>🔍 البحث الذكي بالكيانات</h1>
+        <h1>🔍 البحث الذكي - V3 FTS</h1>
         <div class="search-input-group">
           <input
             type="text"
@@ -253,26 +288,36 @@
           />
           <button onclick="searchPoems()">بحث</button>
         </div>
+
+        <div class="test-buttons">
+          <button class="test-btn" onclick="testGrouped()">
+            اختبار: استعلام مجمع
+          </button>
+          <button class="test-btn" onclick="testOldFormat()">
+            اختبار: صيغة قديمة
+          </button>
+          <button class="test-btn" onclick="testComplex()">اختبار: معقد</button>
+        </div>
       </div>
 
       <div class="loading" id="loading">⏳ جاري البحث الذكي...</div>
-
-      <!-- Summary Stats -->
       <div id="summaryContainer" style="display: none"></div>
-
-      <!-- Tags -->
       <div id="tagsContainer" style="display: none"></div>
-
-      <!-- Results -->
       <div class="results" id="results"></div>
     </div>
 
     <script>
       const CONFIG = {
+        // N8N Webhook URL - REPLACE WITH YOUR WEBHOOK
+        N8N_WEBHOOK_URL: "https://ihisam002.app.n8n.cloud/webhook/N8N",
+
+        // Supabase config (for direct PostgreSQL - optional fallback)
         SUPABASE_URL: "https://uffjlburuvsnstvgyito.supabase.co",
         SUPABASE_ANON_KEY:
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MTczMTcsImV4cCI6MjA4MjA5MzMxN30.cywWITSP-aJfuXlzyBYHf9Ipnhu-6_mVCZ30h3b1-38",
-        N8N_WEBHOOK_URL: "https://ihisam002.app.n8n.cloud/webhook/N8N",
+
+        // Set to true to use N8N, false to use direct PostgreSQL
+        USE_N8N: true,
       };
 
       document
@@ -281,94 +326,144 @@
           if (e.key === "Enter") searchPoems();
         });
 
-      async function searchPoems() {
+      async function searchPoems(customPayload = null) {
         const resultsDiv = document.getElementById("results");
         const loadingDiv = document.getElementById("loading");
         const summaryDiv = document.getElementById("summaryContainer");
         const tagsDiv = document.getElementById("tagsContainer");
+        const perfBadge = document.getElementById("perfBadge");
 
         loadingDiv.classList.add("show");
         resultsDiv.innerHTML = createSkeletonCards(3);
 
+        const startTime = performance.now();
+
         try {
-          // HARDCODED TEST - bypass N8N completely
-          const hardcodedPayload = {
-            N8N_query: {
-              Exact_query: "بو خالد",
-              column: "شخص",
-              tag: "بو خالد",
-              confidence_score: 100,
-              expanded_queries: [
-                {
-                  query: "محمد بن زايد",
-                  column: "شخص",
-                  tag: "محمد بن زايد",
-                  confidence_score: 95,
-                  reason: "related_entity",
-                },
-              ],
-              individual_Limit: 10,
-              total_limit: 50,
-            },
+          const queryText = document.getElementById("searchQuery").value;
+
+          // Build payload
+          const payload = customPayload || {
+            query: queryText, // Simple string for N8N
+            user_language: "ar",
           };
 
-          console.log(
-            "📤 Calling PostgreSQL with hardcoded payload:",
-            hardcodedPayload
-          );
-          const payload_key = "n8n_payload";
-          const limit_key = "total_limit";
-          const score_key = "min_score";
+          console.log("📤 Query payload:", payload);
 
-          const pgResponse = await fetch(
-            `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v2_entity_aware`,
-            {
+          let data;
+
+          if (CONFIG.USE_N8N) {
+            // ============================================
+            // CALL N8N WEBHOOK
+            // ============================================
+            const n8nResponse = await fetch(CONFIG.N8N_WEBHOOK_URL, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                apikey: CONFIG.SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
               },
-              body: JSON.stringify({
-                [payload_key]: hardcodedPayload,
-                [limit_key]: 50,
-                [score_key]: 30,
-              }),
-            }
-          );
+              body: JSON.stringify(payload),
+            });
 
-          if (!pgResponse.ok) {
-            throw new Error(`PostgreSQL error: ${pgResponse.status}`);
+            if (!n8nResponse.ok) {
+              throw new Error(
+                `N8N error: ${n8nResponse.status} - ${await n8nResponse.text()}`
+              );
+            }
+
+            data = await n8nResponse.json();
+            console.log("📥 N8N Response:", data);
+          } else {
+            // ============================================
+            // FALLBACK: DIRECT POSTGRESQL
+            // ============================================
+            const pgPayload = customPayload || {
+              N8N_query: {
+                Exact_query: queryText,
+                tag: "user_query",
+                confidence_score: 100,
+                expanded_queries: [],
+                individual_Limit: 10,
+                total_limit: 20,
+              },
+            };
+
+            const response = await fetch(
+              `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v2_entity_aware`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: CONFIG.SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                  n8n_payload: pgPayload,
+                  total_limit: 20,
+                  min_score: 50,
+                }),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `PostgreSQL error: ${
+                  response.status
+                } - ${await response.text()}`
+              );
+            }
+
+            data = await response.json();
+            console.log("📥 PostgreSQL Response:", data);
           }
 
-          const pgData = await pgResponse.json();
-          console.log("📥 PostgreSQL Response:", pgData);
+          const endTime = performance.now();
+          const duration = Math.round(endTime - startTime);
 
           loadingDiv.classList.remove("show");
 
-          if (pgData && pgData.length > 0) {
-            const data = pgData[0];
-            const results = data.results;
-            console.log("🎯 Results:", results);
+          // Show performance badge
+          perfBadge.textContent = `${duration}ms`;
+          perfBadge.className = `performance-badge ${
+            duration < 500 ? "fast" : "slow"
+          }`;
+          perfBadge.style.display = "block";
+          setTimeout(() => (perfBadge.style.display = "none"), 3000);
 
-            if (results && results.length > 0) {
-              displaySummary(data);
-              displayTags(data.tags);
-              displayResults(results);
-            } else {
-              resultsDiv.innerHTML =
-                '<div class="no-results">😔 لم يتم العثور على نتائج - results is null or empty</div>';
-            }
+          // Handle response (N8N format or PostgreSQL format)
+          const result = Array.isArray(data) ? data[0] : data;
+
+          if (result && result.results && result.results.length > 0) {
+            displaySummary(result);
+            displayTags(result.tags);
+            displayResults(result.results);
           } else {
             resultsDiv.innerHTML =
-              '<div class="no-results">😔 pgData is empty</div>';
+              '<div class="no-results show">😔 لا توجد نتائج</div>';
           }
         } catch (error) {
-          console.error("❌ Search error:", error);
+          console.error("❌ Error:", error);
           loadingDiv.classList.remove("show");
-          resultsDiv.innerHTML = `<div class="no-results">❌ حدث خطأ: ${error.message}</div>`;
+          resultsDiv.innerHTML = `<div class="no-results show">❌ خطأ: ${error.message}</div>`;
         }
       }
+
+      function testGrouped() {
+        // Simple search that will hit N8N
+        document.getElementById("searchQuery").value = "بو خالد";
+        searchPoems();
+      }
+
+      function testOldFormat() {
+        // Simple search that will hit N8N
+        document.getElementById("searchQuery").value = "بو راشد";
+        searchPoems();
+      }
+
+      function testComplex() {
+        // Simple search that will hit N8N
+        document.getElementById("searchQuery").value = "زايد";
+        searchPoems();
+      }
+
       function createSkeletonCards(count) {
         let html = "";
         for (let i = 0; i < count; i++) {
@@ -410,15 +505,12 @@
 
       function displayTags(tagsString) {
         if (!tagsString) return;
-
         const tagsDiv = document.getElementById("tagsContainer");
         const tags = tagsString
           .split(",")
           .map((t) => t.trim())
           .filter((t) => t);
-
         if (tags.length === 0) return;
-
         tagsDiv.innerHTML = `
                 <div class="tags-container">
                     ${tags
@@ -440,40 +532,104 @@
       }
 
       function highlightText(rawText, matchData, displayRowId) {
-        let wordsToHighlight = new Set();
+        let positionsToHighlight = new Set();
+        let metadataWordsToHighlight = new Set(); // For metadata fuzzy matching
 
+        // Extract positions from matchData
         if (Array.isArray(matchData)) {
           matchData.forEach((m) => {
-            if (m.text) wordsToHighlight.add(normalizeForComparison(m.text));
+            if (m.positions && m.positions !== "metadata") {
+              // Parse positions: "5", "5-6", or "2,5,8"
+              const positions = m.positions.toString();
+              if (positions.includes("-")) {
+                const [start, end] = positions.split("-").map(Number);
+                for (let i = start; i <= end; i++) {
+                  positionsToHighlight.add(i);
+                }
+              } else if (positions.includes(",")) {
+                positions
+                  .split(",")
+                  .forEach((p) => positionsToHighlight.add(Number(p.trim())));
+              } else {
+                positionsToHighlight.add(Number(positions));
+              }
+            } else if (m.positions === "metadata" && m.text) {
+              // For metadata matches, add text for fuzzy matching
+              metadataWordsToHighlight.add(normalizeForComparison(m.text));
+            }
           });
         } else if (matchData && matchData.matched_words) {
           if (matchData.row_id && matchData.row_id !== displayRowId)
             return rawText;
+
           matchData.matched_words.forEach((m) => {
-            if (m.text && m.positions !== "metadata") {
-              wordsToHighlight.add(normalizeForComparison(m.text));
+            if (m.positions && m.positions !== "metadata") {
+              const positions = m.positions.toString();
+              if (positions.includes("-")) {
+                const [start, end] = positions.split("-").map(Number);
+                for (let i = start; i <= end; i++) {
+                  positionsToHighlight.add(i);
+                }
+              } else if (positions.includes(",")) {
+                positions
+                  .split(",")
+                  .forEach((p) => positionsToHighlight.add(Number(p.trim())));
+              } else {
+                positionsToHighlight.add(Number(positions));
+              }
+            } else if (m.positions === "metadata" && m.text) {
+              // For metadata matches, add text for fuzzy matching
+              metadataWordsToHighlight.add(normalizeForComparison(m.text));
             }
           });
         } else {
           return rawText;
         }
 
-        if (wordsToHighlight.size === 0) return rawText;
+        if (
+          positionsToHighlight.size === 0 &&
+          metadataWordsToHighlight.size === 0
+        )
+          return rawText;
 
-        const tokens = rawText.split(/(\s+)/);
-        return tokens
+        // Split text into words
+        const words = rawText.split(/(\s+)/);
+        let wordIndex = 0;
+
+        return words
           .map((token) => {
-            if (!token.trim()) return token;
+            if (!token.trim()) return token; // Preserve whitespace
 
+            // Position-based highlighting (EXACT)
+            const shouldHighlight = positionsToHighlight.has(wordIndex);
             const tokenNorm = normalizeForComparison(token);
 
-            if (wordsToHighlight.has(tokenNorm)) {
+            // Skip tokens that normalize to empty (pure punctuation)
+            if (!tokenNorm) {
+              return token;
+            }
+
+            wordIndex++; // Only count actual words
+
+            if (shouldHighlight) {
               return `<mark>${token}</mark>`;
             }
 
-            for (let target of wordsToHighlight) {
-              if (target.length > 2 && tokenNorm.includes(target)) {
-                return `<mark>${token}</mark>`;
+            // Metadata fuzzy highlighting (FALLBACK)
+            for (let metadataWord of metadataWordsToHighlight) {
+              // Split metadata phrase into words
+              const metadataWords = metadataWord.split(/\s+/).filter((w) => w);
+
+              // Check if token matches any word in the metadata phrase
+              if (
+                metadataWords.some(
+                  (mw) =>
+                    tokenNorm === mw ||
+                    (tokenNorm.length > 2 && tokenNorm.includes(mw)) ||
+                    (mw.length > 2 && mw.includes(tokenNorm))
+                )
+              ) {
+                return `<mark class="metadata-highlight">${token}</mark>`;
               }
             }
 
@@ -499,7 +655,6 @@
             result.row_id
           );
 
-          // Extract metadata indicators
           const hasMetadata =
             result.match.poem_line?.matched_words?.some(
               (w) => w.positions === "metadata"
@@ -517,9 +672,6 @@
                             <span class="meta-item meta-location">
                                 ${result.match_location.join(" + ")}
                             </span>
-                            <span class="meta-item">${translateMatchType(
-                              result.match_type
-                            )}</span>
                             ${
                               result.tag
                                 ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>`
@@ -536,20 +688,6 @@
         });
 
         resultsDiv.innerHTML = html;
-      }
-
-      function translateMatchType(type) {
-        const map = {
-          exact_phrase: "مطابقة تامة",
-          partial_match: "مطابقة جزئية",
-          consecutive_words: "كلمات متتالية",
-          all_words_scattered: "كلمات متفرقة",
-          partial_words: "كلمات مفردة",
-          entity_match: "مطابقة كيان",
-          hybrid_match: "مطابقة هجينة",
-          no_match: "بدون مطابقة",
-        };
-        return map[type] || type;
       }
     </script>
   </body>

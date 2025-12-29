@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل الموسيقى</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            direction: rtl;
+            overflow: hidden;
+        }
+        
+        /* Background Image with Blur */
+        .background-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(50px) brightness(0.4);
+            z-index: 0;
+        }
+        
+        .player-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Album Art Section */
+        .album-art-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .album-art {
+            width: 90%;
+            max-width: 500px;
+            aspect-ratio: 9/16;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Poem Info */
+        .poem-info {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .poem-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .poem-artist {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+        
+        /* Audio Controls */
+        .audio-controls {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Progress Bar */
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        .progress-time {
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9em;
+        }
+        
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .control-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8em;
+            background: white;
+            color: #000;
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .skip-btn {
+            font-size: 1em;
+        }
+        
+        /* Audio Type Selector */
+        .audio-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .audio-type-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .audio-type-btn.active {
+            background: white;
+            color: #000;
+            border-color: white;
+        }
+        
+        .audio-type-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Loading State */
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+        
+        /* Hidden Audio Element */
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Image -->
+    <div class="background-image" id="bgImage"></div>
+    
+    <div class="player-container">
+        <!-- Top Navigation -->
+        <div class="top-nav">
+            <button class="back-btn" onclick="goBack()">← رجوع</button>
+        </div>
+        
+        <!-- Loading -->
+        <div id="loading" class="loading">جاري التحميل...</div>
+        
+        <!-- Player Content (hidden until loaded) -->
+        <div id="playerContent" style="display: none; flex: 1; display: flex; flex-direction: column;">
+            <!-- Album Art -->
+            <div class="album-art-section">
+                <img id="albumArt" class="album-art" alt="Poem Image">
+            </div>
+            
+            <!-- Poem Info -->
+            <div class="poem-info">
+                <div class="poem-title" id="poemTitle"></div>
+                <div class="poem-artist">الشيخ حمدان بن محمد آل مكتوم</div>
+            </div>
+            
+            <!-- Audio Controls -->
+            <div class="audio-controls">
+                <!-- Progress Bar -->
+                <div class="progress-section">
+                    <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-time">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="controls">
+                    <button class="control-btn" onclick="previousPoem()">⏮</button>
+                    <button class="control-btn skip-btn" onclick="skipBackward()">⏪ 10</button>
+                    <button class="control-btn play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                    <button class="control-btn skip-btn" onclick="skipForward()">10 ⏩</button>
+                    <button class="control-btn" onclick="nextPoem()">⏭</button>
+                </div>
+                
+                <!-- Audio Type Selector -->
+                <div class="audio-selector">
+                    <button class="audio-type-btn active" id="originalBtn" onclick="switchAudio('original')">
+                        🎤 الأصلي
+                    </button>
+                    <button class="audio-type-btn" id="aiBtn" onclick="switchAudio('ai')">
+                        🤖 AI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden Audio Elements -->
+    <audio id="originalAudio" preload="metadata"></audio>
+    <audio id="aiAudio" preload="metadata"></audio>
+    
+    <script src="config.js"></script>
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const STORAGE_BASE = 'media'; // LOCAL folder
+        
+        // Get poem_id from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPoemId = parseInt(urlParams.get('poem_id'));
+        
+        let allPoems = [];
+        let currentIndex = 0;
+        let currentAudioType = 'original';
+        let isPlaying = false;
+        
+        const originalAudio = document.getElementById('originalAudio');
+        const aiAudio = document.getElementById('aiAudio');
+        
+        // ============================================
+        // FETCH ALL POEMS
+        // ============================================
+        async function fetchAllPoems() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/Exact_search?select=poem_id,Title_raw&order=poem_id.asc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                
+                if (!response.ok) throw new Error('Failed to fetch poems');
+                
+                const data = await response.json();
+                
+                // Get unique poems
+                const poemsMap = new Map();
+                data.forEach(row => {
+                    if (!poemsMap.has(row.poem_id)) {
+                        poemsMap.set(row.poem_id, row);
+                    }
+                });
+                
+                allPoems = Array.from(poemsMap.values());
+                
+                // Find current poem index
+                currentIndex = allPoems.findIndex(p => p.poem_id === currentPoemId);
+                if (currentIndex === -1) currentIndex = 0;
+                
+                loadPoem(allPoems[currentIndex]);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').textContent = 'حدث خطأ في التحميل';
+            }
+        }
+        
+        // ============================================
+        // LOAD POEM
+        // ============================================
+        function loadPoem(poem) {
+            const poemId = poem.poem_id;
+            
+            // Set title
+            document.getElementById('poemTitle').textContent = poem.Title_raw || 'قصيدة';
+            
+            // Set background and album art
+            const imageUrl = `${STORAGE_BASE}/${poemId}_img_Faz3.jpg`;
+            document.getElementById('bgImage').style.backgroundImage = `url(${imageUrl})`;
+            document.getElementById('albumArt').src = imageUrl;
+            
+            // Set audio sources
+            const originalUrl = `${STORAGE_BASE}/${poemId}.mp3`;
+            const aiUrl = `${STORAGE_BASE}/${poemId}_AI_Faz3.mp3`;
+            
+            originalAudio.src = originalUrl;
+            aiAudio.src = aiUrl;
+            
+            // Reset playback
+            originalAudio.currentTime = 0;
+            aiAudio.currentTime = 0;
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶';
+            
+            // Show player
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('playerContent').style.display = 'flex';
+            
+            // Auto-play if previous was playing
+            if (isPlaying) {
+                setTimeout(() => togglePlay(), 500);
+            }
+        }
+        
+        // ============================================
+        // PLAYBACK CONTROLS
+        // ============================================
+        function togglePlay() {
+            const audio = currentAudioType === 'original' ? originalAudio : aiAudio;
+            
+            if (isPlaying) {
+                audio.pause();
+                document.getElementById('playBtn').textContent = '▶';
+            } else {
+                audio.play();
+                document.getElementById('playBtn').textContent = '⏸';
+            }
+            
+            isPlaying = !isPlaying;
+        }
+        
+        function skipForward() {
+            const audio = currentAudioType === 'original' ? originalAudio : aiAudio;
+            audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+        }
+        
+        function skipBackward() {
+            const audio = currentAudioType === 'original' ? originalAudio : aiAudio;
+            audio.currentTime = Math.max(audio.currentTime - 10, 0);
+        }
+        
+        function nextPoem() {
+            currentIndex = (currentIndex + 1) % allPoems.length;
+            loadPoem(allPoems[currentIndex]);
+        }
+        
+        function previousPoem() {
+            currentIndex = (currentIndex - 1 + allPoems.length) % allPoems.length;
+            loadPoem(allPoems[currentIndex]);
+        }
+        
+        function seekAudio(event) {
+            const audio = currentAudioType === 'original' ? originalAudio : aiAudio;
+            const progressBar = document.getElementById('progressBar');
+            const clickX = event.offsetX;
+            const width = progressBar.offsetWidth;
+            const percentage = clickX / width;
+            audio.currentTime = percentage * audio.duration;
+        }
+        
+        function switchAudio(type) {
+            const wasPlaying = isPlaying;
+            
+            // Pause both
+            originalAudio.pause();
+            aiAudio.pause();
+            
+            // Update active button
+            document.getElementById('originalBtn').classList.remove('active');
+            document.getElementById('aiBtn').classList.remove('active');
+            
+            currentAudioType = type;
+            
+            if (type === 'original') {
+                document.getElementById('originalBtn').classList.add('active');
+            } else {
+                document.getElementById('aiBtn').classList.add('active');
+            }
+            
+            // Resume if was playing
+            if (wasPlaying) {
+                isPlaying = false;
+                togglePlay();
+            }
+        }
+        
+        // ============================================
+        // AUDIO EVENT LISTENERS
+        // ============================================
+        function setupAudioListeners(audio) {
+            audio.addEventListener('timeupdate', () => {
+                if (audio === (currentAudioType === 'original' ? originalAudio : aiAudio)) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+                }
+            });
+            
+            audio.addEventListener('loadedmetadata', () => {
+                if (audio === (currentAudioType === 'original' ? originalAudio : aiAudio)) {
+                    document.getElementById('totalTime').textContent = formatTime(audio.duration);
+                }
+            });
+            
+            audio.addEventListener('ended', () => {
+                nextPoem();
+            });
+        }
+        
+        setupAudioListeners(originalAudio);
+        setupAudioListeners(aiAudio);
+        
+        // ============================================
+        // UTILS
+        // ============================================
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function goBack() {
+            window.history.back();
+        }
+        
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        fetchAllPoems();
+    </script>
+</body>
+</html>

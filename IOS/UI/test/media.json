@@ -15,14 +15,76 @@
     352
   ],
   "ai_audio": [
+    1,
+    2,
+    11,
     323,
     325,
     326,
+    331,
     332,
     339,
     340
   ],
+  "ai_song": [
+    1,
+    5,
+    11,
+    323,
+    326,
+    327,
+    331,
+    332
+  ],
+  "ai_song_files": {
+    "11": [
+      "11_AI_song (1).mp3",
+      "11_AI_song (2).mp3",
+      "11_AI_song (3).mp3",
+      "11_AI_song (4).mp3"
+    ],
+    "1": [
+      "1_AI_song (1).mp3",
+      "1_AI_song (2).mp3",
+      "1_AI_song (3).mp3",
+      "1_AI_song (4).mp3"
+    ],
+    "323": [
+      "323_AI_song (1).mp3",
+      "323_AI_song (2).mp3",
+      "323_AI_song (3).mp3",
+      "323_AI_song (4).mp3",
+      "323_AI_song (5).mp3",
+      "323_AI_song (6).mp3"
+    ],
+    "326": [
+      "326_AI_song.mp3"
+    ],
+    "327": [
+      "327_AI_song (1).mp3",
+      "327_AI_song (2).mp3"
+    ],
+    "331": [
+      "331_AI_song (1).mp3",
+      "331_AI_song (2).mp3"
+    ],
+    "332": [
+      "332_AI_song (1).mp3",
+      "332_AI_song (2).mp3",
+      "332_AI_song (3).mp3",
+      "332_AI_song (4).mp3"
+    ],
+    "5": [
+      "5_AI_song (1).mp3",
+      "5_AI_song (2).mp3",
+      "5_AI_song (3).mp3",
+      "5_AI_song (4).mp3"
+    ]
+  },
   "ai_image": [
+    1,
+    5,
+    11,
     323,
     325,
     326,

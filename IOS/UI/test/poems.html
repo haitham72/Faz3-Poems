@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>القصائد</title>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
     <style>
         * {
             margin: 0;
@@ -313,6 +314,34 @@
             display: block;
         }
         
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .play-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .time-display {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
         .loading {
             text-align: center;
             padding: 40px;
@@ -384,7 +413,7 @@
         document.getElementById('itemName').textContent = itemName;
         
         // Load media.json to check which files exist
-        let mediaAvailability = { original_audio: [], ai_audio: [], ai_image: [] };
+        let mediaAvailability = { original_audio: [], ai_audio: [], ai_song: [], ai_image: [] };
         
         async function loadMediaAvailability() {
             try {
@@ -552,7 +581,7 @@
         async function openPoemDetail(poemId) {
             try {
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/Exact_search?poem_id=eq.${poemId}&order=Row_ID.asc`,
+                    `${SUPABASE_URL}/rest/v1/Exact_search?poem_id=eq.${poemId}&order=poem_id.asc,Row_ID.asc`,
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -567,8 +596,15 @@
                 const rows = await response.json();
                 
                 console.log(`📜 Poem ${poemId}: Fetched ${rows.length} rows/lines`);
-                console.log('First line:', rows[0]?.Poem_line_raw);
-                console.log('Last line:', rows[rows.length - 1]?.Poem_line_raw);
+                console.log('Column values for first 5 rows:');
+                rows.slice(0, 5).forEach((r, i) => {
+                    console.log(`Row ${i}:`, {
+                        id: r.id,
+                        Row_ID: r.Row_ID,
+                        poem_id: r.poem_id,
+                        line: r.Poem_line_raw?.substring(0, 30) + '...'
+                    });
+                });
                 
                 if (rows.length === 0) {
                     showError('القصيدة غير موجودة');
@@ -583,6 +619,22 @@
                 if (modalContent) {
                     modalContent.scrollTop = 0;
                 }
+                
+                // Get media info for this poem (use poemId from function parameter)
+                const hasOriginalAudio = mediaAvailability.original_audio.includes(poemId);
+                const hasAiAudio = mediaAvailability.ai_audio.includes(poemId);
+                const aiSongFiles = mediaAvailability.ai_song_files?.[poemId] || [];
+                const faz3AudioUrl = hasOriginalAudio ? `media/${poemId}.mp3` : null;
+                const aiAudioUrl = hasAiAudio ? `media/${poemId}_AI_Faz3.mp3` : null;
+                
+                // Initialize audio players
+                setTimeout(() => initializeAudioPlayers(poemId, {
+                    hasOriginalAudio,
+                    hasAiAudio,
+                    aiSongFiles,
+                    faz3AudioUrl,
+                    aiAudioUrl
+                }), 300);
             } catch (error) {
                 console.error('Error:', error);
                 showError('حدث خطأ في تحميل القصيدة');
@@ -606,8 +658,10 @@
             const poemId = firstRow.poem_id;
             const hasOriginalAudio = mediaAvailability.original_audio.includes(poemId);
             const hasAiAudio = mediaAvailability.ai_audio.includes(poemId);
+            const hasAiSong = mediaAvailability.ai_song?.includes(poemId) || false;
+            const aiSongFiles = mediaAvailability.ai_song_files?.[poemId] || [];
             const hasAiImage = mediaAvailability.ai_image.includes(poemId);
-            const hasAnyMedia = hasOriginalAudio || hasAiAudio || hasAiImage;
+            const hasAnyMedia = hasOriginalAudio || hasAiAudio || hasAiSong || hasAiImage;
             
             // Only generate URLs if file exists
             const faz3AudioUrl = hasOriginalAudio ? `media/${poemId}.mp3` : null;
@@ -632,19 +686,33 @@
                         ${hasOriginalAudio ? `
                         <div class="media-item">
                             <div class="media-label">🎤 صوت فزاع الأصلي</div>
-                            <audio controls style="width: 100%;">
-                                <source src="${faz3AudioUrl}" type="audio/mpeg">
-                            </audio>
+                            <div id="waveform-original-${poemId}" style="width: 100%; margin-top: 10px;"></div>
+                            <div class="audio-controls">
+                                <button onclick="togglePlay('original-${poemId}')" id="play-original-${poemId}" class="play-btn">▶ تشغيل</button>
+                                <span id="time-original-${poemId}" class="time-display">0:00 / 0:00</span>
+                            </div>
                         </div>
                         ` : ''}
                         ${hasAiAudio ? `
                         <div class="media-item">
                             <div class="media-label">🤖 صوت فزاع AI</div>
-                            <audio controls style="width: 100%;">
-                                <source src="${aiAudioUrl}" type="audio/mpeg">
-                            </audio>
+                            <div id="waveform-ai-${poemId}" style="width: 100%; margin-top: 10px;"></div>
+                            <div class="audio-controls">
+                                <button onclick="togglePlay('ai-${poemId}')" id="play-ai-${poemId}" class="play-btn">▶ تشغيل</button>
+                                <span id="time-ai-${poemId}" class="time-display">0:00 / 0:00</span>
+                            </div>
                         </div>
                         ` : ''}
+                        ${aiSongFiles.length > 0 ? aiSongFiles.map((filename, idx) => `
+                        <div class="media-item">
+                            <div class="media-label">🎵 أغنية AI ${aiSongFiles.length > 1 ? `(${idx + 1}/${aiSongFiles.length})` : ''}</div>
+                            <div id="waveform-song-${poemId}-${idx}" style="width: 100%; margin-top: 10px;"></div>
+                            <div class="audio-controls">
+                                <button onclick="togglePlay('song-${poemId}-${idx}')" id="play-song-${poemId}-${idx}" class="play-btn">▶ تشغيل</button>
+                                <span id="time-song-${poemId}-${idx}" class="time-display">0:00 / 0:00</span>
+                            </div>
+                        </div>
+                        `).join('') : ''}
                         ${hasAiImage ? `
                         <div class="media-item">
                             <div class="media-label">🖼️ صورة AI (9:16)</div>
@@ -780,6 +848,138 @@
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 3000);
+        }
+        
+        // ============================================
+        // WAVESURFER AUDIO PLAYERS
+        // ============================================
+        const wavesurfers = {};
+        
+        function initializeAudioPlayers(poemId, mediaInfo) {
+            const { hasOriginalAudio, hasAiAudio, aiSongFiles, faz3AudioUrl, aiAudioUrl } = mediaInfo;
+            
+            console.log('🎵 Initializing audio players for poem:', poemId);
+            console.log('Media info:', mediaInfo);
+            
+            // Check if WaveSurfer is loaded
+            if (typeof WaveSurfer === 'undefined') {
+                console.error('❌ WaveSurfer library not loaded!');
+                return;
+            }
+            
+            // Original Audio
+            if (hasOriginalAudio) {
+                const id = `original-${poemId}`;
+                console.log('Creating waveform for:', id, faz3AudioUrl);
+                try {
+                    const ws = WaveSurfer.create({
+                        container: `#waveform-${id}`,
+                        waveColor: '#667eea',
+                        progressColor: '#764ba2',
+                        cursorColor: '#764ba2',
+                        height: 60,
+                        barWidth: 2,
+                        barRadius: 3,
+                        responsive: true
+                    });
+                    ws.on('error', (err) => console.error('Waveform error:', err));
+                    ws.on('ready', () => {
+                        console.log('✅ Audio ready:', id);
+                        updateTime(id, ws);
+                    });
+                    ws.on('audioprocess', () => updateTime(id, ws));
+                    ws.on('finish', () => {
+                        document.getElementById(`play-${id}`).textContent = '▶ تشغيل';
+                    });
+                    ws.load(faz3AudioUrl);
+                    wavesurfers[id] = ws;
+                } catch (err) {
+                    console.error('Failed to create waveform:', err);
+                }
+            }
+            
+            // AI Audio
+            if (hasAiAudio) {
+                const id = `ai-${poemId}`;
+                const ws = WaveSurfer.create({
+                    container: `#waveform-${id}`,
+                    waveColor: '#667eea',
+                    progressColor: '#764ba2',
+                    cursorColor: '#764ba2',
+                    height: 60,
+                    barWidth: 2,
+                    barRadius: 3,
+                    responsive: true
+                });
+                ws.load(aiAudioUrl);
+                ws.on('ready', () => updateTime(id, ws));
+                ws.on('audioprocess', () => updateTime(id, ws));
+                ws.on('finish', () => {
+                    document.getElementById(`play-${id}`).textContent = '▶ تشغيل';
+                });
+                wavesurfers[id] = ws;
+            }
+            
+            // AI Songs
+            aiSongFiles.forEach((filename, idx) => {
+                const id = `song-${poemId}-${idx}`;
+                const ws = WaveSurfer.create({
+                    container: `#waveform-${id}`,
+                    waveColor: '#667eea',
+                    progressColor: '#764ba2',
+                    cursorColor: '#764ba2',
+                    height: 60,
+                    barWidth: 2,
+                    barRadius: 3,
+                    responsive: true
+                });
+                ws.load(`media/${filename}`);
+                ws.on('ready', () => updateTime(id, ws));
+                ws.on('audioprocess', () => updateTime(id, ws));
+                ws.on('finish', () => {
+                    document.getElementById(`play-${id}`).textContent = '▶ تشغيل';
+                });
+                wavesurfers[id] = ws;
+            });
+        }
+        
+        function togglePlay(id) {
+            const ws = wavesurfers[id];
+            if (!ws) return;
+            
+            const btn = document.getElementById(`play-${id}`);
+            if (ws.isPlaying()) {
+                ws.pause();
+                btn.textContent = '▶ تشغيل';
+            } else {
+                // Pause all other players
+                Object.keys(wavesurfers).forEach(key => {
+                    if (key !== id && wavesurfers[key].isPlaying()) {
+                        wavesurfers[key].pause();
+                        const otherBtn = document.getElementById(`play-${key}`);
+                        if (otherBtn) otherBtn.textContent = '▶ تشغيل';
+                    }
+                });
+                
+                ws.play();
+                btn.textContent = '⏸ إيقاف';
+            }
+        }
+        
+        function updateTime(id, ws) {
+            const current = formatTime(ws.getCurrentTime());
+            const total = formatTime(ws.getDuration());
+            const timeDisplay = document.getElementById(`time-${id}`);
+            if (timeDisplay) {
+                timeDisplay.textContent = `${current} / ${total}`;
+            }
+        }
+        
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
         
         // Initialize

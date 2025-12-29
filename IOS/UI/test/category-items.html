@@ -231,6 +231,10 @@
                     
                     const mediaFiles = await response.json();
                     
+                    console.log('📀 Media files loaded:', mediaFiles);
+                    console.log('🎵 AI Song count:', mediaFiles.ai_song?.length);
+                    console.log('🎵 AI Song IDs:', mediaFiles.ai_song);
+                    
                     const items = [
                         {
                             name: 'صوت فزاع الأصلي',
@@ -247,6 +251,13 @@
                             poemIds: mediaFiles.ai_audio
                         },
                         {
+                            name: 'أغنية AI',
+                            count: mediaFiles.ai_song?.length || 0,
+                            field: 'ai_song',
+                            icon: '🎵',
+                            poemIds: mediaFiles.ai_song || []
+                        },
+                        {
                             name: 'صورة AI',
                             count: mediaFiles.ai_image.length,
                             field: 'ai_image',
@@ -254,6 +265,8 @@
                             poemIds: mediaFiles.ai_image
                         }
                     ].filter(item => item.count > 0);
+                    
+                    console.log('📊 Final items to display:', items);
                     
                     document.getElementById('loading').style.display = 'none';
                     

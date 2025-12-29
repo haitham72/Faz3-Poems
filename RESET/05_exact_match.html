@@ -279,7 +279,7 @@
 
     <div class="container">
       <div class="search-box">
-        <h1>🔍 البحث الذكي - V3 FTS</h1>
+        <h1>🔍 البحث الذكي - Hybrid Search V3</h1>
         <div class="search-input-group">
           <input
             type="text"
@@ -291,12 +291,14 @@
 
         <div class="test-buttons">
           <button class="test-btn" onclick="testGrouped()">
-            اختبار: استعلام مجمع
+            اختبار: استعلام مجمع (بو خالد)
           </button>
           <button class="test-btn" onclick="testOldFormat()">
-            اختبار: صيغة قديمة
+            اختبار: صيغة قديمة (بو راشد)
           </button>
-          <button class="test-btn" onclick="testComplex()">اختبار: معقد</button>
+          <button class="test-btn" onclick="testComplex()">
+            اختبار: معقد (زايد)
+          </button>
         </div>
       </div>
 
@@ -309,7 +311,7 @@
     <script>
       const CONFIG = {
         // N8N Webhook URL - REPLACE WITH YOUR WEBHOOK
-        N8N_WEBHOOK_URL: "https://ihisam002.app.n8n.cloud/webhook/N8N",
+        N8N_WEBHOOK_URL: "http://localhost:5678/webhook/N8N",
 
         // Supabase config (for direct PostgreSQL - optional fallback)
         SUPABASE_URL: "https://uffjlburuvsnstvgyito.supabase.co",
@@ -326,12 +328,134 @@
           if (e.key === "Enter") searchPoems();
         });
 
+      // Normalizer: Standardizes Arabic text (removes diacritics, unifies alef, etc.)
+      function normalizeForComparison(text) {
+        if (!text) return "";
+        return text
+          .replace(/[^\u0600-\u06FFa-zA-Z0-9]/g, "") // Keep alphanumeric & Arabic
+          .replace(/[\u0640]/g, "") // Remove Tatweel
+          .replace(/[أإآ]/g, "ا")
+          .replace(/[ى]/g, "ي")
+          .replace(/[ة]/g, "ه");
+      }
+
+      // ==========================================
+      // CORE LOGIC: Highlight Text Function
+      // ==========================================
+      function highlightText(rawText, matchData, displayRowId) {
+        let positionsToHighlight = new Set();
+        let metadataWordsToHighlight = new Set();
+        let phrasePartsToHighlight = new Set();
+
+        // 1. EXTRACT: Gather all highlight rules from matchData
+        if (Array.isArray(matchData)) {
+          matchData.forEach(processMatch);
+        } else if (matchData && matchData.matched_words) {
+          // If match data belongs to a specific row, ensure we only highlight that row
+          if (matchData.row_id && matchData.row_id !== displayRowId)
+            return rawText;
+          matchData.matched_words.forEach(processMatch);
+        } else {
+          return rawText;
+        }
+
+        function processMatch(m) {
+          // Rule A: Numeric Positions (FTS standard)
+          if (
+            m.positions &&
+            m.positions !== "metadata" &&
+            m.positions !== "phrase"
+          ) {
+            const positions = m.positions.toString();
+            if (positions.includes("-")) {
+              const [start, end] = positions.split("-").map(Number);
+              for (let i = start; i <= end; i++) {
+                positionsToHighlight.add(i);
+              }
+            } else if (positions.includes(",")) {
+              positions
+                .split(",")
+                .forEach((p) => positionsToHighlight.add(Number(p.trim())));
+            } else {
+              positionsToHighlight.add(Number(positions));
+            }
+          }
+          // Rule B: Phrase Match (Fix for "بو راشد")
+          // High scores return "positions": "phrase". We split and normalize parts.
+          else if (m.positions === "phrase" && m.text) {
+            m.text.split(/\s+/).forEach((w) => {
+              if (w) phrasePartsToHighlight.add(normalizeForComparison(w));
+            });
+          }
+          // Rule C: Metadata Match (Fuzzy)
+          else if (m.positions === "metadata" && m.text) {
+            m.text.split(/\s+/).forEach((w) => {
+              if (w) metadataWordsToHighlight.add(normalizeForComparison(w));
+            });
+          }
+        }
+
+        // Optimization: Return early if nothing to highlight
+        if (
+          positionsToHighlight.size === 0 &&
+          metadataWordsToHighlight.size === 0 &&
+          phrasePartsToHighlight.size === 0
+        ) {
+          return rawText;
+        }
+
+        // 2. APPLY: Split text by spaces (preserving structure) and check tokens
+        const tokens = rawText.split(/(\s+)/);
+        let wordIndex = 0;
+
+        return tokens
+          .map((token) => {
+            if (!token.trim()) return token; // Return whitespace as is
+
+            const tokenNorm = normalizeForComparison(token);
+            if (!tokenNorm) return token; // Skip punctuation tokens
+
+            // Check 1: Numeric Index (Exact FTS)
+            const isIndexMatch = positionsToHighlight.has(wordIndex);
+
+            // Check 2: Phrase Part (Substring match allowed for suffixes)
+            const isPhraseMatch = [...phrasePartsToHighlight].some(
+              (target) =>
+                tokenNorm.includes(target) || target.includes(tokenNorm)
+            );
+
+            // Check 3: Metadata Part
+            const isMetadataMatch = [...metadataWordsToHighlight].some(
+              (target) =>
+                tokenNorm.includes(target) || target.includes(tokenNorm)
+            );
+
+            wordIndex++; // Safely increment word count
+
+            // Apply HTML wrapping
+            if (isIndexMatch || isPhraseMatch) {
+              return `<mark>${token}</mark>`;
+            }
+            if (isMetadataMatch) {
+              return `<mark class="metadata-highlight">${token}</mark>`;
+            }
+
+            return token;
+          })
+          .join("");
+      }
+
+      // ==========================================
+      // API Interaction
+      // ==========================================
       async function searchPoems(customPayload = null) {
         const resultsDiv = document.getElementById("results");
         const loadingDiv = document.getElementById("loading");
-        const summaryDiv = document.getElementById("summaryContainer");
-        const tagsDiv = document.getElementById("tagsContainer");
         const perfBadge = document.getElementById("perfBadge");
+
+        // Clear previous results
+        document.getElementById("summaryContainer").style.display = "none";
+        document.getElementById("tagsContainer").style.display = "none";
 
         loadingDiv.classList.add("show");
         resultsDiv.innerHTML = createSkeletonCards(3);
@@ -343,7 +467,7 @@
 
           // Build payload
           const payload = customPayload || {
-            query: queryText, // Simple string for N8N
+            query: queryText,
             user_language: "ar",
           };
 
@@ -352,29 +476,19 @@
           let data;
 
           if (CONFIG.USE_N8N) {
-            // ============================================
-            // CALL N8N WEBHOOK
-            // ============================================
             const n8nResponse = await fetch(CONFIG.N8N_WEBHOOK_URL, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
             });
 
             if (!n8nResponse.ok) {
-              throw new Error(
-                `N8N error: ${n8nResponse.status} - ${await n8nResponse.text()}`
-              );
+              throw new Error(`N8N error: ${n8nResponse.status}`);
             }
 
             data = await n8nResponse.json();
-            console.log("📥 N8N Response:", data);
           } else {
-            // ============================================
-            // FALLBACK: DIRECT POSTGRESQL
-            // ============================================
+            // Fallback Logic (Supabase Direct)
             const pgPayload = customPayload || {
               N8N_query: {
                 Exact_query: queryText,
@@ -387,7 +501,7 @@
             };
 
             const response = await fetch(
-              `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v2_entity_aware`,
+              `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v3_entity_aware`,
               {
                 method: "POST",
                 headers: {
@@ -403,16 +517,8 @@
               }
             );
 
-            if (!response.ok) {
-              throw new Error(
-                `PostgreSQL error: ${
-                  response.status
-                } - ${await response.text()}`
-              );
-            }
-
+            if (!response.ok) throw new Error("PostgreSQL Error");
             data = await response.json();
-            console.log("📥 PostgreSQL Response:", data);
           }
 
           const endTime = performance.now();
@@ -420,7 +526,7 @@
 
           loadingDiv.classList.remove("show");
 
-          // Show performance badge
+          // Performance Badge
           perfBadge.textContent = `${duration}ms`;
           perfBadge.className = `performance-badge ${
             duration < 500 ? "fast" : "slow"
@@ -428,7 +534,7 @@
           perfBadge.style.display = "block";
           setTimeout(() => (perfBadge.style.display = "none"), 3000);
 
-          // Handle response (N8N format or PostgreSQL format)
+          // Handle response array/object differences
           const result = Array.isArray(data) ? data[0] : data;
 
           if (result && result.results && result.results.length > 0) {
@@ -446,34 +552,18 @@
         }
       }
 
-      function testGrouped() {
-        // Simple search that will hit N8N
-        document.getElementById("searchQuery").value = "بو خالد";
-        searchPoems();
-      }
-
-      function testOldFormat() {
-        // Simple search that will hit N8N
-        document.getElementById("searchQuery").value = "بو راشد";
-        searchPoems();
-      }
-
-      function testComplex() {
-        // Simple search that will hit N8N
-        document.getElementById("searchQuery").value = "زايد";
-        searchPoems();
-      }
-
+      // ==========================================
+      // Helper Functions
+      // ==========================================
       function createSkeletonCards(count) {
         let html = "";
         for (let i = 0; i < count; i++) {
           html += `
-                    <div class="result-card">
-                        <div class="skeleton skeleton-title"></div>
-                        <div class="skeleton skeleton-poem"></div>
-                        <div class="skeleton skeleton-meta"></div>
-                    </div>
-                `;
+                <div class="result-card">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-poem"></div>
+                    <div class="skeleton skeleton-meta"></div>
+                </div>`;
         }
         return html;
       }
@@ -498,8 +588,7 @@
                         <div class="stat-value">${data.results.length}</div>
                         <div class="stat-label">نتيجة</div>
                     </div>
-                </div>
-            `;
+                </div>`;
         summaryDiv.style.display = "block";
       }
 
@@ -516,126 +605,8 @@
                     ${tags
                       .map((tag) => `<span class="tag-pill">${tag}</span>`)
                       .join("")}
-                </div>
-            `;
+                </div>`;
         tagsDiv.style.display = "block";
-      }
-
-      function normalizeForComparison(text) {
-        if (!text) return "";
-        return text
-          .replace(/[^\u0600-\u06FFa-zA-Z]/g, "")
-          .replace(/[\u0640]/g, "")
-          .replace(/[أإآ]/g, "ا")
-          .replace(/[ى]/g, "ي")
-          .replace(/[ة]/g, "ه");
-      }
-
-      function highlightText(rawText, matchData, displayRowId) {
-        let positionsToHighlight = new Set();
-        let metadataWordsToHighlight = new Set(); // For metadata fuzzy matching
-
-        // Extract positions from matchData
-        if (Array.isArray(matchData)) {
-          matchData.forEach((m) => {
-            if (m.positions && m.positions !== "metadata") {
-              // Parse positions: "5", "5-6", or "2,5,8"
-              const positions = m.positions.toString();
-              if (positions.includes("-")) {
-                const [start, end] = positions.split("-").map(Number);
-                for (let i = start; i <= end; i++) {
-                  positionsToHighlight.add(i);
-                }
-              } else if (positions.includes(",")) {
-                positions
-                  .split(",")
-                  .forEach((p) => positionsToHighlight.add(Number(p.trim())));
-              } else {
-                positionsToHighlight.add(Number(positions));
-              }
-            } else if (m.positions === "metadata" && m.text) {
-              // For metadata matches, add text for fuzzy matching
-              metadataWordsToHighlight.add(normalizeForComparison(m.text));
-            }
-          });
-        } else if (matchData && matchData.matched_words) {
-          if (matchData.row_id && matchData.row_id !== displayRowId)
-            return rawText;
-
-          matchData.matched_words.forEach((m) => {
-            if (m.positions && m.positions !== "metadata") {
-              const positions = m.positions.toString();
-              if (positions.includes("-")) {
-                const [start, end] = positions.split("-").map(Number);
-                for (let i = start; i <= end; i++) {
-                  positionsToHighlight.add(i);
-                }
-              } else if (positions.includes(",")) {
-                positions
-                  .split(",")
-                  .forEach((p) => positionsToHighlight.add(Number(p.trim())));
-              } else {
-                positionsToHighlight.add(Number(positions));
-              }
-            } else if (m.positions === "metadata" && m.text) {
-              // For metadata matches, add text for fuzzy matching
-              metadataWordsToHighlight.add(normalizeForComparison(m.text));
-            }
-          });
-        } else {
-          return rawText;
-        }
-
-        if (
-          positionsToHighlight.size === 0 &&
-          metadataWordsToHighlight.size === 0
-        )
-          return rawText;
-
-        // Split text into words
-        const words = rawText.split(/(\s+)/);
-        let wordIndex = 0;
-
-        return words
-          .map((token) => {
-            if (!token.trim()) return token; // Preserve whitespace
-
-            // Position-based highlighting (EXACT)
-            const shouldHighlight = positionsToHighlight.has(wordIndex);
-            const tokenNorm = normalizeForComparison(token);
-
-            // Skip tokens that normalize to empty (pure punctuation)
-            if (!tokenNorm) {
-              return token;
-            }
-
-            wordIndex++; // Only count actual words
-
-            if (shouldHighlight) {
-              return `<mark>${token}</mark>`;
-            }
-
-            // Metadata fuzzy highlighting (FALLBACK)
-            for (let metadataWord of metadataWordsToHighlight) {
-              // Split metadata phrase into words
-              const metadataWords = metadataWord.split(/\s+/).filter((w) => w);
-
-              // Check if token matches any word in the metadata phrase
-              if (
-                metadataWords.some(
-                  (mw) =>
-                    tokenNorm === mw ||
-                    (tokenNorm.length > 2 && tokenNorm.includes(mw)) ||
-                    (mw.length > 2 && mw.includes(tokenNorm))
-                )
-              ) {
-                return `<mark class="metadata-highlight">${token}</mark>`;
-              }
-            }
-
-            return token;
-          })
-          .join("");
       }
 
       function displayResults(results) {
@@ -643,51 +614,67 @@
         let html = "";
 
         results.forEach((result) => {
+          // Highlight Title
           const titleHighlighted = highlightText(
             result.title_raw,
             result.match.title,
             null
           );
 
+          // Highlight Poem Line
           const poemHighlighted = highlightText(
             result.poem_line_raw,
             result.match.poem_line,
             result.row_id
           );
 
+          // Check if metadata matched
           const hasMetadata =
             result.match.poem_line?.matched_words?.some(
               (w) => w.positions === "metadata"
             ) || false;
 
           html += `
-                    <div class="result-card">
-                        <div class="result-header">
-                            <div class="result-title">${titleHighlighted}</div>
-                            <div class="result-score">${result.score}</div>
-                        </div>
-                        <div class="result-poem">${poemHighlighted}</div>
-                        <div class="result-meta">
-                            <span class="meta-item">سطر: ${result.row_id}</span>
-                            <span class="meta-item meta-location">
-                                ${result.match_location.join(" + ")}
-                            </span>
-                            ${
-                              result.tag
-                                ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>`
-                                : ""
-                            }
-                            ${
-                              hasMetadata
-                                ? '<span class="meta-item" style="background: #ffe5b4;">📊 من البيانات الوصفية</span>'
-                                : ""
-                            }
-                        </div>
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">${titleHighlighted}</div>
+                        <div class="result-score">${result.score}</div>
                     </div>
-                `;
+                    <div class="result-poem">${poemHighlighted}</div>
+                    <div class="result-meta">
+                        <span class="meta-item">سطر: ${result.row_id}</span>
+                        <span class="meta-item meta-location">
+                            ${result.match_location.join(" + ")}
+                        </span>
+                        ${
+                          result.tag
+                            ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>`
+                            : ""
+                        }
+                        ${
+                          hasMetadata
+                            ? '<span class="meta-item" style="background: #ffe5b4;">📊 من البيانات الوصفية</span>'
+                            : ""
+                        }
+                    </div>
+                </div>`;
         });
 
         resultsDiv.innerHTML = html;
+      }
+
+      // Test Functions
+      function testGrouped() {
+        document.getElementById("searchQuery").value = "بو خالد";
+        searchPoems();
+      }
+      function testOldFormat() {
+        document.getElementById("searchQuery").value = "بو راشد";
+        searchPoems();
+      }
+      function testComplex() {
+        document.getElementById("searchQuery").value = "زايد";
+        searchPoems();
       }
     </script>
   </body>

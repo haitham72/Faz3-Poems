@@ -106,7 +106,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 5;
+            -webkit-line-clamp: 12;  /* Show up to 12 lines */
             -webkit-box-orient: vertical;
         }
         
@@ -404,30 +404,55 @@
         // ============================================
         async function fetchPoems() {
             try {
-                // Fetch all rows
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/Exact_search?select=*&order=poem_id.asc`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                let response;
+                
+                // Audio category - ONLY fetch poems that have media files
+                if (category === 'audio' && validPoemIds && validPoemIds.length > 0) {
+                    console.log('Fetching ONLY poems with media:', validPoemIds);
+                    
+                    // Build query: poem_id.in.(323,325,326,339,340)
+                    const poemIdsQuery = validPoemIds.join(',');
+                    response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/Exact_search?select=*&poem_id=in.(${poemIdsQuery})&order=poem_id.asc`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
                         }
-                    }
-                );
+                    );
+                } else {
+                    // Regular categories - fetch all rows
+                    response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/Exact_search?select=*&order=poem_id.asc`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Range': '0-9999'
+                            }
+                        }
+                    );
+                }
                 
                 if (!response.ok) throw new Error('Failed to fetch poems');
                 
                 const data = await response.json();
                 
-                // Filter poems that match this item
-                const matchingPoems = new Map();
+                console.log('Total rows fetched:', data.length);
+                console.log('Category:', category);
+                console.log('Valid Poem IDs:', validPoemIds);
+                
+                // Group rows by poem_id to get complete poems
+                const poemGroups = new Map();
                 
                 data.forEach(row => {
                     let hasMatch = false;
                     
-                    // Audio category - filter by valid poem IDs from storage
+                    // Audio category - we already fetched only valid poems!
                     if (category === 'audio' && validPoemIds) {
-                        hasMatch = validPoemIds.includes(row.poem_id);
+                        hasMatch = true; // All fetched rows are valid
+                        console.log('✅ Included poem_id:', row.poem_id, row.Title_raw);
                     }
                     // Regular category filtering
                     else if (category !== 'audio') {
@@ -450,12 +475,25 @@
                         }
                     }
                     
-                    if (hasMatch && !matchingPoems.has(row.poem_id)) {
-                        matchingPoems.set(row.poem_id, row);
+                    if (hasMatch) {
+                        // Group all rows for this poem
+                        if (!poemGroups.has(row.poem_id)) {
+                            poemGroups.set(row.poem_id, []);
+                        }
+                        poemGroups.get(row.poem_id).push(row);
                     }
                 });
                 
+                // Take first row from each poem group for display
+                const matchingPoems = new Map();
+                poemGroups.forEach((rows, poemId) => {
+                    matchingPoems.set(poemId, rows[0]); // Use first row for thumbnail
+                });
+                
                 const poems = Array.from(matchingPoems.values());
+                
+                console.log('✅ Final matching poems:', poems.length);
+                console.log('Poem IDs found:', poems.map(p => p.poem_id));
                 
                 document.getElementById('loading').style.display = 'none';
                 renderPoems(poems);
@@ -518,7 +556,8 @@
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Range': '0-999'  // Get up to 1000 lines per poem
                         }
                     }
                 );
@@ -527,6 +566,10 @@
                 
                 const rows = await response.json();
                 
+                console.log(`📜 Poem ${poemId}: Fetched ${rows.length} rows/lines`);
+                console.log('First line:', rows[0]?.Poem_line_raw);
+                console.log('Last line:', rows[rows.length - 1]?.Poem_line_raw);
+                
                 if (rows.length === 0) {
                     showError('القصيدة غير موجودة');
                     return;
@@ -534,6 +577,12 @@
                 
                 renderPoemDetail(rows);
                 document.getElementById('modal').classList.add('active');
+                
+                // Scroll modal content to top
+                const modalContent = document.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.scrollTop = 0;
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('حدث خطأ في تحميل القصيدة');

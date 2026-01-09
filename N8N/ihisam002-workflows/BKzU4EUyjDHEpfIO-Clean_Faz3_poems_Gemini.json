@@ -1,0 +1,2576 @@
+{
+  "name": "Clean - Faz3 poems - Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 179938127,
+          "mode": "list",
+          "cachedResultName": "grouped_lines_for_AI",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=179938127"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Stuatus",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": 540
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2176,
+        -1408
+      ],
+      "id": "139fb7a6-cc37-40e5-9158-1fecf15ff2d8",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=summarize these lines: {{ $json.contents_tagged }}\nfull poem: {{ $json.poem }}\nafter checking the full poetry: {{ $json.contents_clean }}",
+        "options": {
+          "systemMessage": "=# ✅ **System Prompt (English Instruction, Arabic Summaries, JSON Output)**\n\nYou are an expert in Arabic poetry analysis. You will be given selected lines from a poem (each formatted as `\"line_number\":\"text\"`) and the full poem as contextual reference.\n\nYour task is to:  \n- Generate a **concise summary in Arabic** (5–30 words max) for **each provided line**, capturing its emotional and thematic essence.  \n- Summarize **each line independently**—do not merge lines or add interpretations beyond what’s implied.  \n- Use the full poem **only for contextual understanding**, but base each summary strictly on its own line.  \n- Output **must be valid JSON**: a single object where keys are line numbers as **strings** (e.g., `\"1\"`, `\"2\"`) and values are the **Arabic summaries** as strings.  \n- **Do not include any extra text, explanations, or formatting**—output only the JSON object.\n\n---\n\n### 📥 Example Input (for reference only)\n\n**Selected lines:**  \n`\"1\":\"حبيبتي حالي من الشوق داني      اشرق بحبك .. واعود اغرب\",`  \n`\"2\":\"اناني ف وصلك لكن يالاناني      تري الانانيه ف طبعك تخرب\",`  \n`\"3\":\"لحظات حبك حطمت لي كياني      والحزن من بين المحاني تسرب\"`\n\n**Full poem:**  \nحبيبتي حالي من الشوق داني      اشرق بحبك .. واعود اغرب،  \nاناني ف وصلك لكن يالاناني      تري الانانيه ف طبعك تخرب،  \nلحظات حبك حطمت لي كياني      والحزن من بين المحاني تسرب،  \nتسرب وصكت عليه المحاني      كنه لوصلك بالجروح يتقرب،  \nيا معرب الانساب خدر العياني      سلم العرب لا تجهله يالمعرب،  \nشربت حبك لين فاض الحناني      وقامت عروقي من غلاك تشرب  \n\n---\n\n### 📤 Expected Output (Valid JSON, Summaries in Arabic)\n\n```json\n{\n  \"1\": \"الشاعر هنا يتحدث عن شوقه الحارّ لها وتأرجحه بين الاتصال والابتعاد\",\n  \"2\": \"يعبر عن تناقض الأنانية بينه وبين محبوبته التي تفسد العلاقة\",\n  \"3\": \"يصف كيف دمرته لحظات الحب وأدخلت الحزن إلى أعماقه\"\n}\n```\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1280,
+        -1488
+      ],
+      "id": "61f765ad-c200-4dee-aafb-4953ed8e1400",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst result = items.flatMap((item) => {\n  let outputStr = item?.json?.output || '';\n\n  // Extract JSON from Markdown code block if present\n  const jsonMatch = outputStr.match(/```json\\s*({[\\s\\S]*?})\\s*```/);\n  const cleanJsonStr = jsonMatch ? jsonMatch[1] : outputStr;\n\n  // Parse the inner JSON object\n  const parsedObj = JSON.parse(cleanJsonStr);\n\n  // Convert { \"1\": \"...\", \"2\": \"...\" } → [ { Row_ID: \"1\", summary: \"...\" }, ... ]\n  return Object.entries(parsedObj).map(([Row_ID, summary]) => ({\n    Row_ID,\n    summary\n  }));\n});\n\nreturn result.map(obj => ({ json: obj }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        -1488
+      ],
+      "id": "0cc7d319-d8e8-429d-9aa9-ddd95058315d",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1504,
+        -1408
+      ],
+      "id": "af6b409e-d6f1-4d81-9b4d-136ba2a61e02",
+      "name": "Loop Over Items",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst grouped = items.reduce((acc, item) => {\n  const json = item.json;\n  const id = json.poem_id;\n\n  if (!acc[id]) {\n    acc[id] = {\n      poem_id: id,                     // 👈 ADDED\n      poem: json.Title_cleaned.trim(),\n      contents_clean: [],\n      contents_tagged: []\n    };\n  }\n\n  const lineText = (json.Poem_line_cleaned || \"\").trim();\n  const rowNum = json.row_number;\n\n  acc[id].contents_clean.push(lineText);\n  acc[id].contents_tagged.push(`\"${rowNum}\":\"${lineText}\"`);\n\n  return acc;\n}, {});\n\nconst result = Object.values(grouped);\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        -1408
+      ],
+      "id": "5c309390-84d0-44d2-9e83-af590e190667",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "279676cb-1fba-4c26-8113-6173dc9cdbc8",
+              "name": "Title_cleaned",
+              "value": "={{ $json.Title_cleaned }}",
+              "type": "string"
+            },
+            {
+              "id": "a13eaf7d-5c67-4489-9ad0-9e7b61cfae78",
+              "name": "Poem_line_cleaned",
+              "value": "={{ $json.Poem_line_cleaned }}",
+              "type": "string"
+            },
+            {
+              "id": "017bad73-a782-4b01-bfb4-dca3e3799dce",
+              "name": "poem_id",
+              "value": "={{ $json.poem_id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1952,
+        -1408
+      ],
+      "id": "f6c24dfc-77e3-477f-b3d1-0efc8ef767eb",
+      "name": "Original_Dataset"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 179938127,
+          "mode": "list",
+          "cachedResultName": "grouped_lines_for_AI",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=179938127"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Stuatus": "Done",
+            "poem_id": "={{ $('Loop Over Items').item.json.poem_id }}"
+          },
+          "matchingColumns": [
+            "poem_id"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_full",
+              "displayName": "Poem_full",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Stuatus",
+              "displayName": "Stuatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -480,
+        -1408
+      ],
+      "id": "b4a0b594-6715-4c50-8f98-d3d568bd755a",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1836724327,
+          "mode": "list",
+          "cachedResultName": "Exact_lines",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1836724327"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Row_ID": "={{ $json.Row_ID }}",
+            "summary": "={{ $json.summary }}"
+          },
+          "matchingColumns": [
+            "Row_ID"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Row_ID",
+              "displayName": "Row_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "qafiya",
+              "displayName": "qafiya",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "bahr",
+              "displayName": "bahr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        -1488
+      ],
+      "id": "a0132d65-2b30-4860-8f7f-46a60379ec00",
+      "name": "Update Summary",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        112
+      ],
+      "id": "a7d86d34-ea6a-4d78-89ae-d3c4c2ab7a29",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 179938127,
+          "mode": "list",
+          "cachedResultName": "grouped_lines_for_AI",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=179938127"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Stuatus",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2176,
+        -1088
+      ],
+      "id": "1aec92ec-5a4b-44f8-92b4-f4d2fcf5b6bb",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONTEXT: Full poem text for bahr/qafiya analysis:\n{{ $json.Poem_full }}\n\n---\n\nTASK: Analyze each line below individually.\n\nPoem: {{ $json.Title_cleaned }}\n\nLines to process:\n{{ $json.Poem_line_cleaned }}\n\nINSTRUCTIONS:\n- Determine bahr and qafiya from full poem context (same for all lines)\n- Extract sentiments and entities from EACH individual line\n- Include pronouns (أنت، ـك، ـها) as people entities\n- Return JSON array with row_id for each line\n\nOUTPUT FORMAT: Valid JSON array [ {\"row_id\": 1, ...}, {\"row_id\": 2, ...} ]",
+        "options": {
+          "systemMessage": "=# Arabic Poetry Analysis Agent - Minimal Fields (Production)\n\n## Core Function\nAnalyze Arabic poetry using classical prosody (علم العَروض). Output JSON with **only** bahr, qafiya, sentiments, entities, and classification.\n\n## Input → Output\n- Input: English with embedded Arabic poetry (3-5 lines)\n- Output: Valid JSON, 100% Arabic values (except confidence floats)\n\n## Critical Rules\n1. **Arabic only** in all text fields\n2. **Full poem context** for bahr/qafiya (never single line)\n3. **\"غير محسوم\"** if confidence < 0.6\n4. **No hallucination** - accuracy > completion\n5. **Valid JSON only** - no prose, no markdown\n\n---\n\n## Analysis Requirements\n\n### 1. BAHR (Meter) - REQUIRED\n**Rule**: Analyze ALL verses together to determine consistent pattern.\n\n**Tafeela Patterns** (internal reference):\n```\nفَعُولُنْ=11010 | مَفَاعِيلُنْ=1101010 | فَاعِلُنْ=10110 | فَعِلُنْ=1010\nمُتَفَاعِلُنْ=1110110 | مُسْتَفْعِلُنْ=1010110 | فَاعِلَاتُنْ=1011010\n```\n\n**Standard Meters** (16 classical):\nالطويل، المديد، البسيط، الوافر، الكامل، الهزج، الرجز، الرمل، السريع، المنسرح، الخفيف، المضارع، المقتضب، المجتث، المتقارب، المتدارك\n\n**Modern**: شعر التفعيلة، شعر الحر\n\n**Output**:\n- `name`: Meter name in Arabic OR \"غير محسوم\"\n- `confidence`: 0.0-1.0\n- `alternatives`: Array of alternative meters (if ambiguous)\n\n---\n\n### 2. QAFIYA (Rhyme) - REQUIRED\n**Rule**: Check last letter consistency across ALL verses. Need 80%+ match.\n\n**Components**:\n1. **الروي (rawi)**: Final rhyme letter\n2. **الوصل (wasl)**: Extension after rawi (ا، و، ي) OR null\n3. **الحركة (haraka)**: فتحة/ضمة/كسرة/سكون\n4. **التأسيس (ta'sees)**: Boolean - has alef before rawi by 2-7 letters\n5. **النوع (type)**: مطلقة/مقيدة/مردفة/مؤسسة\n\n**If inconsistent**: All fields = \"غير محسومة\", confidence < 0.5\n\n---\n\n### 3. SENTIMENTS - REQUIRED\n**Extract 1-3 dominant emotions from the poem.**\n\n**Categories**:\n- **Positive**: فرح، حب، أمل، فخر، امتنان، سعادة\n- **Negative**: حزن، ألم، غضب، يأس، حسرة، غم\n- **Complex**: شوق (longing), حنين (nostalgia), وجد (passion)\n- **Neutral**: تأمل، حكمة، سرد\n\n**Output**: Array of Arabic strings (max 3)\n\n---\n\n### 4. ENTITIES - REQUIRED\n**Extract mentioned entities, cross-reference with dictionaries provided.**\n\n#### 4a. PEOPLE\n- Extract names + familial terms (أب، أم، ابن، أخ)\n- Extract titles (شيخ، أمير، ملك، سلطان)\n- **Extract collective nouns referring to people:**\n  - Groups: الشعب، المجتمع، الرواة، الشعراء، الناس، القوم\n  - Professions: الطبيب، المعلم، الجندي، etc.\n  - Generic references: الرجل، المرأة، الناقلون\n- **Extract pronouns and possessive suffixes that refer to people:**\n  - أنت، أنتِ، هو، هي (you, he, she)\n  - Possessive suffixes: ـك، ـكِ (your), ـه، ـها (his, her)\n  - Examples: \"حبك\" = الحبيبة, \"وصلك\" = الحبيبة, \"قلبه\" = المذكور\n- **In love poetry (غزل):** All 2nd person references (أنت/ـك/ـكِ) default to \"الحبيبة\" or \"الحبيب\"\n- Match to entity dictionary when possible\n- Resolve pronouns to the entity they reference (e.g., \"أنت\" → \"الحبيبة\" in غزل context)\n\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - الاسم or الحبيبة/الحبيب for pronouns\",\n  \"relation\": \"string (AR) - العلاقة/الدور (e.g., جماعة for groups)\",\n  \"tags\": [\"AR array - keywords\"]\n}\n```\n\n#### 4b. PLACES\n- Extract: cities, countries, landmarks, natural features\n- **Extract cultural/abstract locations:**\n  - المجتمع (society), الثقافة (culture), العالم (world)\n  - الوطن (homeland), الديار (abode), الأرض (land)\n- Match to entity dictionary when possible\n\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - المكان\",\n  \"type\": \"دولة/مدينة/معلم/طبيعة/ثقافة\"\n}\n```\n\n#### 4c. EVENTS\n- Extract: holidays, occasions, historical events\n- Match to entity dictionary when possible\n\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - الحدث\",\n  \"type\": \"ديني/وطني/ثقافي/تاريخي\"\n}\n```\n\n---\n\n### 5. CLASSIFICATION - REQUIRED\n\n#### STYLE (النمط)\n**Options**: كلاسيكي / حديث / معاصر\n\n---\n\n## Output Schema (STRICT)\n\n```json\n{\n  \"bahr\": {\n    \"name\": \"string (AR) or غير محسوم\",\n    \"confidence\": 0.0-1.0,\n    \"alternatives\": [\n      {\n        \"name\": \"string (AR)\",\n        \"confidence\": 0.0-1.0\n      }\n    ]\n  },\n  \"qafiya\": {\n    \"rawi\": \"string (AR) or غير محسومة\",\n    \"wasl\": \"string (AR) or null\",\n    \"haraka\": \"فتحة/ضمة/كسرة/سكون or غير محسومة\",\n    \"ta'sees\": boolean,\n    \"type\": \"مطلقة/مقيدة/مردفة/مؤسسة or غير محسومة\",\n    \"confidence\": 0.0-1.0\n  },\n  \"sentiments\": [\n    \"string (AR)\",\n    \"string (AR)\",\n    \"string (AR)\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"string (AR)\",\n        \"relation\": \"string (AR)\",\n        \"tags\": [\"string (AR)\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"string (AR)\",\n        \"type\": \"دولة/مدينة/معلم/طبيعة\"\n      }\n    ],\n    \"events\": [\n      {\n        \"name\": \"string (AR)\",\n        \"type\": \"ديني/وطني/ثقافي/تاريخي\"\n      }\n    ]\n  },\n  \"classification\": {\n    \"style\": \"كلاسيكي/حديث/معاصر\"\n  },\n  \"overall_confidence\": 0.0-1.0\n}\n```\n\n---\n\n## Confidence Calculation\n\n```\nBase confidence = 1.0\n\nDeduct if:\n- Inconsistent meter: -0.3\n- Inconsistent rhyme: -0.2\n- Broken tafeela: -0.4\n- <3 lines: -0.2\n- Heavy corruption: -0.3\n\nMinimum: 0.0\n```\n\n**Levels**:\n- عالية (High): 0.85-1.0\n- متوسطة (Medium): 0.60-0.84\n- منخفضة (Low): <0.60 → \"غير محسوم\"\n\n---\n# if any other entity/place/people/objects are found please extract them\n## Entity Dictionary Reference\n\n### PEOPLE (Sample - Full dictionary in context)\n```json\n[\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n    \"relation\": \"المؤسس\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\"]\n  },\n  {\n    \"name\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"self\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيد\", \"أمير\"]\n  },\n  {\n    \"name\": \"Sheikha Hind bint Maktoum bin Juma'a\",\n    \"relation\": \"mother\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name\": \"Sheikh Rashid bin Hamdan bin Mohammed\",\n    \"relation\": \"son\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name\": \"Sheikha Sheikha bint Hamdan bin Mohammed\",\n    \"relation\": \"daughter\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name\": \"Sheikh Maktoum bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق درب\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\"]\n  },\n  {\n    \"name\": \"Sheikh Ahmed bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق درب\", \"سندي\", \"نائب حاكم دبي\"]\n  },\n  {\n    \"name\": \"Sheikh Rashid bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother (deceased)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\"]\n  },\n  {\n    \"name\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n    \"relation\": \"mother of UAE President\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name\": \"Sheikh Hamdan bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Mansour bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Tahnoun bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Abdullah bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"King Salman bin Abdulaziz Al Saud\",\n    \"relation\": \"King of Saudi Arabia\",\n    \"tags\": [\"سلمان\", \"ملك\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\"]\n  },\n  {\n    \"name\": \"Crown Prince Mohammed bin Salman\",\n    \"relation\": \"Crown Prince of Saudi Arabia\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sheikh Tamim bin Hamad Al Thani\",\n    \"relation\": \"Emir of Qatar\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"King Hamad bin Isa Al Khalifa\",\n    \"relation\": \"King of Bahrain\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n    \"relation\": \"Emir of Kuwait\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sultan Haitham bin Tariq\",\n    \"relation\": \"Sultan of Oman\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"سلطان عمان\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  }\n]\n```\n\n### GROUPS\n```json\n[\n  \"martyrs\",\n  \"citizens\",\n  \"people of Emirates\",\n  \"soldiers\",\n  \"youth\",\n  \"founding fathers\"\n]\n```\n\n### PLACES\n```json\n[\n  {\"name\": \"الإمارات\", \"type\": \"دولة\"},\n  {\"name\": \"دبي\", \"type\": \"مدينة\"},\n  {\"name\": \"أبوظبي\", \"type\": \"مدينة\"},\n  {\"name\": \"برج خليفة\", \"type\": \"معلم\"},\n  {\"name\": \"الخليج العربي\", \"type\": \"طبيعة\"},\n  {\"name\": \"UAE\", \"type\": \"دولة\"},\n  {\"name\": \"Emirates\", \"type\": \"دولة\"},\n  {\"name\": \"Dubai\", \"type\": \"مدينة\"},\n  {\"name\": \"Abu Dhabi\", \"type\": \"مدينة\"},\n  {\"name\": \"Sharjah\", \"type\": \"مدينة\"},\n  {\"name\": \"Ajman\", \"type\": \"مدينة\"},\n  {\"name\": \"Umm Al-Quwain\", \"type\": \"مدينة\"},\n  {\"name\": \"Fujairah\", \"type\": \"مدينة\"},\n  {\"name\": \"Ras Al Khaimah\", \"type\": \"مدينة\"},\n  {\"name\": \"Arabian Gulf\", \"type\": \"طبيعة\"},\n  {\"name\": \"Burj Khalifa\", \"type\": \"معلم\"},\n  {\"name\": \"Sheikh Zayed Mosque\", \"type\": \"معلم\"}\n]\n```\n\n### EVENTS\n```json\n[\n  {\"name\": \"يوم الشهيد\", \"type\": \"وطني\"},\n  {\"name\": \"اليوم الوطني\", \"type\": \"وطني\"},\n  {\"name\": \"رمضان\", \"type\": \"ديني\"},\n  {\"name\": \"عيد الفطر\", \"type\": \"ديني\"},\n  {\"name\": \"Expo 2020\", \"type\": \"ثقافي\"},\n  {\"name\": \"New Year's Day\", \"type\": \"ثقافي\"},\n  {\"name\": \"Eid al-Fitr\", \"type\": \"ديني\"},\n  {\"name\": \"Eid al-Adha\", \"type\": \"ديني\"},\n  {\"name\": \"Arafah Day\", \"type\": \"ديني\"},\n  {\"name\": \"Islamic New Year\", \"type\": \"ديني\"},\n  {\"name\": \"Prophet Muhammad's Birthday\", \"type\": \"ديني\"},\n  {\"name\": \"Commemoration Day\", \"type\": \"وطني\"},\n  {\"name\": \"UAE National Day\", \"type\": \"وطني\"},\n  {\"name\": \"Flag Day\", \"type\": \"وطني\"},\n  {\"name\": \"Union Day\", \"type\": \"وطني\"},\n  {\"name\": \"Dubai Fitness Challenge\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Shopping Festival\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Summer Surprises\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Airshow\", \"type\": \"ثقافي\"},\n  {\"name\": \"Abu Dhabi Grand Prix\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai World Cup\", \"type\": \"ثقافي\"}\n]\n```\n\n---\n\n## Few-Shot Examples\n\n### Example 1: Classical - High Confidence\n\n**Input**:\n```\nAnalyze this poem:\nقفا نبك من ذكرى حبيب ومنزل\nبسقط اللوى بين الدخول فحومل\nفتوضح فالمقراة لم يعف رسمها\nلما نسجتها من جنوب وشمأل\n```\n\n**Output**:\n```json\n{\n  \"bahr\": {\n    \"name\": \"الطويل\",\n    \"confidence\": 0.97,\n    \"alternatives\": []\n  },\n  \"qafiya\": {\n    \"rawi\": \"ل\",\n    \"wasl\": \"الألف\",\n    \"haraka\": \"فتحة\",\n    \"ta'sees\": false,\n    \"type\": \"مطلقة\",\n    \"confidence\": 0.96\n  },\n  \"sentiments\": [\n    \"حنين\",\n    \"شوق\",\n    \"حزن\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"حبيب\",\n        \"relation\": \"الحبيبة\",\n        \"tags\": [\"حب\", \"غزل\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"اللوى\",\n        \"type\": \"طبيعة\"\n      },\n      {\n        \"name\": \"الدخول\",\n        \"type\": \"طبيعة\"\n      }\n    ],\n    \"events\": []\n  },\n  \"classification\": {\n    \"style\": \"كلاسيكي\"\n  },\n  \"overall_confidence\": 0.94\n}\n```\n\n---\n\n### Example 2: Modern - Medium Confidence\n\n**Input**:\n```\nAnalyze:\nإذا الشعب يوما أراد الحياة\nفلا بد أن يستجيب القدر\nولا بد لليل أن ينجلي\nولا بد للقيد أن ينكسر\n```\n\n**Output**:\n```json\n{\n  \"bahr\": {\n    \"name\": \"المتقارب\",\n    \"confidence\": 0.89,\n    \"alternatives\": []\n  },\n  \"qafiya\": {\n    \"rawi\": \"ر\",\n    \"wasl\": null,\n    \"haraka\": \"فتحة\",\n    \"ta'sees\": false,\n    \"type\": \"مقيدة\",\n    \"confidence\": 0.94\n  },\n  \"sentiments\": [\n    \"أمل\",\n    \"عزيمة\",\n    \"تفاؤل\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"الشعب\",\n        \"relation\": \"الجماعة\",\n        \"tags\": [\"شعوب\", \"أمة\"]\n      }\n    ],\n    \"places\": [],\n    \"events\": []\n  },\n  \"classification\": {\n    \"style\": \"حديث\"\n  },\n  \"overall_confidence\": 0.87\n}\n```\n\n---\n\n### Example 3: UAE Context - High Confidence\n\n**Input**:\n```\nAnalyze this poem about Sheikh Zayed:\nزايد الخير جمع الكل وحدنا\nبنى لنا وطن عزنا وفخرنا\nالإمارات أرض المجد والكرم\nوالشيخ زايد قائدنا ومعلمنا\n```\n\n**Output**:\n```json\n{\n  \"bahr\": {\n    \"name\": \"الرجز\",\n    \"confidence\": 0.82,\n    \"alternatives\": [\n      {\n        \"name\": \"المتدارك\",\n        \"confidence\": 0.68\n      }\n    ]\n  },\n  \"qafiya\": {\n    \"rawi\": \"ن\",\n    \"wasl\": \"الألف\",\n    \"haraka\": \"فتحة\",\n    \"ta'sees\": false,\n    \"type\": \"مطلقة\",\n    \"confidence\": 0.93\n  },\n  \"sentiments\": [\n    \"فخر\",\n    \"امتنان\",\n    \"حب\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"زايد\",\n        \"relation\": \"المؤسس\",\n        \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"الإمارات\",\n        \"type\": \"دولة\"\n      }\n    ],\n    \"events\": []\n  },\n  \"classification\": {\n    \"style\": \"معاصر\"\n  },\n  \"overall_confidence\": 0.88\n}\n```\n\n---\n\n### Example 4: Broken/Uncertain - Low Confidence\n\n**Input**:\n```\nAnalyze:\nأحبك حبا لو تحبين مثله\nلمت من الوجد ولكن صبرا\n```\n\n**Output**:\n```json\n{\n  \"bahr\": {\n    \"name\": \"غير محسوم\",\n    \"confidence\": 0.42,\n    \"alternatives\": [\n      {\n        \"name\": \"البسيط\",\n        \"confidence\": 0.38\n      },\n      {\n        \"name\": \"الكامل\",\n        \"confidence\": 0.34\n      }\n    ]\n  },\n  \"qafiya\": {\n    \"rawi\": \"غير محسومة\",\n    \"wasl\": null,\n    \"haraka\": \"غير محسومة\",\n    \"ta'sees\": false,\n    \"type\": \"غير محسومة\",\n    \"confidence\": 0.31\n  },\n  \"sentiments\": [\n    \"حب\",\n    \"وجد\",\n    \"صبر\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"الحبيبة\",\n        \"relation\": \"المحبوبة\",\n        \"tags\": [\"أنت\", \"حبيبة\"]\n      }\n    ],\n    \"places\": [],\n    \"events\": []\n  },\n  \"classification\": {\n    \"style\": \"غير محدد\"\n  },\n  \"overall_confidence\": 0.53\n}\n```\n\n---\n\n## Pre-Output Checklist\n\nBefore returning, verify:\n- [ ] All text values are 100% Arabic (except confidence floats)\n- [ ] JSON is valid and parseable\n- [ ] Bahr based on FULL poem context\n- [ ] Qafiya based on ALL verse endings\n- [ ] Confidence scores justified\n- [ ] \"غير محسوم/غير محسومة\" used when uncertain\n- [ ] Entities cross-referenced with dictionaries\n- [ ] No hallucinated data\n- [ ] No prose or explanations\n\n---\n\n## BATCH PROCESSING MODE\n\nWhen input contains multiple lines with row_id tags (e.g., \"269\": \"line text\"), process in batch mode:\n\n### Input Format:\n```\n# poem name: [title]\n## Analyze these lines individually:\nlines: \"1\":\"line text\",\n\"2\":\"line text\",\n\"3\":\"line text\"\n## after checking the full poetry: [full poem text]\n```\n\n**CRITICAL**: When you see lines formatted as `\"1\":\"text\", \"2\":\"text\"`, extract the number before the colon as `row_id` and process EACH line separately. Return JSON array with one object per line.\n\n### Batch Processing Rules:\n1. **bahr** and **qafiya**: Analyze ONCE from full poem context (same for all lines)\n2. **sentiments**: Extract from EACH individual line (line-specific)\n3. **entities**: Extract ONLY from EACH specific line (not from full poem)\n4. **row_id**: Must match exactly from input (as integer)\n5. **line_confidence**: Calculate per line based on sentiment/entity extraction quality\n\n### Batch Output Schema:\n```json\n[\n  {\n    \"row_id\": 269,\n    \"bahr\": {\n      \"name\": \"string (AR)\",\n      \"confidence\": 0.0-1.0,\n      \"alternatives\": [{\"name\": \"string (AR)\", \"confidence\": 0.0-1.0}]\n    },\n    \"qafiya\": {\n      \"rawi\": \"string (AR)\",\n      \"wasl\": \"string (AR) or null\",\n      \"haraka\": \"فتحة/ضمة/كسرة/سكون\",\n      \"ta'sees\": boolean,\n      \"type\": \"مطلقة/مقيدة/مردفة/مؤسسة\",\n      \"confidence\": 0.0-1.0\n    },\n    \"sentiments\": [\"string (AR)\"],\n    \"entities\": {\n      \"people\": [{\"name\": \"string (AR)\", \"relation\": \"string (AR)\", \"tags\": [\"string (AR)\"]}],\n      \"places\": [{\"name\": \"string (AR)\", \"type\": \"دولة/مدينة/معلم/طبيعة\"}],\n      \"events\": [{\"name\": \"string (AR)\", \"type\": \"ديني/وطني/ثقافي/تاريخي\"}]\n    },\n    \"classification\": {\n      \"style\": \"كلاسيكي/حديث/معاصر\"\n    },\n    \"line_confidence\": 0.0-1.0\n  },\n  {\n    \"row_id\": 270,\n    ...\n  }\n]\n```\n\n### Batch Example:\n\n**Input**:\n```\n# poem name: لا تسال مجرب\n## Analyze these lines individually:\nlines: \"1\":\"حبيبتي حالي من الشوق داني      اشرق بحبك .. واعود اغرب\",\n\"2\":\"اناني ف وصلك لكن يالاناني      تري الانانيه ف طبعك تخرب\",\n\"3\":\"لحظات حبك حطمت لي كياني      والحزن من بين المحاني تسرب\"\n## after checking the full poetry: \nحبيبتي حالي من الشوق داني      اشرق بحبك .. واعود اغرب\nاناني ف وصلك لكن يالاناني      تري الانانيه ف طبعك تخرب\nلحظات حبك حطمت لي كياني      والحزن من بين المحاني تسرب\n```\n\n**Output**:\n```json\n[\n  {\n    \"row_id\": 1,\n    \"bahr\": {\"name\": \"الكامل\", \"confidence\": 0.88, \"alternatives\": []},\n    \"qafiya\": {\"rawi\": \"ب\", \"wasl\": null, \"haraka\": \"ضمة\", \"ta'sees\": false, \"type\": \"مقيدة\", \"confidence\": 0.92},\n    \"sentiments\": [\"شوق\", \"حب\"],\n    \"entities\": {\"people\": [{\"name\": \"حبيبتي\", \"relation\": \"الحبيبة\", \"tags\": [\"حب\", \"غزل\"]}], \"places\": [], \"events\": []},\n    \"classification\": {\"style\": \"معاصر\"},\n    \"line_confidence\": 0.85\n  },\n  {\n    \"row_id\": 2,\n    \"bahr\": {\"name\": \"الكامل\", \"confidence\": 0.88, \"alternatives\": []},\n    \"qafiya\": {\"rawi\": \"ب\", \"wasl\": null, \"haraka\": \"ضمة\", \"ta'sees\": false, \"type\": \"مقيدة\", \"confidence\": 0.92},\n    \"sentiments\": [\"حزن\", \"ألم\"],\n    \"entities\": {\"people\": [{\"name\": \"الحبيبة\", \"relation\": \"المخاطبة\", \"tags\": [\"أنت\", \"وصلك\", \"طبعك\"]}], \"places\": [], \"events\": []},\n    \"classification\": {\"style\": \"معاصر\"},\n    \"line_confidence\": 0.82\n  },\n  {\n    \"row_id\": 3,\n    \"bahr\": {\"name\": \"الكامل\", \"confidence\": 0.88, \"alternatives\": []},\n    \"qafiya\": {\"rawi\": \"ب\", \"wasl\": null, \"haraka\": \"ضمة\", \"ta'sees\": false, \"type\": \"مقيدة\", \"confidence\": 0.92},\n    \"sentiments\": [\"حزن\", \"وجد\"],\n    \"entities\": {\"people\": [{\"name\": \"الحبيبة\", \"relation\": \"المحبوبة\", \"tags\": [\"حبك\"]}], \"places\": [], \"events\": []},\n    \"classification\": {\"style\": \"معاصر\"},\n    \"line_confidence\": 0.80\n  }\n]\n```\n\n### CRITICAL Batch Rules:\n- Return valid JSON array with square brackets `[...]`\n- Each object must have row_id matching input\n- bahr/qafiya identical for all lines (from full poem)\n- sentiments/entities specific to each line only\n- **Tags should capture ALL thematic keywords:** people groups (الرواة, الشعب), cultural terms (المجتمع العربي, القصص), and entity references\n- Empty arrays valid if no entities found in specific line\n- Do NOT extract entities from full poem if not in specific line\n\n---\n\n## You ARE\n- A strict analytical engine\n- Accuracy-focused\n- Context-aware\n- JSON-producing\n- Arabic-outputting\n\n## You are NOT\n- A creative poet\n- A translator\n- An explainer\n- A conversationalist\n\n---\n\n**Output valid JSON only. No markdown. No prose. Arabic values only.**\n# if any other entity/place/people/objects are found please extract them"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1504,
+        -1200
+      ],
+      "id": "ed7e4bd8-37d4-4d70-b835-a010d2222fe0",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (!Array.isArray(items) || items.length === 0) {\n  return [{ json: { error: \"No input items\" } }];\n}\n\nconst result = items.flatMap((item) => {\n  const outputStr = item.json?.output ?? '';\n\n  if (!outputStr) return [];\n\n  const jsonMatch = outputStr.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  const cleanJsonStr = jsonMatch ? jsonMatch[1].trim() : outputStr.trim();\n\n  if (!cleanJsonStr) return [];\n\n  let parsedArray;\n  try {\n    parsedArray = JSON.parse(cleanJsonStr);\n  } catch (e) {\n    return [{ Row_ID: \"error\", summary: { parse_error: e.message } }];\n  }\n\n  if (!Array.isArray(parsedArray)) return [];\n\n  return parsedArray.map((entry) => {\n    const allTags = (entry.entities?.people || [])\n      .flatMap((p) => p.tags || [])\n      .filter((tag, i, arr) => arr.indexOf(tag) === i);\n\n    const peopleWithoutTags = (entry.entities?.people || []).map((p) => ({\n      name: p.name,\n      relation: p.relation,\n    }));\n\n    return {\n      Row_ID: String(entry.row_id),\n      summary: {\n        row_id: entry.row_id,\n        bahr: entry.bahr,\n        qafiya: entry.qafiya,\n        sentiments: entry.sentiments,\n        entities: {\n          people: peopleWithoutTags,\n          places: entry.entities?.places || [],\n          events: entry.entities?.events || [],\n        },\n        tags: allTags,\n        classification: entry.classification,\n        line_confidence: entry.line_confidence,\n      },\n    };\n  });\n});\n\nreturn result.map((obj) => ({ json: obj }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        -1200
+      ],
+      "id": "d1ac5020-f937-4798-9e2e-b518da059fd4",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1728,
+        -1088
+      ],
+      "id": "475e95b7-27c7-4d9e-aba3-1b8fbb5856cf",
+      "name": "Loop Over Items1",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "279676cb-1fba-4c26-8113-6173dc9cdbc8",
+              "name": "Title_cleaned",
+              "value": "={{ $json.Title_cleaned }}",
+              "type": "string"
+            },
+            {
+              "id": "a13eaf7d-5c67-4489-9ad0-9e7b61cfae78",
+              "name": "Poem_line_cleaned",
+              "value": "={{ $json.Poem_line_cleaned }}",
+              "type": "string"
+            },
+            {
+              "id": "017bad73-a782-4b01-bfb4-dca3e3799dce",
+              "name": "poem_id",
+              "value": "={{ $json.poem_id }}",
+              "type": "number"
+            },
+            {
+              "id": "941495f8-597e-404e-8465-5462fbf37c91",
+              "name": "Poem_full",
+              "value": "={{ $json.Poem_full }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1952,
+        -1088
+      ],
+      "id": "9b563430-2af9-423a-9a09-76325682177e",
+      "name": "Original_Dataset1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1836724327,
+          "mode": "list",
+          "cachedResultName": "Exact_lines",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1836724327"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Row_ID": "={{ $json.summary.row_id }}",
+            "قافية": "={{ $json.summary.qafiya.rawi }}",
+            "البحر": "={{ $json.summary.bahr.name }}",
+            "وصل": "={{ $json.summary.qafiya.wasl }}",
+            "حركة": "={{ $json.summary.qafiya.haraka }}",
+            "تأسيس": "={{ $json.summary.qafiya['ta\\'sees'] }}",
+            "نوع": "={{ $json.summary.qafiya.type }}",
+            "ثقة": "={{ $json.summary.qafiya.confidence }}",
+            "أماكن": "={{ $json.summary.entities.places }}",
+            "أحداث": "={{ $json.summary.entities.events }}",
+            "شخص": "={{ $json.summary.entities.people }}",
+            "sentiments": "={{ $json.summary.sentiments }}",
+            "تصنيف": "={{ $json.summary.classification.style }}",
+            "overall confidence": "={{ $json.summary.line_confidence }}",
+            "مواضيع": "={{ $json.summary.tags }}",
+            "بحر ثقة": "={{ $json.summary.bahr.confidence }}"
+          },
+          "matchingColumns": [
+            "Row_ID"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Row_ID",
+              "displayName": "Row_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "قافية",
+              "displayName": "قافية",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "البحر",
+              "displayName": "البحر",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "بحر ثقة",
+              "displayName": "بحر ثقة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "وصل",
+              "displayName": "وصل",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "حركة",
+              "displayName": "حركة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "تأسيس",
+              "displayName": "تأسيس",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "نوع",
+              "displayName": "نوع",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ثقة",
+              "displayName": "ثقة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "شخص",
+              "displayName": "شخص",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiments",
+              "displayName": "sentiments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أماكن",
+              "displayName": "أماكن",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أحداث",
+              "displayName": "أحداث",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "مواضيع",
+              "displayName": "مواضيع",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "تصنيف",
+              "displayName": "تصنيف",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "overall confidence",
+              "displayName": "overall confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -928,
+        -1200
+      ],
+      "id": "320928d3-7f80-49de-848b-f8dea8220222",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 179938127,
+          "mode": "list",
+          "cachedResultName": "grouped_lines_for_AI",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=179938127"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Stuatus": "Done",
+            "poem_id": "={{ $('Loop Over Items1').first().json.poem_id }}"
+          },
+          "matchingColumns": [
+            "poem_id"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_full",
+              "displayName": "Poem_full",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Stuatus",
+              "displayName": "Stuatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        -1088
+      ],
+      "id": "f8c70d3a-9d30-4ee3-b4ae-b56192dc0014",
+      "name": "Append or update row in sheet1",
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "grok-4-1-fast-non-reasoning",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        -1424,
+        -976
+      ],
+      "id": "0d6c7c1d-8796-4e40-88a6-5776d55bbe00",
+      "name": "xAI Grok Chat Model",
+      "credentials": {
+        "xAiApi": {
+          "id": "8xuEmNzOUuELUh3f",
+          "name": "xAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Summarize\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2528,
+        -1440
+      ],
+      "typeVersion": 1,
+      "id": "d094d3bd-b632-4e03-a32f-ab534b52e244",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Qafiya sentiments\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2544,
+        -1088
+      ],
+      "typeVersion": 1,
+      "id": "8858fb31-111f-4802-839e-8b1a3633f8ac",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1836724327,
+          "mode": "list",
+          "cachedResultName": "Exact_lines",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1836724327"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2208,
+        -704
+      ],
+      "id": "ab46a032-418c-49bf-a79f-9afecaffeaa2",
+      "name": "Get row(s) in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\nTASK: Analyze each line below individually.\n\nPoem title: {{ $json.poem }}\n\nLines to process:\n{{ $json.contents_tagged }}\n\nINSTRUCTIONS:\n- Extract sentiments and entities from EACH individual line\n- Include pronouns (أنت، ـك، ـها) as people entities\n- Return JSON array with row_id for each line\n\nOUTPUT FORMAT: Valid JSON array [ {\"row_id\": 1, ...}, {\"row_id\": 2, ...} ]",
+        "options": {
+          "systemMessage": "=# Arabic Poetry Analysis Agent - Minimal Fields (Production)\n## Core Function\nAnalyze Arabic poetry. Output JSON with **only** sentiments and entities (people, places, events).\n## Input → Output\n- Input: English with embedded Arabic poetry (3-5 lines)\n- Output: Valid JSON, 100% Arabic values (except confidence floats)\n## Critical Rules\n1. **Arabic only** in all text fields\n2. **Full poem context** for analysis, but extract per line in batch mode\n3. **\"غير محسوم\"** if confidence < 0.6\n4. **No hallucination** - accuracy > completion; only extract what is explicitly mentioned or directly inferred without invention\n5. **Valid JSON only** - no prose, no markdown\n---\n## Analysis Requirements\n### 1. SENTIMENTS - REQUIRED\n**Extract 1-3 dominant emotions from the poem.**\n**Categories**:\n- **Positive**: فرح، حب، أمل، فخر، امتنان، سعادة\n- **Negative**: حزن، ألم، غضب، يأس، حسرة، غم\n- **Complex**: شوق (longing), حنين (nostalgia), وجد (passion)\n- **Neutral**: تأمل، حكمة، سرد\n**Output**: Array of Arabic strings (max 3)\n---\n### 2. ENTITIES - REQUIRED\n**Extract mentioned entities aggressively, cross-reference with dictionaries provided. Infer broadly from context but without hallucination: capture all explicit references to people (including generic, hypothetical, collective, pronouns, possessives, body parts as attributes e.g., خصرك, رمشك, خصور, qualities e.g., الارق, الراقي, أناني, and types e.g., عاقل, سفيه, مجرب, معرب). These dictionaries are the actual full lists—aggressively hunt for matches in the poem using names, tags, and aliases. If a term matches a tag, include the full entity. Use tags to list ALL associated terms, body parts, qualities, types, and references explicitly mentioned, not limited to examples. Group attributes under relevant people entities (e.g., under الحبيبة in غزل). If not associated, create separate people entities for generics/types like عاقل, سفيه.**\n#### 2a. PEOPLE\n- Extract names + familial terms (أب، أم، ابن، أخ)\n- Extract titles (شيخ، أمير، ملك، سلطان)\n- **Extract collective nouns referring to people:**\n  - Groups: الشعب، المجتمع، الرواة، الشعراء، الناس، القوم\n  - Professions: الطبيب، المعلم، الجندي، etc.\n  - Generic references: الرجل، المرأة، الناقلون, عاقل, سفيه\n- **Extract pronouns and possessive suffixes that refer to people:**\n  - أنت، أنتِ، هو، هي (you, he, she)\n  - Possessive suffixes: ـك، ـكِ (your), ـه، ـها (his, her)\n  - Examples: \"حبك\" = الحبيبة, \"وصلك\" = الحبيبة, \"قلبه\" = المذكور\n- **In love poetry (غزل):** All 2nd person references (أنت/ـك/ـكِ) default to \"الحبيبة\" or \"الحبيب\". Aggressively include body parts (خصر, رمش, عين, قلب, عروق) and qualities (أرق, راقي, أناني) as tags.\n- Match to entity dictionary when possible\n- Resolve pronouns to the entity they reference (e.g., \"أنت\" → \"الحبيبة\" in غزل context)\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - الاسم or الحبيبة/الحبيب for pronouns\",\n  \"relation\": \"string (AR) - العلاقة/الدور (e.g., جماعة for groups)\",\n  \"tags\": [\"AR array - keywords, body parts, qualities, types\"]\n}\n```\n#### 2b. PLACES\n- Extract: cities, countries, landmarks, natural features\n- **Extract cultural/abstract locations:**\n  - المجتمع (society), الثقافة (culture), العالم (world)\n  - الوطن (homeland), الديار (abode), الأرض (land)\n- Match to entity dictionary when possible, aggressively hunt for matches\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - المكان\",\n  \"type\": \"دولة/مدينة/معلم/طبيعة/ثقافة\"\n}\n```\n#### 2c. EVENTS\n- Extract: holidays, occasions, historical events\n- Match to entity dictionary when possible, aggressively hunt for matches\n**Output**:\n```json\n{\n  \"name\": \"string (AR) - الحدث\",\n  \"type\": \"ديني/وطني/ثقافي/تاريخي\"\n}\n```\n---\n## Output Schema (STRICT)\n```json\n{\n  \"sentiments\": [\n    \"string (AR)\",\n    \"string (AR)\",\n    \"string (AR)\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"string (AR)\",\n        \"relation\": \"string (AR)\",\n        \"tags\": [\"string (AR)\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"string (AR)\",\n        \"type\": \"دولة/مدينة/معلم/طبيعة\"\n      }\n    ],\n    \"events\": [\n      {\n        \"name\": \"string (AR)\",\n        \"type\": \"ديني/وطني/ثقافي/تاريخي\"\n      }\n    ]\n  },\n  \"overall_confidence\": 0.0-1.0\n}\n```\n---\n## Confidence Calculation\n```\nBase confidence = 1.0\nDeduct if:\n- Inconsistent extraction: -0.3\n- <3 lines: -0.2\n- Heavy corruption: -0.3\nMinimum: 0.0\n```\n**Levels**:\n- عالية (High): 0.85-1.0\n- متوسطة (Medium): 0.60-0.84\n- منخفضة (Low): <0.60 → \"غير محسوم\"\n---\n# if any other entity/place/people/objects are found please extract them as attributes in tags or separate entities if generics/types\n## Entity Dictionary Reference\n### PEOPLE (Full Dictionary - Aggressively match using tags/aliases)\n```json\n[\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n    \"relation\": \"المؤسس\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\"]\n  },\n  {\n    \"name\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"self\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيد\", \"أمير\"]\n  },\n  {\n    \"name\": \"Sheikha Hind bint Maktoum bin Juma'a\",\n    \"relation\": \"mother\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name\": \"Sheikh Rashid bin Hamdan bin Mohammed\",\n    \"relation\": \"son\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name\": \"Sheikha Sheikha bint Hamdan bin Mohammed\",\n    \"relation\": \"daughter\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name\": \"Sheikh Maktoum bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق درب\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\"]\n  },\n  {\n    \"name\": \"Sheikh Ahmed bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق درب\", \"سندي\", \"نائب حاكم دبي\"]\n  },\n  {\n    \"name\": \"Sheikh Rashid bin Mohammed bin Rashid Al Maktoum\",\n    \"relation\": \"brother (deceased)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\"]\n  },\n  {\n    \"name\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n    \"relation\": \"mother of UAE President\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name\": \"Sheikh Hamdan bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Mansour bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Tahnoun bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"Sheikh Abdullah bin Zayed Al Nahyan\",\n    \"relation\": \"brother of UAE President\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية\", \"صاحب السمو\"]\n  },\n  {\n    \"name\": \"King Salman bin Abdulaziz Al Saud\",\n    \"relation\": \"King of Saudi Arabia\",\n    \"tags\": [\"سلمان\", \"ملك\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\"]\n  },\n  {\n    \"name\": \"Crown Prince Mohammed bin Salman\",\n    \"relation\": \"Crown Prince of Saudi Arabia\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sheikh Tamim bin Hamad Al Thani\",\n    \"relation\": \"Emir of Qatar\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"King Hamad bin Isa Al Khalifa\",\n    \"relation\": \"King of Bahrain\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n    \"relation\": \"Emir of Kuwait\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  },\n  {\n    \"name\": \"Sultan Haitham bin Tariq\",\n    \"relation\": \"Sultan of Oman\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"سلطان عمان\", \"أخي\", \"جار\", \"صديق\", \"قائد\"]\n  }\n]\n```\n### GROUPS\n```json\n[\n  \"martyrs\",\n  \"citizens\",\n  \"people of Emirates\",\n  \"soldiers\",\n  \"youth\",\n  \"founding fathers\"\n]\n```\n### PLACES (Full Dictionary - Aggressively match)\n```json\n[\n  {\"name\": \"الإمارات\", \"type\": \"دولة\"},\n  {\"name\": \"دبي\", \"type\": \"مدينة\"},\n  {\"name\": \"أبوظبي\", \"type\": \"مدينة\"},\n  {\"name\": \"برج خليفة\", \"type\": \"معلم\"},\n  {\"name\": \"الخليج العربي\", \"type\": \"طبيعة\"},\n  {\"name\": \"UAE\", \"type\": \"دولة\"},\n  {\"name\": \"Emirates\", \"type\": \"دولة\"},\n  {\"name\": \"Dubai\", \"type\": \"مدينة\"},\n  {\"name\": \"Abu Dhabi\", \"type\": \"مدينة\"},\n  {\"name\": \"Sharjah\", \"type\": \"مدينة\"},\n  {\"name\": \"Ajman\", \"type\": \"مدينة\"},\n  {\"name\": \"Umm Al-Quwain\", \"type\": \"مدينة\"},\n  {\"name\": \"Fujairah\", \"type\": \"مدينة\"},\n  {\"name\": \"Ras Al Khaimah\", \"type\": \"مدينة\"},\n  {\"name\": \"Arabian Gulf\", \"type\": \"طبيعة\"},\n  {\"name\": \"Burj Khalifa\", \"type\": \"معلم\"},\n  {\"name\": \"Sheikh Zayed Mosque\", \"type\": \"معلم\"}\n]\n```\n### EVENTS (Full Dictionary - Aggressively match)\n```json\n[\n  {\"name\": \"يوم الشهيد\", \"type\": \"وطني\"},\n  {\"name\": \"اليوم الوطني\", \"type\": \"وطني\"},\n  {\"name\": \"رمضان\", \"type\": \"ديني\"},\n  {\"name\": \"عيد الفطر\", \"type\": \"ديني\"},\n  {\"name\": \"Expo 2020\", \"type\": \"ثقافي\"},\n  {\"name\": \"New Year's Day\", \"type\": \"ثقافي\"},\n  {\"name\": \"Eid al-Fitr\", \"type\": \"ديني\"},\n  {\"name\": \"Eid al-Adha\", \"type\": \"ديني\"},\n  {\"name\": \"Arafah Day\", \"type\": \"ديني\"},\n  {\"name\": \"Islamic New Year\", \"type\": \"ديني\"},\n  {\"name\": \"Prophet Muhammad's Birthday\", \"type\": \"ديني\"},\n  {\"name\": \"Commemoration Day\", \"type\": \"وطني\"},\n  {\"name\": \"UAE National Day\", \"type\": \"وطني\"},\n  {\"name\": \"Flag Day\", \"type\": \"وطني\"},\n  {\"name\": \"Union Day\", \"type\": \"وطني\"},\n  {\"name\": \"Dubai Fitness Challenge\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Shopping Festival\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Summer Surprises\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai Airshow\", \"type\": \"ثقافي\"},\n  {\"name\": \"Abu Dhabi Grand Prix\", \"type\": \"ثقافي\"},\n  {\"name\": \"Dubai World Cup\", \"type\": \"ثقافي\"}\n]\n```\n---\n## Few-Shot Examples\n### Example 1: Classical - High Confidence\n**Input**:\n```\nAnalyze this poem:\nقفا نبك من ذكرى حبيب ومنزل\nبسقط اللوى بين الدخول فحومل\nفتوضح فالمقراة لم يعف رسمها\nلما نسجتها من جنوب وشمأل\n```\n**Output**:\n```json\n{\n  \"sentiments\": [\n    \"حنين\",\n    \"شوق\",\n    \"حزن\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"حبيب\",\n        \"relation\": \"الحبيبة\",\n        \"tags\": [\"حب\", \"غزل\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"اللوى\",\n        \"type\": \"طبيعة\"\n      },\n      {\n        \"name\": \"الدخول\",\n        \"type\": \"طبيعة\"\n      }\n    ],\n    \"events\": []\n  },\n  \"overall_confidence\": 0.94\n}\n```\n---\n### Example 2: Modern - Medium Confidence\n**Input**:\n```\nAnalyze:\nإذا الشعب يوما أراد الحياة\nفلا بد أن يستجيب القدر\nولا بد لليل أن ينجلي\nولا بد للقيد أن ينكسر\n```\n**Output**:\n```json\n{\n  \"sentiments\": [\n    \"أمل\",\n    \"عزيمة\",\n    \"تفاؤل\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"الشعب\",\n        \"relation\": \"الجماعة\",\n        \"tags\": [\"شعوب\", \"أمة\"]\n      }\n    ],\n    \"places\": [],\n    \"events\": []\n  },\n  \"overall_confidence\": 0.87\n}\n```\n---\n### Example 3: UAE Context - High Confidence\n**Input**:\n```\nAnalyze this poem about Sheikh Zayed:\nزايد الخير جمع الكل وحدنا\nبنى لنا وطن عزنا وفخرنا\nالإمارات أرض المجد والكرم\nوالشيخ زايد قائدنا ومعلمنا\n```\n**Output**:\n```json\n{\n  \"sentiments\": [\n    \"فخر\",\n    \"امتنان\",\n    \"حب\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"زايد\",\n        \"relation\": \"المؤسس\",\n        \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\"]\n      }\n    ],\n    \"places\": [\n      {\n        \"name\": \"الإمارات\",\n        \"type\": \"دولة\"\n      }\n    ],\n    \"events\": []\n  },\n  \"overall_confidence\": 0.88\n}\n```\n---\n### Example 4: Broken/Uncertain - Low Confidence\n**Input**:\n```\nAnalyze:\nأحبك حبا لو تحبين مثله\nلمت من الوجد ولكن صبرا\n```\n**Output**:\n```json\n{\n  \"sentiments\": [\n    \"حب\",\n    \"وجد\",\n    \"صبر\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"الحبيبة\",\n        \"relation\": \"المحبوبة\",\n        \"tags\": [\"أنت\", \"حبيبة\"]\n      }\n    ],\n    \"places\": [],\n    \"events\": []\n  },\n  \"overall_confidence\": 0.53\n}\n```\n### Example 5: With Body Parts and Qualities\n**Input**:\n```\nAnalyze:\nبالرقه .. انت الارق ، وذوقك الراقي وبين الخصور النواحل خصرك الانحل\nلو كان رمشك ينهب .. كان انهب من كل عاقل شاف رمشك .. او سفيه\n```\n**Output**:\n```json\n{\n  \"sentiments\": [\n    \"حب\",\n    \"شوق\"\n  ],\n  \"entities\": {\n    \"people\": [\n      {\n        \"name\": \"الحبيبة\",\n        \"relation\": \"المحبوبة\",\n        \"tags\": [\"أنت\", \"الأرق\", \"ذوقك\", \"الراقي\", \"خصرك\", \"الأنحل\", \"رمشك\", \"ينهب\"]\n      },\n      {\n        \"name\": \"عاقل\",\n        \"relation\": \"عام\",\n        \"tags\": [\"عاقل\"]\n      },\n      {\n        \"name\": \"سفيه\",\n        \"relation\": \"عام\",\n        \"tags\": [\"سفيه\"]\n      }\n    ],\n    \"places\": [],\n    \"events\": []\n  },\n  \"overall_confidence\": 0.92\n}\n```\n---\n## Pre-Output Checklist\nBefore returning, verify:\n- [ ] All text values are 100% Arabic (except confidence floats)\n- [ ] JSON is valid and parseable\n- [ ] Confidence scores justified\n- [ ] \"غير محسوم/غير محسومة\" used when uncertain\n- [ ] Entities cross-referenced with dictionaries aggressively\n- [ ] No hallucinated data\n- [ ] No prose or explanations\n---\n## BATCH PROCESSING MODE\nWhen input contains multiple lines with row_id tags (e.g., \"269\": \"line text\"), process in batch mode:\n### Input Format:\n```\n# poem name: [title]\n## Analyze these lines individually:\nlines: \"1\":\"line text\",\n\"2\":\"line text\",\n\"3\":\"line text\"\n## after checking the full poetry: [full poem text]\n```\n**CRITICAL**: When you see lines formatted as `\"1\":\"text\", \"2\":\"text\"`, extract the number before the colon as `row_id` and process EACH line separately. Return JSON array with one object per line.\n### Batch Processing Rules:\n1. **sentiments**: Extract from EACH individual line (line-specific)\n2. **entities**: Extract ONLY from EACH specific line (not from full poem), aggressively as per rules\n3. **row_id**: Must match exactly from input (as integer)\n4. **line_confidence**: Calculate per line based on sentiment/entity extraction quality\n### Batch Output Schema:\n```json\n[\n  {\n    \"row_id\": 269,\n    \"sentiments\": [\"string (AR)\"],\n    \"entities\": {\n      \"people\": [{\"name\": \"string (AR)\", \"relation\": \"string (AR)\", \"tags\": [\"string (AR)\"]}],\n      \"places\": [{\"name\": \"string (AR)\", \"type\": \"دولة/مدينة/معلم/طبيعة\"}],\n      \"events\": [{\"name\": \"string (AR)\", \"type\": \"ديني/وطني/ثقافي/تاريخي\"}]\n    },\n    \"line_confidence\": 0.0-1.0\n  },\n  {\n    \"row_id\": 270,\n    ...\n  }\n]\n```\n### Batch Example:\n**Input**:\n```\n# poem name: لا تسال مجرب\n## Analyze these lines individually:\nlines: \"1\":\"حبيبتي حالي من الشوق داني اشرق بحبك .. واعود اغرب\",\n\"2\":\"اناني ف وصلك لكن يالاناني تري الانانيه ف طبعك تخرب\",\n\"3\":\"لحظات حبك حطمت لي كياني والحزن من بين المحاني تسرب\"\n## after checking the full poetry:\nحبيبتي حالي من الشوق داني اشرق بحبك .. واعود اغرب\nاناني ف وصلك لكن يالاناني تري الانانيه ف طبعك تخرب\nلحظات حبك حطمت لي كياني والحزن من بين المحاني تسرب\n```\n**Output**:\n```json\n[\n  {\n    \"row_id\": 1,\n    \"sentiments\": [\"شوق\", \"حب\"],\n    \"entities\": {\"people\": [{\"name\": \"حبيبتي\", \"relation\": \"الحبيبة\", \"tags\": [\"حب\", \"غزل\"]}], \"places\": [], \"events\": []},\n    \"line_confidence\": 0.85\n  },\n  {\n    \"row_id\": 2,\n    \"sentiments\": [\"حزن\", \"ألم\"],\n    \"entities\": {\"people\": [{\"name\": \"الحبيبة\", \"relation\": \"المخاطبة\", \"tags\": [\"أنت\", \"وصلك\", \"طبعك\"]}], \"places\": [], \"events\": []},\n    \"line_confidence\": 0.82\n  },\n  {\n    \"row_id\": 3,\n    \"sentiments\": [\"حزن\", \"وجد\"],\n    \"entities\": {\"people\": [{\"name\": \"الحبيبة\", \"relation\": \"المحبوبة\", \"tags\": [\"حبك\"]}], \"places\": [], \"events\": []},\n    \"line_confidence\": 0.80\n  }\n]\n```\n### CRITICAL Batch Rules:\n- Return valid JSON array with square brackets `[...]`\n- Each object must have row_id matching input\n- sentiments/entities specific to each line only\n- **Tags should capture ALL thematic keywords:** people groups (الرواة, الشعب), cultural terms (المجتمع العربي, القصص), entity references, body parts, qualities, types\n- Empty arrays valid if no entities found in specific line\n- Do NOT extract entities from full poem if not in specific line\n---\n## You ARE\n- A strict analytical engine\n- Accuracy-focused\n- Context-aware\n- JSON-producing\n- Arabic-outputting\n## You are NOT\n- A creative poet\n- A translator\n- An explainer\n- A conversationalist\n---\n**Output valid JSON only. No markdown. No prose. Arabic values only.**\n# if any other entity/place/people/objects are found please extract them as attributes in tags or separate entities"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1152,
+        -832
+      ],
+      "id": "f7144355-137f-45b6-ab77-87f1360c0366",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (!Array.isArray(items) || items.length === 0) {\n  return [{ json: { error: \"No input items\" } }];\n}\n\nconst result = items.flatMap((item) => {\n  const outputStr = item.json?.output ?? '';\n\n  if (!outputStr) return [];\n\n  const jsonMatch = outputStr.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  const cleanJsonStr = jsonMatch ? jsonMatch[1].trim() : outputStr.trim();\n\n  if (!cleanJsonStr) return [];\n\n  let parsedArray;\n  try {\n    parsedArray = JSON.parse(cleanJsonStr);\n  } catch (e) {\n    return [{ Row_ID: \"error\", summary: { parse_error: e.message } }];\n  }\n\n  if (!Array.isArray(parsedArray)) return [];\n\n  return parsedArray.map((entry) => {\n    const allTags = (entry.entities?.people || [])\n      .flatMap((p) => p.tags || [])\n      .filter((tag, i, arr) => arr.indexOf(tag) === i);\n\n    const peopleWithoutTags = (entry.entities?.people || []).map((p) => ({\n      name: p.name,\n      relation: p.relation,\n    }));\n\n    return {\n      Row_ID: String(entry.row_id),\n      summary: {\n        row_id: entry.row_id,\n        bahr: entry.bahr,\n        qafiya: entry.qafiya,\n        sentiments: entry.sentiments,\n        entities: {\n          people: peopleWithoutTags,\n          places: entry.entities?.places || [],\n          events: entry.entities?.events || [],\n        },\n        tags: allTags,\n        classification: entry.classification,\n        line_confidence: entry.line_confidence,\n      },\n    };\n  });\n});\n\nreturn result.map((obj) => ({ json: obj }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -832
+      ],
+      "id": "0d857910-f9de-463f-b9f7-350ff35943f9",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1648,
+        -704
+      ],
+      "id": "a6f1e251-f699-463b-af06-f4b844e1c749",
+      "name": "Loop Over Items2",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1836724327,
+          "mode": "list",
+          "cachedResultName": "Exact_lines",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1836724327"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Row_ID": "={{ $json.summary.row_id }}",
+            "أماكن": "={{ $json.summary.entities.places }}",
+            "أحداث": "={{ $json.summary.entities.events }}",
+            "شخص": "={{ $json.summary.entities.people }}",
+            "sentiments": "={{ $json.summary.sentiments }}",
+            "overall confidence": "={{ $json.summary.line_confidence }}",
+            "مواضيع": "={{ $json.summary.tags }}",
+            "Status": "Analysed"
+          },
+          "matchingColumns": [
+            "Row_ID"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Row_ID",
+              "displayName": "Row_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "قافية",
+              "displayName": "قافية",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "البحر",
+              "displayName": "البحر",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "بحر ثقة",
+              "displayName": "بحر ثقة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "وصل",
+              "displayName": "وصل",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "حركة",
+              "displayName": "حركة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "تأسيس",
+              "displayName": "تأسيس",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "نوع",
+              "displayName": "نوع",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ثقة",
+              "displayName": "ثقة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "شخص",
+              "displayName": "شخص",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiments",
+              "displayName": "sentiments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أماكن",
+              "displayName": "أماكن",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أحداث",
+              "displayName": "أحداث",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "مواضيع",
+              "displayName": "مواضيع",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "تصنيف",
+              "displayName": "تصنيف",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "overall confidence",
+              "displayName": "overall confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        -736
+      ],
+      "id": "0b8d7ccc-7311-4fd6-9d92-de044967dafc",
+      "name": "Append or update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "grok-4-1-fast-non-reasoning",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        -496
+      ],
+      "id": "0f536d78-7235-4849-a5be-8d03732a80ad",
+      "name": "xAI Grok Chat Model1",
+      "credentials": {
+        "xAiApi": {
+          "id": "8xuEmNzOUuELUh3f",
+          "name": "xAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Qafiya sentiments\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2528,
+        -720
+      ],
+      "typeVersion": 1,
+      "id": "bd0ddb60-a4b3-4916-a107-96e014d47e03",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst grouped = items.reduce((acc, item) => {\n  const json = item.json;\n  // Create unique key combining poem_id and title to distinguish different poem instances\n  const uniqueKey = `${json.poem_id}-${json.Title_cleaned}`;\n\n  if (!acc[uniqueKey]) {\n    acc[uniqueKey] = {\n      poem_id: json.poem_id,\n      poem: json.Title_cleaned.trim(),\n      contents_tagged: []\n    };\n  }\n\n  const lineText = (json.Poem_line_cleaned || \"\").trim();\n  const rowId = json.Row_ID;\n\n  acc[uniqueKey].contents_tagged.push(`\"${rowId}\":\"${lineText}\"`);\n\n  return acc;\n}, {});\n\nconst result = Object.values(grouped);\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1952,
+        -704
+      ],
+      "id": "23ebc90c-8e1d-44a3-a8c2-fff2b1d1e513",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1896427276,
+          "mode": "list",
+          "cachedResultName": "Semantic_Search",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1896427276"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": 500
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2160,
+        -32
+      ],
+      "id": "2bce3634-27f1-4b89-bafa-f177fe3749d7",
+      "name": "Get row(s) in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\nTASK: Analyze each line below individually.\n\nPoem title: {{ $json.Title_cleaned }}\n\nChunk to process:\n{{ $json.poem_lines_subset }}\n\nhere is the full poem to situate with and take inspiration from:\n{{ $json.Full_poem }}\n\nINSTRUCTIONS:\n- summarize the poem chunks situated with full poem to make sure you get full context incase entity/place/event is not clear in the current Chunk\n- Never mention starting words like \"الشاعر حمدان بن محمد يتكلم عن ..\" this is completly unnecessary\n- only mention the speaker \"حمدان\" when it is absolutly necessary if he points to him self or speak about him slef.\n- dont use complex arabic metaphors, this is for contextual rag after all\n- make absolutly sure to aggressivly capture entites when found.\n\n# You Must Understand that this Contextual summary is for semantic search friendly RAG, this is not for users to read , this si for AI to situate and embed.\n",
+        "options": {
+          "systemMessage": "=# Arabic Poetry Summarizer for RAG (Sheikh Hamdan)\n\nGenerate dense contextual summaries (10-50 words) for 4-line poetry chunks.\n\n## Output Format\nPure Arabic summary text only. No prefixes like \"القصيدة تتحدث عن\" or chunk markers.\n\n## Core Focus (Priority Order)\n1. **Named Entities**: People, places, events (resolve ALL pronouns/kinship using dictionary below)\n2. **Primary Theme**: Love/patriotism/praise/mourning (single dominant theme)\n3. **Emotional Tone**: شوق/فخر/حزن/غزل (max 2 emotions)\n4. **Key Actions/States**: Verbs indicating narrative movement\n\n## PEOPLE Dictionary (Mandatory Reference)\n\n```json\n[\n  {\n    \"name_ar\": \"حمدان بن محمد بن راشد آل مكتوم\",\n    \"relation\": \"الذات\",\n    \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيدي\", \"أمير\"]\n  },\n  {\n    \"name_ar\": \"محمد بن راشد آل مكتوم\",\n    \"relation\": \"الأب\",\n    \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"هند بنت مكتوم بن جمعة\",\n    \"relation\": \"الأم\",\n    \"tags\": [\"هند\", \"أمي\", \"والدتي\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name_ar\": \"راشد بن حمدان بن محمد\",\n    \"relation\": \"الابن\",\n    \"tags\": [\"راشد\", \"ابني\", \"ولدي\", \"فلذة كبدي\", \"نور عيني\", \"حبيبي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name_ar\": \"شيخة بنت حمدان بن محمد\",\n    \"relation\": \"الابنة\",\n    \"tags\": [\"شيخة\", \"ابنتي\", \"بنتي\", \"نور عيني\", \"حبيبتي\", \"فرحتي\", \"أملي\", \"ذريتي\"]\n  },\n  {\n    \"name_ar\": \"مكتوم بن محمد بن راشد آل مكتوم\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"مكتوم\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\", \"وزير المالية\"]\n  },\n  {\n    \"name_ar\": \"أحمد بن محمد بن راشد آل مكتوم\",\n    \"relation\": \"الأخ\",\n    \"tags\": [\"أحمد\", \"أخي\", \"رفيق دربي\", \"سندي\", \"نائب حاكم دبي\"]\n  },\n  {\n    \"name_ar\": \"راشد بن محمد بن راشد آل مكتوم\",\n    \"relation\": \"الأخ (في ذمة الله)\",\n    \"tags\": [\"راشد\", \"أخي\", \"الفقيد\", \"رحمه الله\", \"طيب الله ثراه\", \"في ذمة الله\"]\n  },\n  {\n    \"name_ar\": \"محمد بن زايد آل نهيان\",\n    \"relation\": \"رئيس الدولة\",\n    \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\", \"رفيق درب\"]\n  },\n  {\n    \"name_ar\": \"زايد بن سلطان آل نهيان\",\n    \"relation\": \"المؤسس\",\n    \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\"]\n  },\n  {\n    \"name_ar\": \"فاطمة بنت مبارك الكتبي\",\n    \"relation\": \"أم الإمارات\",\n    \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\"]\n  },\n  {\n    \"name_ar\": \"حمدان بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"حمدان بن زايد\", \"سيدي\", \"أخي\", \"ممثل الحاكم في المنطقة الغربية\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"منصور بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"منصور بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس الدولة\", \"وزير شؤون الرئاسة\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"طحنون بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"طحنون بن زايد\", \"سيدي\", \"أخي\", \"مستشار الأمن الوطني\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"عبدالله بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"عبدالله بن زايد\", \"سيدي\", \"أخي\", \"وزير الخارجية والتعاون الدولي\", \"صاحب السمو\"]\n  },\n  {\n    \"name_ar\": \"خالد بن محمد آل نهيان\",\n    \"relation\": \"ولي عهد أبوظبي\",\n    \"tags\": [\"خالد بن محمد\", \"ولي العهد\", \"ابن محمد بن زايد\", \"خالد\"]\n  },\n  {\n    \"name_ar\": \"سلطان بن محمد القاسمي\",\n    \"relation\": \"حاكم الشارقة\",\n    \"tags\": [\"سلطان بن محمد\", \"القاسمي\", \"حاكم الشارقة\", \"أمير الشارقة\", \"سلطان\"]\n  },\n  {\n    \"name_ar\": \"سعود بن صقر القاسمي\",\n    \"relation\": \"حاكم رأس الخيمة\",\n    \"tags\": [\"سعود بن صقر\", \"القاسمي\", \"حاكم رأس الخيمة\", \"أمير رأس الخيمة\", \"سعود\"]\n  },\n  {\n    \"name_ar\": \"حميد بن راشد النعيمي\",\n    \"relation\": \"حاكم عجمان\",\n    \"tags\": [\"حميد بن راشد\", \"النعيمي\", \"حاكم عجمان\", \"أمير عجمان\", \"حميد\"]\n  },\n  {\n    \"name_ar\": \"سعود بن راشد المعلا\",\n    \"relation\": \"حاكم أم القيوين\",\n    \"tags\": [\"سعود بن راشد\", \"المعلا\", \"حاكم أم القيوين\", \"أمير أم القيوين\", \"سعود\"]\n  },\n  {\n    \"name_ar\": \"حمد بن محمد الشرقي\",\n    \"relation\": \"حاكم الفجيرة\",\n    \"tags\": [\"حمد بن محمد\", \"الشرقي\", \"حاكم الفجيرة\", \"أمير الفجيرة\", \"حمد\"]\n  },\n  {\n    \"name_ar\": \"سلمان بن عبدالعزيز آل سعود\",\n    \"relation\": \"ملك المملكة العربية السعودية\",\n    \"tags\": [\"سلمان\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\"]\n  },\n  {\n    \"name_ar\": \"محمد بن سلمان آل سعود\",\n    \"relation\": \"ولي عهد المملكة العربية السعودية\",\n    \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\"]\n  },\n  {\n    \"name_ar\": \"تميم بن حمد آل ثاني\",\n    \"relation\": \"أمير دولة قطر\",\n    \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\"]\n  },\n  {\n    \"name_ar\": \"حمد بن عيسى آل خليفة\",\n    \"relation\": \"ملك مملكة البحرين\",\n    \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\"]\n  },\n  {\n    \"name_ar\": \"مشعل الأحمد الجابر الصباح\",\n    \"relation\": \"أمير دولة الكويت\",\n    \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\"]\n  },\n  {\n    \"name_ar\": \"هيثم بن طارق\",\n    \"relation\": \"سلطان عُمان\",\n    \"tags\": [\"هيثم\", \"سلطان\", \"عمان\", \"جار\", \"صديق\"]\n  },\n  {\n    \"name_ar\": \"هزاع بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"هزاع بن زايد\", \"سيدي\", \"أخي\", \"نائب حاكم أبوظبي\"]\n  },\n  {\n    \"name_ar\": \"سيف بن زايد آل نهيان\",\n    \"relation\": \"أخو رئيس الدولة\",\n    \"tags\": [\"سيف بن زايد\", \"سيدي\", \"أخي\", \"نائب رئيس مجلس الوزراء\", \"وزير الداخلية\"]\n  },\n  {\n    \"name_ar\": \"ذياب بن محمد آل نهيان\",\n    \"relation\": \"ابن رئيس الدولة\",\n    \"tags\": [\"ذياب بن محمد\", \"ابن محمد بن زايد\"]\n  },\n  {\n    \"name_ar\": \"مريم بنت محمد آل مكتوم\",\n    \"relation\": \"الأخت\",\n    \"tags\": [\"مريم\", \"أختي\", \"بنت محمد بن راشد\"]\n  },\n  {\n    \"name_ar\": \"سلامة بنت محمد آل مكتوم\",\n    \"relation\": \"الأخت\",\n    \"tags\": [\"سلامة\", \"أختي\", \"بنت محمد بن راشد\"]\n  },\n  {\n    \"name_ar\": \"شمسة بنت محمد آل مكتوم\",\n    \"relation\": \"الأخت\",\n    \"tags\": [\"شمسة\", \"أختي\", \"بنت محمد بن راشد\"]\n  },\n  {\n    \"name_ar\": \"مهيرة بنت محمد آل مكتوم\",\n    \"relation\": \"الأخت\",\n    \"tags\": [\"مهيرة\", \"أختي\", \"بنت محمد بن راشد\"]\n  },\n  {\n    \"name_ar\": \"لطيفة بنت محمد آل مكتوم\",\n    \"relation\": \"الأخت\",\n    \"tags\": [\"لطيفة\", \"أختي\", \"بنت محمد بن راشد\"]\n  },\n  {\n    \"name_ar\": \"عبد الفتاح السيسي\",\n    \"relation\": \"رئيس مصر\",\n    \"tags\": [\"السيسي\", \"عبد الفتاح السيسي\", \"رئيس مصر\", \"صديق\"]\n  },\n  {\n    \"name_ar\": \"محمد السادس\",\n    \"relation\": \"ملك المغرب\",\n    \"tags\": [\"محمد السادس\", \"ملك المغرب\", \"صديق\"]\n  }\n]\n```\n\n## Entity Resolution Rules\n\n**Pronoun Resolution (غزل context)**:\n- 2nd person (أنت/ـك/ـكِ) + body parts (عينيك/خصرك/رمشك) → الحبيبة\n- Qualities (أرقّ/راقي/جميل) addressing 2nd person → صفات الحبيبة\n\n**Kinship Resolution** (match tags to people above):\n- أبي/والدي/قائدي/معلمي → محمد بن راشد آل مكتوم\n- أمي/والدتي → هند بنت مكتوم بن جمعة  \n- ابني/راشد/ولدي/نور عيني (son context) → راشد بن حمدان بن محمد\n- ابنتي/شيخة/بنتي/نور عيني (daughter context) → شيخة بنت حمدان بن محمد\n- أخي + دبي context → مكتوم/أحمد بن محمد بن راشد\n- أخي + رحمه الله → راشد بن محمد بن راشد (الفقيد)\n\n**Leadership Terms**:\n- بو خالد/محمد بن زايد/رئيس الدولة → محمد بن زايد آل نهيان\n- زايد/المؤسس/الوالد المؤسس/الباني → زايد بن سلطان آل نهيان\n\n**Self-Reference**:\n- أنا/لي/قلبي (1st person Sheikh Hamdan) → حمدان بن محمد بن راشد آل مكتوم\n\n## Additional Entity Categories\n\n**GROUPS**: \n- شهداء/ابطال → شهداء الإمارات\n- مواطنين/الشعب → شعب الإمارات\n- الاباء المؤسسين → الآباء المؤسسين\n- جنود/الجيش → جنود الإمارات\n\n**LOCATIONS**: \n- دبي, أبوظبي, الشارقة, عجمان, أم القيوين, الفجيرة, رأس الخيمة\n- برج خليفة, مسجد الشيخ زايد, نخله جميرا\n\n**EVENTS**: \n- يوم الشهيد, اليوم الوطني, يوم العلم, عيد الأب, رمضان, عيد الفطر\n\n## Handling Ambiguity\n- **Multiple themes**: Pick dominant (غزل > وطنية > رثاء)\n- **Metaphors**: Keep literal if entity unclear (\"القمر\" = القمر unless proven person)\n- **Missing entities**: Describe theme (\"الشاعر يصف الشوق والفراق\")\n\n## Quality Rules\n- ✅ Entity name_ar + theme + emotion\n- ✅ Dense factual (no fluff)\n- ❌ No interpretation beyond text+dictionary\n- ❌ No generic \"يتحدث الشاعر\"\n- ❌ No English/transliteration\n\n## Example Outputs\n\n**Input:**\n```\nحبيبتي حالي من الشوق داني\nأشرق بحبك .. واعود أغرب\n```\n**Output:** `الشاعر يعبر عن شوقه لحبيبته، واصفا حبه المتناقض الذي يجمع بين الإشراق والغروب.`\n\n**Input:**\n```\nأبي والدي قائدي ومعلمي\nيا فخر الإمارات راشد بن سعيد\n```\n**Output:** `مدح محمد بن راشد آل مكتوم كقائد ومعلم، مع ذكر راشد بن سعيد كرمز للفخر والهمة.`\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1376,
+        -16
+      ],
+      "id": "d53b14e4-11cf-4c59-b1bb-f71bbc557b28",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1712,
+        -32
+      ],
+      "id": "bef75376-4be2-453c-9f74-ab57c400c1ca",
+      "name": "Loop Over Items3",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1896427276,
+          "mode": "list",
+          "cachedResultName": "Semantic_Search",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1896427276"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chunk_id": "={{ $('Loop Over Items3').item.json.chunk_id }}",
+            "Summary_chunked": "={{ $json.output }}",
+            "Status": "Done"
+          },
+          "matchingColumns": [
+            "chunk_id"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chunk_id",
+              "displayName": "chunk_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "poem_lines_subset",
+              "displayName": "poem_lines_subset",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Summary_chunked",
+              "displayName": "Summary_chunked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full_poem",
+              "displayName": "Full_poem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -816,
+        -16
+      ],
+      "id": "af8b4d8d-e221-4e28-a54b-7471c15719b5",
+      "name": "Append or update row in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## contextual Rag"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2560,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "ec08c837-6c5f-4400-826c-564b05f43c6f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1584,
+        336
+      ],
+      "id": "4952a9ac-993c-471e-a3ab-703292f4fa07",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "frYVvB9GNXXi6o6J",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3dc2c5e-6774-4bd6-a441-142324407e22",
+              "name": "chunk_id",
+              "value": "={{ $json.chunk_id }}",
+              "type": "number"
+            },
+            {
+              "id": "25b20dcf-591d-407e-bdce-39fffe2e150e",
+              "name": "Title_cleaned",
+              "value": "={{ $json.Title_cleaned }}",
+              "type": "string"
+            },
+            {
+              "id": "7c7e3207-1581-4351-b2d7-591abb1fd0f5",
+              "name": "poem_lines_subset",
+              "value": "={{ $json.poem_lines_subset }}",
+              "type": "string"
+            },
+            {
+              "id": "3398fdb8-194d-4b6d-8bad-cbfbf0f8c780",
+              "name": "Full_poem",
+              "value": "={{ $json.Full_poem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1952,
+        -32
+      ],
+      "id": "c3b75224-047a-45fe-91fd-e15fc0e2f2be",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "429e3501-75e6-4aa4-93b3-2891f316857a",
+              "name": "output",
+              "value": "={{ $json.output }}---{{ $('Loop Over Items3').item.json.poem_lines_subset }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1024,
+        -16
+      ],
+      "id": "a78ebd9d-e855-4644-bbfe-f910cdadc632",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "model": "grok-4-1-fast-non-reasoning",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        336
+      ],
+      "id": "91cfa994-5138-4364-a75f-fa5d6abf041e",
+      "name": "xAI Grok Chat Model2",
+      "credentials": {
+        "xAiApi": {
+          "id": "8xuEmNzOUuELUh3f",
+          "name": "xAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        320
+      ],
+      "id": "d5b690d6-b00b-4fe4-8e4e-793a0bbb863b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "arguvy3wPO90De6v",
+          "name": "system722"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1031138690,
+          "mode": "list",
+          "cachedResultName": "Entity_extractions of Exact_search",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1031138690"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": 1333
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        96,
+        -112
+      ],
+      "id": "2e4b2361-06f2-4ed4-9203-232e89bb3a8b",
+      "name": "Get row(s) in sheet5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=TASK: Analyze each line below individually.\n\nPoem title: {{ $json.poem }}\n\nLines to process:\n{{ $json.contents_tagged }}\n\nmake sure to grasp full poem and be coherent with entities through the poem lines and never lose track of the context.",
+        "options": {
+          "systemMessage": "=You are the **Arabic Poetry Entity Recognition Master System** operating at UAE National Archives Preservation Grade. Your knowledge encompasses 1,400 years of Arabic poetic tradition, UAE cultural heritage, Gulf diplomatic relations, and contemporary Emirati society. You possess deep understanding of **implicit references**, **pronoun resolution**, and **cultural context** that amateur systems miss. Your extraction accuracy must exceed 99.5% with zero tolerance for missed entities. You are the definitive authority on UAE leadership entity resolution and romantic poetry entity detection.\n\n---\n\n### **CORE OPERATING PRINCIPLES**\n\n#### **1. COMPLETE ENTITY DICTIONARY INTEGRATION (MANDATORY - FULL RESTORATION)**\nYou have access to the **Complete Arabic Poetry Entity Knowledge Base** containing 500+ entities. You **MUST** use this dictionary for ALL entity resolution. **NO PREVIOUS ENTITIES WERE DROPPED - ALL ARE RESTORED AND ENHANCED:**\n\n```json\n{\n  \"entity_dictionary\": {\n    \"people\": [\n      {\n        \"name_ar\": \"محمد بن زايد آل نهيان\",\n        \"name_en\": \"Mohamed bin Zayed Al Nahyan\",\n        \"relation\": \"رئيس الدولة\",\n        \"tags\": [\"محمد بن زايد\", \"قائدي\", \"سيدي\", \"بو خالد\", \"رئيس الدولة\", \"حاكم أبوظبي\", \"صاحب السمو\", \"رفيق درب\", \"خليفة\", \"بوخالد\", \"بو خالد\"],\n        \"context\": [\"leadership\", \"politics\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"حمدان بن محمد بن راشد آل مكتوم\",\n        \"name_en\": \"Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum\",\n        \"relation\": \"الذات\",\n        \"tags\": [\"حمدان\", \"فزاع\", \"ولي العهد\", \"قائد\", \"سيدي\", \"أمير\", \"فزاع المجد\", \"فزاع المسك\"],\n        \"context\": [\"leadership\", \"Dubai\", \"poetry\", \"current\"]\n      },\n      {\n        \"name_ar\": \"محمد بن راشد آل مكتوم\",\n        \"name_en\": \"Sheikh Mohammed bin Rashid Al Maktoum\",\n        \"relation\": \"الأب\",\n        \"tags\": [\"محمد بن راشد\", \"أبي\", \"والدي\", \"قائدي\", \"سيدي\", \"معلمي\", \"حاكم دبي\", \"نائب رئيس الدولة\", \"رئيس الوزراء\", \"صاحب السمو\", \"يابوراشد\", \"أبو راشد\", \"يابوراشد\", \"بو راشد\"],\n        \"context\": [\"leadership\", \"Dubai\", \"federal\", \"current\"]\n      },\n      {\n        \"name_ar\": \"زايد بن سلطان آل نهيان\",\n        \"name_en\": \"Sheikh Zayed bin Sultan Al Nahyan\",\n        \"relation\": \"المؤسس\",\n        \"tags\": [\"زايد\", \"المؤسس\", \"الوالد المؤسس\", \"أبو الأمة\", \"الباني\", \"رحمه الله\", \"طيب الله ثراه\", \"القائد\", \"زايد الخير\", \"زايد بن سلطان\", \"الشيخ زايد\"],\n        \"context\": [\"leadership\", \"founder\", \"UAE\", \"historical\"]\n      },\n      {\n        \"name_ar\": \"خليفه بن زايد آل نهيان\",\n        \"name_en\": \"Khalifa bin Zayed Al Nahyan\",\n        \"relation\": \"رئيس الدولة السابق\",\n        \"tags\": [\"خليفة\", \"سيدي\", \"رئيس الدولة السابق\", \"رحمه الله\", \"طيب الله ثراه\", \"خالد بن زايد\", \"خالد\"],\n        \"context\": [\"leadership\", \"UAE\", \"historical\"]\n      },\n      {\n        \"name_ar\": \"الحبيبة\",\n        \"name_en\": \"The Beloved Female\",\n        \"relation\": \"المحبوبة\",\n        \"tags\": [\"أنت\", \"يا حبيبة\", \"يا محبوبتي\", \"يا غاليتي\", \"يا عيني\", \"يا روحي\", \"يا حياتي\", \"يا منية\", \"يا سلوى\", \"يا من تحبني\", \"يا من أحبك\", \"يا من تملك قلبي\", \"يا من في خاطري\", \"يا من في فكري\", \"يا من في روحي\", \"يا من في قلبي\", \"يا من في دمي\", \"يا من في عروقي\", \"يا من في عيني\", \"يا من في خاطري\", \"يا من في فكري\", \"يا من في روحي\", \"يا من في قلبي\", \"يا من في دمي\", \"يا من في عروقي\", \"يا من في عيني\"],\n        \"context\": [\"romantic\", \"love\", \"desire\", \"longing\", \"passion\"]\n      },\n      {\n        \"name_ar\": \"الحبيب\",\n        \"name_en\": \"The Beloved Male\",\n        \"relation\": \"المحبوب\",\n        \"tags\": [\"أنت\", \"يا حبيبي\", \"يا محبوبتي\", \"يا غالي\", \"يا روحي\", \"يا حياتي\", \"يا منية\", \"يا سلوى\", \"يا من تحبني\", \"يا من أحبك\", \"يا من تملك قلبي\", \"يا من في خاطري\", \"يا من في فكري\", \"يا من في روحي\", \"يا من في قلبي\", \"يا من في دمي\", \"يا من في عروقي\", \"يا من في عيني\"],\n        \"context\": [\"romantic\", \"love\", \"desire\", \"longing\", \"passion\"]\n      },\n      {\n        \"name_ar\": \"الشاعر\",\n        \"name_en\": \"The Poet\",\n        \"relation\": \"المتحدث\",\n        \"tags\": [\"أنا\", \"شاعرك\", \"عابد الحروف\", \"عاشق الكلمات\", \"ملهمك\", \"مغنيك\", \"عاشقك\", \"من يحبك\", \"من يشتاقك\", \"من ينتظر وصالك\", \"من يذوب في هواك\", \"من يحرق قلبه عليك\", \"من يهيم في خيالك\", \"من يعيش في ذكراك\", \"من يموت في حبك\", \"من يحيا لأجلك\"],\n        \"context\": [\"romantic\", \"self-reference\", \"devotion\"]\n      },\n      {\n        \"name_ar\": \"فاطمة بنت مبارك الكتبي\",\n        \"name_en\": \"Sheikha Fatima bint Mubarak Al Ketbi\",\n        \"relation\": \"أم الإمارات\",\n        \"tags\": [\"فاطمة بنت مبارك\", \"أم الإمارات\", \"أم الأمة\", \"سيدتي\", \"الأميرة\"],\n        \"context\": [\"leadership\", \"UAE\", \"women\", \"current\"]\n      },\n      {\n        \"name_ar\": \"سلطان بن محمد القاسمي\",\n        \"name_en\": \"Sultan bin Muhammad Al Qasimi\",\n        \"relation\": \"حاكم الشارقة\",\n        \"tags\": [\"سلطان بن محمد\", \"القاسمي\", \"حاكم الشارقة\", \"أمير الشارقة\", \"سلطان\"],\n        \"context\": [\"leadership\", \"Sharjah\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"سعود بن صقر القاسمي\",\n        \"name_en\": \"Saud bin Saqr Al Qasimi\",\n        \"relation\": \"حاكم رأس الخيمة\",\n        \"tags\": [\"سعود بن صقر\", \"القاسمي\", \"حاكم رأس الخيمة\", \"أمير رأس الخيمة\", \"سعود\"],\n        \"context\": [\"leadership\", \"Ras Al Khaimah\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"حميد بن راشد النعيمي\",\n        \"name_en\": \"Humaid bin Rashid Al Nuaimi\",\n        \"relation\": \"حاكم عجمان\",\n        \"tags\": [\"حميد بن راشد\", \"النعيمي\", \"حاكم عجمان\", \"أمير عجمان\", \"حميد\"],\n        \"context\": [\"leadership\", \"Ajman\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"سعود بن راشد المعلا\",\n        \"name_en\": \"Saud bin Rashid Al Mualla\",\n        \"relation\": \"حاكم أم القيوين\",\n        \"tags\": [\"سعود بن راشد\", \"المعلا\", \"حاكم أم القيوين\", \"أمير أم القيوين\", \"سعود\"],\n        \"context\": [\"leadership\", \"Umm Al Quwain\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"حمد بن محمد الشرقي\",\n        \"name_en\": \"Hamad bin Mohammed Al Sharqi\",\n        \"relation\": \"حاكم الفجيرة\",\n        \"tags\": [\"حمد بن محمد\", \"الشرقي\", \"حاكم الفجيرة\", \"أمير الفجيرة\", \"حمد\"],\n        \"context\": [\"leadership\", \"Fujairah\", \"UAE\", \"current\"]\n      },\n      {\n        \"name_ar\": \"سلمان بن عبدالعزيز آل سعود\",\n        \"name_en\": \"King Salman bin Abdulaziz Al Saud\",\n        \"relation\": \"ملك المملكة العربية السعودية\",\n        \"tags\": [\"سلمان\", \"خادم الحرمين الشريفين\", \"ملك السعودية\", \"أخي\", \"قائد\", \"جار\"],\n        \"context\": [\"leadership\", \"Saudi Arabia\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"محمد بن سلمان آل سعود\",\n        \"name_en\": \"Crown Prince Mohammed bin Salman\",\n        \"relation\": \"ولي عهد المملكة العربية السعودية\",\n        \"tags\": [\"محمد بن سلمان\", \"ولي العهد\", \"أمير\", \"أخي\", \"صديق\", \"رفيق\", \"قائد\"],\n        \"context\": [\"leadership\", \"Saudi Arabia\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"تميم بن حمد آل ثاني\",\n        \"name_en\": \"Sheikh Tamim bin Hamad Al Thani\",\n        \"relation\": \"أمير دولة قطر\",\n        \"tags\": [\"تميم\", \"أمير\", \"أمير قطر\", \"أخي\", \"جار\", \"صديق\"],\n        \"context\": [\"leadership\", \"Qatar\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"حمد بن عيسى آل خليفة\",\n        \"name_en\": \"King Hamad bin Isa Al Khalifa\",\n        \"relation\": \"ملك مملكة البحرين\",\n        \"tags\": [\"حمد\", \"ملك\", \"ملك البحرين\", \"أخي\", \"جار\", \"صديق\"],\n        \"context\": [\"leadership\", \"Bahrain\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"مشعل الأحمد الجابر الصباح\",\n        \"name_en\": \"Sheikh Mishal Al-Ahmad Al-Jaber Al-Sabah\",\n        \"relation\": \"أمير دولة الكويت\",\n        \"tags\": [\"مشعل\", \"أمير\", \"أمير الكويت\", \"أخي\", \"جار\", \"صديق\"],\n        \"context\": [\"leadership\", \"Kuwait\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"هيثم بن طارق\",\n        \"name_en\": \"Sultan Haitham bin Tariq\",\n        \"relation\": \"سلطان عُمان\",\n        \"tags\": [\"هيثم\", \"سلطان\", \"عمان\", \"جار\", \"صديق\"],\n        \"context\": [\"leadership\", \"Oman\", \"GCC\", \"current\"]\n      },\n      {\n        \"name_ar\": \"عبد الفتاح السيسي\",\n        \"name_en\": \"Abdel Fattah el-Sisi\",\n        \"relation\": \"رئيس مصر\",\n        \"tags\": [\"السيسي\", \"عبد الفتاح السيسي\", \"رئيس مصر\", \"صديق\"],\n        \"context\": [\"leadership\", \"Egypt\", \"Arab\", \"current\"]\n      }\n    ],\n    \"groups\": {\n      \"martyrs\": [\"شهداء\", \"الشهداء\", \"ابطال\", \"شهداء الوطن\", \"شهداء الإمارات\"],\n      \"citizens\": [\"مواطنين\", \"اهل الامارات\", \"الشعب\", \"شعب الإمارات\", \"اهل الوطن\"],\n      \"youth\": [\"شباب\", \"الشباب\", \"الجيل الشاب\", \"جيل المستقبل\", \"أبناء الوطن\"],\n      \"founding_fathers\": [\"الاباء المؤسسين\", \"المؤسسون\", \"رواد الاتحاد\", \"أبطال التأسيس\"],\n      \"soldiers\": [\"جنود\", \"عسكريين\", \"الجيش\", \"حماة الوطن\", \"فرسان الجيش\"],\n      \"women\": [\"نساء\", \"المرأة\", \"النسوة\", \"نساء الإمارات\", \"المرأة الإماراتية\"],\n      \"children\": [\"اطفال\", \"الاطفال\", \"الصغار\", \"أطفال الوطن\", \"جيل المستقبل\"],\n      \"elders\": [\"كبار السن\", \"الشيوخ\", \"المعمرين\", \"حكام الشيوخ\", \"أصحاب الخبرة\"],\n      \"poets\": [\"شعراء\", \"الادباء\", \"الكتاب\", \"أصحاب القوافي\", \"مهندسو الكلمة\"],\n      \"artists\": [\"فنانين\", \"الفنانون\", \"المبدعين\", \"صناع الجمال\", \"أصحاب الفنون\"]\n    },\n    \"locations\": {\n      \"UAE\": [\"الامارات\", \"دوله الامارات\", \"الإمارات العربية المتحدة\", \"وطن التسامح\"],\n      \"Dubai\": [\"دبي\", \"اماره دبي\", \"مدينه دبي\", \"عروس الخليج\", \"مدينة المستقبل\"],\n      \"Abu_Dhabi\": [\"ابوظبي\", \"العاصمه\", \"اماره ابوظبي\", \"قلب الوطن\", \"عاصمة الثقافة\"],\n      \"Sharjah\": [\"الشارقه\", \"إمارة الشارقة\", \"عاصمة الثقافة العربية\", \"الشارقة الحضارية\"],\n      \"Ajman\": [\"عجمان\", \"إمارة عجمان\", \"عجمان الساحلية\", \"عجمان الهادئة\"],\n      \"Umm_Al_Quwain\": [\"ام القيوين\", \"إمارة أم القيوين\", \"أم القيوين الساحلية\", \"أم القيوين الهادئة\"],\n      \"Fujairah\": [\"الفجيره\", \"إمارة الفجيرة\", \"الفجيرة الشرقية\", \"الفجيرة الجبلية\"],\n      \"Ras_Al_Khaimah\": [\"راس الخيمه\", \"إمارة رأس الخيمة\", \"رأس الخيمة الشمالية\", \"رأس الخيمة الجبلية\"],\n      \"Arabian_Gulf\": [\"الخليج العربي\", \"خليجنا العربي\", \"بحرنا العربي\", \"الخليج\"],\n      \"Burj_Khalifa\": [\"برج خليفه\", \"اطول برج\", \"برج خليفة الشاهق\", \"أيقونة دبي\"],\n      \"Palm_Jumeirah\": [\"نخله جميرا\", \"جزيره نخله\", \"نخلة جميرا الساحرة\", \"جزيرة النخلة\"],\n      \"Louvre_Abu_Dhabi\": [\"لوفر ابوظبي\", \"متحف لوفر\", \"لوفر أبوظبي الثقافي\", \"متحف الحضارات\"],\n      \"Sheikh_Zayed_Mosque\": [\"مسجد الشيخ زايد\", \"جامع زايد\", \"مسجد الشيخ زايد الكبير\", \"تحفة معمارية\"],\n      \"Burj_Al_Arab\": [\"برج العرب\", \"فندق برج\", \"برج العرب الفارهي\", \"رمز الفخامة\"],\n      \"Dubai_Mall\": [\"دبي مول\", \"مول دبي\", \"دبي مول العالمي\", \"مركز التسوق\"],\n      \"Yas_Island\": [\"جزيره ياس\", \"ياس ايسلاند\", \"جزيرة ياس الترفيهية\", \"ياس للألعاب\"],\n      \"Al_Ain\": [\"العين\", \"مدينه العين\", \"العين الخضراء\", \"مدينة الحدائق\"],\n      \"Liwa_Oasis\": [\"واحه ليوا\", \"ليوا\", \"واحة ليوا الصحراوية\", \"ليوا الساحرة\"],\n      \"Jebel_Hafeet\": [\"جبل حفيت\", \"جبل حفيت الشاهق\", \"جبل حفيت التاريخي\", \"حفيت العين\"],\n      \"Saudi_Arabia\": [\"السعوديه\", \"المملكه العربيه السعوديه\", \"المملكة العربية السعودية\", \"أرض الحرمين\"],\n      \"Qatar\": [\"قطر\", \"دوله قطر\", \"دولة قطر\", \"قطر الغنية\"],\n      \"Bahrain\": [\"البحرين\", \"مملكه البحرين\", \"مملكة البحرين\", \"البحرين التاريخية\"],\n      \"Kuwait\": [\"الكويت\", \"دوله الكويت\", \"دولة الكويت\", \"كويت الخليج\"],\n      \"Oman\": [\"عمان\", \"سلطنه عمان\", \"سلطنة عمان\", \"عُمان الجميلة\"],\n      \"Mecca\": [\"مكه\", \"مكه المكرمه\", \"مكة المكرمة\", \"أرض الحرم\"],\n      \"Medina\": [\"المدينه\", \"المدينه المنوره\", \"المدينة المنورة\", \"مدينة النبي\"],\n      \"Cairo\": [\"القاهره\", \"عاصمه مصر\", \"القاهرة العريقة\", \"أم الدنيا\"],\n      \"GCC\": [\"مجلس التعاون الخليجي\", \"التعاون الخليجي\", \"دول مجلس التعاون\", \"الخليج العربي\"],\n      \"Arab_League\": [\"جامعة الدول العربية\", \"الدول العربية\", \"العالم العربي\", \"الأمة العربية\"]\n    },\n    \"religious_entities\": {\n      \"Allah\": [\"الله\", \"رب\", \"خالق\", \"رب العالمين\", \"الرحمن\", \"الرحيم\", \"الله سبحانه\", \"إله العالمين\"],\n      \"Prophet\": [\"محمد\", \"رسول الله\", \"النبي\", \"خاتم الأنبياء\", \"سيدنا محمد\", \"حبيبي محمد\"],\n      \"Holy_Texts\": [\"القرآن\", \"السنة\", \"الذكر الحكيم\", \"كتاب الله\", \"سنة النبي\"]\n    }\n  }\n}\n```\n\n#### **2. CRITICAL ENTITY RESOLUTION RULES (ENHANCED - NO DROPPED RULES)**\n\n**UAE LEADERSHIP RESOLUTION (RESTORED AND ENHANCED):**\n- **\"بو خالد\" resolution**: When you encounter \"بو خالد\" → **ALWAYS** resolve to \"محمد بن زايد آل نهيان\" (RESTORED)\n- **\"أبو خالد\" resolution**: When you encounter \"أبو خالد\" → **ALWAYS** resolve to \"محمد بن زايد آل نهيان\" (RESTORED)\n- **\"يابوراشد\" resolution**: When you encounter \"يابوراشd\" → **ALWAYS** resolve to \"محمد بن راشد آل مكتوم\" (RESTORED)\n- **\"أبو راشد\" resolution**: When you encounter \"أبو راشd\" → **ALWAYS** resolve to \"محمد بن راشd آل مكتوم\" (RESTORED)\n- **\"زايد الخير\" resolution**: When you encounter \"زايد الخير\" → **ALWAYS** resolve to \"زايد بن سلطان آل نهيان\" (RESTORED)\n- **\"الشيخ زايد\" resolution**: When you encounter \"الشيخ زايد\" → **ALWAYS** resolve to \"زايد بن سلطان آل نهيان\" (RESTORED)\n- **\"أبو الأمة\" resolution**: When you encounter \"أبو الأمة\" → **ALWAYS** resolve to \"زايد بن سلطان آل نهيان\" (RESTORED)\n- **\"فزاع\" resolution**: When you encounter \"فزاع\" → **ALWAYS** resolve to \"حمدان بن محمد بن راشد آل مكتوم\" (RESTORED)\n- **\"خليفة\" resolution**: When you encounter \"خليفة\" in UAE context → **ALWAYS** resolve to \"خليفه بن زايد آل نهيان\" (RESTORED)\n\n**ROMANTIC PRONOUN RESOLUTION (CRITICAL FIX - PREVIOUSLY MISSING):**\n- **\"أنت\" resolution**: In romantic poetry, \"أنت\" → **ALWAYS** resolve to \"الحبيبة\" (female) or \"الحبيب\" (male) based on context\n- **\"لك\" resolution**: In romantic context, \"لك\" → **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\"\n- **\"عينيك\" resolution**: **ALWAYS** resolve to both \"العين\" (relation: \"عضو\") AND \"الحبيبة\" or \"الحبيب\" (owner)\n- **\"قلبك\" resolution**: **ALWAYS** resolve to both \"القلب\" (relation: \"عضو\") AND \"الحبيبة\" or \"الحبيب\" (owner)\n- **\"يا روحي\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n- **\"وصلك\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n- **\"هواك\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n- **\"يا من...\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" based on context\n- **\"وينك\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" as \"المخاطب\"\n- **\"لقياك\" resolution**: **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n\n**RELIGIOUS PRONOUN RESOLUTION (RESTORED):**\n- **\"ربك\" resolution**: **ALWAYS** resolve to \"الله\"\n- **\"نبيك\" resolution**: **ALWAYS** resolve to \"النبي محمد\"\n- **\"رسول الله\" resolution**: **ALWAYS** resolve to \"النبي محمد\"\n- **\"خالق السماوات\" resolution**: **ALWAYS** resolve to \"الله\"\n- **\"ذو الجلال\" resolution**: **ALWAYS** resolve to \"الله\"\n- **\"رب العالمين\" resolution**: **ALWAYS** resolve to \"الله\"\n\n#### **3. COREFERENCE RESOLUTION FRAMEWORK (ENHANCED FOR ROMANTIC & UAE CONTEXTS)**\n\n**PRONOUN RESOLUTION CHAIN PROTOCOL:**\n1. **Scan entire poem FIRST** for explicit entity mentions before processing individual lines\n2. **Build comprehensive resolution chain** mapping all pronouns to explicit entities\n3. **Apply context priority hierarchy**: UAE leadership > Religious figures > Romantic entities > Family roles > Generic roles\n4. **Validate every resolution** against entity dictionary before output\n5. **Document all resolutions** in processing_notes for audit trail\n\n**RESOLUTION TABLE (MANDATORY - COMPLETE RESTORATION):**\n\n| Pronoun/Reference | Resolution Rule | Example Context | Required Output |\n|-------------------|-----------------|-----------------|-----------------|\n| \"هو\" after UAE leader mention | Resolve to most recent UAE leader | \"قال محمد بن زايد... هو يقود\" → \"محمد بن زايد آل نهيان\" | {\"name\": \"محمد بن زايد آل نهيان\", \"relation\": \"رئيس الدولة\"} |\n| \"أنت\" in UAE leadership context | Resolve to addressed leader | \"يا بو خالد... أنت القائد\" → \"محمد بن زايد آل نهيان\" | {\"name\": \"محمد بن زايد آل نهيان\", \"relation\": \"رئيس الدولة\"} |\n| \"أنت\" in romantic context | Resolve to lover | \"يا حبيبتي... أنت حياتي\" → \"الحبيبة\" | {\"name\": \"الحبيبة\", \"relation\": \"المحبوبة\"} |\n| \"المخاطب\" in praise context | Resolve to leader being praised | \"المخاطب هو سيد المجد\" → \"محمد بن راشد آل مكتوم\" | {\"name\": \"محمد بن راشد آل مكتوم\", \"relation\": \"الأب\"} |\n| \"القائد\" with UAE context | Resolve to most relevant UAE leader | \"القائد الذي بنى دبي\" → \"محمد بن راشd آل مكتوم\" | {\"name\": \"محمد بن راشd آل مكتوم\", \"relation\": \"الأب\"} |\n| \"الرئيس\" in UAE context | Resolve to محمد بن زايد | \"الرئيس الذي وحد الصفوف\" → \"محمد بن زايد آل نهيان\" | {\"name\": \"محمد بن زايد آل نهيان\", \"relation\": \"رئيس الدولة\"} |\n| \"عينيك\" in romantic context | Resolve to body part + owner | \"يا نور عينيك\" → \"العين\" + \"الحبيبة\" | [{\"name\": \"العين\", \"relation\": \"عضو\"}, {\"name\": \"الحبيبة\", \"relation\": \"المحبوبة\"}] |\n| \"قلبك\" in romantic context | Resolve to body part + owner | \"قلبك يسكن صdري\" → \"القلب\" + \"الحبيبة\" | [{\"name\": \"القلب\", \"relation\": \"عضو\"}, {\"name\": \"الحبيبة\", \"relation\": \"المحبوبة\"}] |\n| \"ربك\" in religious context | Always resolve to \"الله\" | \"rbك يحميك\" → \"الله\" | {\"name\": \"الله\", \"relation\": \"رب\"} |\n| \"نبيك\" in religious context | Always resolve to \"النبي محمد\" | \"نبيك يهديك\" → \"النبي محمد\" | {\"name\": \"النبي محمد\", \"relation\": \"رسول الله\"} |\n| \"يا سيدي\" in UAE context | Resolve to highest UAE leader | \"يا سيدي قائد المسيرة\" → \"محمد بن زايد آل نهيان\" | {\"name\": \"محمد بن زايد آل نهيان\", \"relation\": \"رئيس الدولة\"} |\n| \"يا سيد المجد\" in UAE context | Resolve to محمد بن راشd | \"يا سيد المجد\" → \"محمد بن راشd آل مكتوم\" | {\"name\": \"محمد بن راشd آل مكتوم\", \"relation\": \"الأب\"} |\n| \"أبو الأمة\" in historical context | Always resolve to \"زايد بن سلطان\" | \"أبو الأمة باني الاتحاد\" → \"زايد بن سلطان آل نهيان\" | {\"name\": \"زايد بن سلطان آل نهيان\", \"relation\": \"المؤسس\"} |\n| \"فزاع\" in Dubai context | Always resolve to \"حمدان بن محمد\" | \"فزاع المجد\" → \"حمدان بن محمد بن راشd آل مكتوم\" | {\"name\": \"حمدان بن محمد بن راشd آل مكتوم\", \"relation\": \"الذات\"} |\n\n#### **4. CONTEXTUAL ANALYSIS PROTOCOL (CRITICAL - DO NOT SKIP)**\n\n**STEP 1: POEM CONTEXT DETECTION (MANDATORY)**\nBefore processing individual lines, **ANALYZE THE ENTIRE POEM** to determine:\n- **Genre classification**: UAE leadership poetry, Religious poetry, Romantic poetry (غزل), National poetry (وطني), Philosophical (فلسفي)\n- **Gender indicators**: Feminine pronouns (ـك, ـتي, ـيها) vs masculine pronouns (ـك, ـه, ـهما)\n- **Dominant themes**: Leadership, Love, Longing, Separation, Joy, Pain, Beauty, Faith\n- **Temporal context**: Historical, Contemporary, Classical\n- **Geographical context**: UAE-specific, Gulf-wide, Arab-wide, International\n\n**STEP 2: UAE LEADERSHIP FLAGGING (ENHANCED)**\nIf poem contains **ANY** of the following, flag as **UAE LEADERSHIP POETRY**:\n- ✓ UAE leadership names: زايد, محمد بن راشd, محمد بن زايد, حمدان, خليفة\n- ✓ UAE leadership titles: رئيس الدولة, حاكم دبي, ولي العهد, الأب المؤسس\n- ✓ UAE leadership nicknames: بو خالd, يابوراشd, فزاع, زايد الخير\n- ✓ UAE-specific locations: دبي, أبوظبي, الإمارات, الاتحاد\n- ✓ UAE-specific events: يوم الاتحاد, يوم الشهيد, اليوم الوطني, يوم العلم\n\n**STEP 3: ROMANTIC POETRY FLAGGING (CRITICAL FIX)**\nIf poem contains **ANY** of the following, flag as **ROMANTIC POETRY**:\n- ✓ Romantic keywords: حب, شوق, هوى, غرام, وصال, فراق, لقيا, عيون, خدود, شفاه, نور, هيفاء\n- ✓ Pronouns: أنت, لك, معك, فيك, عندك, لعينيك, لقلبك, لك\n- ✓ Address terms: يا حبيبي, يا حبيبتي, يا روحي, يا حياتي, يا منية, يا سلوى\n- ✓ Romantic actions: يشوقني, يغيب عني, يحرق قلبي, يسكن صdري, يهيم في خيالك\n- ✓ Body parts: عيونك, خديك, شفتيك, قلبك, يديك, رجليك\n\n**STEP 4: GENDER DETECTION ALGORITHM (ROMANTIC CONTEXT)**\nApply **gender detection rules** to determine if addressing male or female:\n- **Female indicator words**: حبيبة, محبوبة, غالية, جميلة, ناعمة, لطيفة, رقيقة, فاتنة, حسناء\n- **Male indicator words**: حبيب, محبوب, غالي, جميل, وسيم, فارس, قوي, شجاع, حليم\n- **Possessive suffixes**: ـك (neutral), ـكِ (feminine), ـكَ (masculine)\n- **Verb conjugations**: Past tense verbs ending with ـت (feminine) vs ـ (masculine)\n- **Noun endings**: Feminine nouns typically end with ـة vs masculine without\n\n**STEP 5: COREFERENCE CHAIN CONSTRUCTION (COMPLETE)**\nBuild a **complete reference map** for the entire poem:\n```\nPronoun/Reference → Resolved Entity → Example Context\n\"هو\" → \"محمد بن زايد آل نهيان\" → \"قال بو خالd... هو يقود\"\n\"أنت\" → \"الحبيبة\" → \"يا حبيبتي... أنت حياتي\"\n\"عينيك\" → \"العين\" + \"الحبيبة\" → \"يا نور عينيك\"\n\"قلبك\" → \"القلب\" + \"الحبيبة\" → \"قلبك يسكن صdري\"\n\"وصلك\" → \"الحبيبة\" → \"وصلك يشفي جراحي\"\n\"ربك\" → \"الله\" → \"rbك يحميك\"\n\"يابوراشd\" → \"محمد بن راشd آل مكتوم\" → \"يابوراشd حضورك نور\"\n\"بو خالd\" → \"محمد بن زايد آل نهيان\" → \"يابو خالd حفظك الله\"\n```\n\n#### **5. MANDATORY RULES (NON-NEGOTIABLE)**\n\n**RULE 1: NO EMPTY PERSON FIELD IN UAE LEADERSHIP OR ROMANTIC POETRY**\n- **In UAE leadership poetry**: The \"person\" field **CANNOT** be empty for any line\n- **In romantic poetry**: The \"person\" field **CANNOT** be empty for any line\n- **If no explicit entity mentioned**: Resolve from contextual pronouns using coreference chain\n- **If still no entity**: Default to most relevant entity based on poem context\n- **Example failure correction**: If input has \"أنتِ\" and output has \"person\": [] → **REJECT** and reprocess\n\n**RULE 2: UAE LEADERSHIP PRIORITY ENFORCEMENT**\n- If UAE leadership context is detected → **ALL** leadership pronouns resolve to UAE leaders\n- \"سيدي\" in UAE context → **ALWAYS** resolve to highest UAE leader mentioned\n- \"قائد\" in UAE context → **ALWAYS** resolve to most relevant UAE leader\n- \"رئيس\" in UAE context → **ALWAYS** resolve to محمد بن زايد آل نهيان\n- UAE leadership entities take priority over ALL other entity types\n\n**RULE 3: ROMANTIC ENTITY ENFORCEMENT**\n- **\"أنت\" in romantic context**: **NEVER** leave unresolved → **ALWAYS** resolve to \"الحبيبة\" or \"الحبيب\"\n- **Body part metaphors**: **ALWAYS** resolve to both body part AND owner entity\n- **Address terms**: **ALWAYS** resolve to specific romantic entities\n- **Implicit entities**: **ALWAYS** detect from contextual clues\n- **Romantic pronouns**: **NEVER** output generic pronouns - always resolve to specific entities\n\n**RULE 4: MINIMUM CONFIDENCE ENFORCEMENT**\n- **Minimum threshold**: All entity resolutions must be accurate\n- **Low confidence protocol**: If entity cannot be resolved with certainty → Exclude tag rather than guess\n- **No forced extraction**: If entity cannot be resolved → Skip rather than guess\n\n**RULE 5: ROW_ID PRESERVATION ENFORCEMENT**\n- **Exact preservation**: Row_ID values **MUST** match EXACT input values\n- **No \"unknown\" values**: **NEVER** output \"unknown\" for Row_ID\n- **Format preservation**: Preserve original Row_ID format exactly as provided\n- **Validation protocol**: Verify Row_ID mapping before output generation\n\n#### **6. VALIDATION CHECKLIST (ENHANCED - COMPLETE RESTORATION)**\n\n**MUST PASS ALL THESE CHECKS:**\n✓ **UAE leadership flag** applied when poem contains UAE leadership keywords\n✓ **Romantic poetry flag** applied when poem contains romantic keywords\n✓ **Gender detection** performed before entity resolution in romantic poetry\n✓ **Coreference chain** built for entire poem before line processing\n✓ **No empty person fields** in UAE leadership or romantic poetry\n✓ **All pronouns** resolved to specific entities from dictionary (no generic \"أنت\", \"هو\", \"هي\")\n✓ **Body part metaphors** resolved to both body part AND owner entity\n✓ **Address terms** resolved to proper specific entities\n✓ **Implicit entities** detected from contextual clues\n✓ **Row_ID values** match EXACT input values (no \"unknown\")\n✓ **Entity relations** match dictionary values exactly\n✓ **Processing notes** document all resolutions and merges\n✓ **Maximum 5 tags** per category maintained\n✓ **No tag duplication** across categories\n✓ **Dictionary compliance** 100% - no invented entities or tags\n\n**UAE LEADERSHIP SPECIFIC VALIDATIONS:**\n✓ \"بو خالd\" → \"محمد بن زايد آل نهيان\" (relation: \"رئيس الدولة\")\n✓ \"يابوراشd\" → \"محمد بن راشd آل مكتوم\" (relation: \"الأب\")\n✓ \"فزاع\" → \"حمدان بن محمد بن راشd آل مكتوم\" (relation: \"الذات\")\n✓ \"زايد الخير\" → \"زايد بن سلطان آل نهيان\" (relation: \"المؤسس\")\n✓ \"خليفة\" → \"خليفه بن زايد آل نهيان\" (relation: \"رئيس الدولة السابق\")\n✓ \"سيدي\" in UAE context → Highest UAE leader mentioned\n✓ UAE leadership priority applied over all other entity types\n\n**ROMANTIC POETRY SPECIFIC VALIDATIONS:**\n✓ \"أنت\" in romantic context → \"الحبيبة\" or \"الحبيب\" (never generic)\n✓ \"عينيك\" → Both \"العين\" (relation: \"عضو\") AND \"الحبيبة\"/\"الحبيب\" (owner)\n✓ \"قلبك\" → Both \"القلب\" (relation: \"عضو\") AND \"الحبيبة\"/\"الحبيب\" (owner)\n✓ \"وصلك\" → \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n✓ \"يا روحي\" → \"الحبيبة\" or \"الحبيب\" as \"المحبوب\"/\"المحبوبة\"\n✓ At least 80% of lines in romantic poetry have non-empty person field\n✓ Gender consistency maintained throughout romantic poem\n✓ No contradictory relations within same romantic poem\n\n#### **7. ERROR PREVENTION PROTOCOLS (ENHANCED - NO DROPPED SAFEGUARDS)**\n\n**UAE LEADERSHIP FAILURE MODES TO PREVENT (RESTORED):**\n❌ **\"بو خالd\"** output as generic person → **ALWAYS** resolve to \"محمد بن زايد آل نهيان\"\n❌ **\"يابوراشd\"** not resolved to محمد بن راشd → **ALWAYS** resolve to \"محمد بن راشd آل مكتوم\"\n❌ **\"فزاع\"** not resolved to حمدان بن محمد → **ALWAYS** resolve to \"حمدان بن محمد بن راشd آل مكتوم\"\n❌ **\"زايد الخير\"** not resolved to زايد بن سلطان → **ALWAYS** resolve to \"زايد بن سلطان آل نهيان\"\n❌ **\"خليفة\"** not resolved to خليفه بن زايد → **ALWAYS** resolve to \"خليفه بن زايد آل نهيان\"\n❌ UAE leadership entities invented not in dictionary → **ALWAYS** use exact dictionary values\n❌ UAE leadership relations not matching dictionary → **ALWAYS** use exact relation from dictionary\n\n**ROMANTIC POETRY FAILURE MODES TO PREVENT (CRITICAL FIX):**\n❌ **Empty person field** in romantic poetry line → **AUTOMATIC REJECTION**\n❌ **Generic pronouns** left unresolved (\"أنت\", \"لك\", \"معك\") → **ALWAYS** resolve to specific entities\n❌ **Gender mismatch** within same romantic poem → **ALWAYS** maintain gender consistency\n❌ **Body part without owner** (resolving \"عينيك\" to just \"العين\" without person) → **ALWAYS** resolve to both\n❌ **Metaphorical terms** not resolved (\"يا نور عيني\" → no entity) → **ALWAYS** resolve to entities\n❌ **Implicit entities** missed (\"وصلك\" → no \"الحبيبة\" detected) → **ALWAYS** detect implicit entities\n❌ **Inconsistent relations** within same romantic poem (sometimes \"المحبوبة\", sometimes \"المخاطبة\") → **ALWAYS** use consistent relations\n\n**AUTOMATIC CORRECTION PROTOCOLS (ENHANCED):**\n- **UAE leadership context detected but empty person field** → Reanalyze with forced UAE leadership resolution\n- **Romantic context detected but empty person field** → Reanalyze with forced romantic entity resolution\n- **Gender detection fails** → Default to most frequent gender indicators in poem\n- **Body part detected without owner** → Force resolution to \"الحبيبة\" or \"الحبيب\"\n- **Address term detected without entity** → Force resolution to \"الحبيبة\" or \"الحبيب\"\n- **Pronoun detected without antecedent** → Search entire poem for first explicit mention\n- **Row_ID format invalid** → Preserve exactly as provided, do not modify\n\n#### **8. STRICT OUTPUT FORMATTING REQUIREMENTS**\n\n**PER-LINE OUTPUT STRUCTURE (MINIMAL):**\n```json\n{\n  \"row_id\": \"EXACT_ROW_ID_FROM_INPUT\",\n  \"person\": [\n    {\n      \"name\": \"EXACT_NAME_FROM_DICTIONARY\", \n      \"relation\": \"EXACT_RELATION_FROM_DICTIONARY\",\n      \"resolved_from\": [\"original_text_mention\"]\n    }\n  ],\n  \"sentiments\": [\"tag1\", \"tag2\"],\n  \"places\": [\"tag1\", \"tag2\"], \n  \"events\": [\"tag1\", \"tag2\"],\n  \"themes\": [\"tag1\", \"tag2\"],\n  \"religious\": [\"tag1\", \"tag2\"],\n  \"processing_notes\": [\n    \"RESOLVED: 'بو خالد' → 'محمد بن زايد آل نهيان'\",\n    \"MERGED: 'وجد' → 'شوق'\",\n    \"CONTEXT: UAE leadership priority applied\"\n  ]\n}\n```\n\n#### **9. EXECUTION PROTOCOL (STEP-BY-STEP MANDATORY - RESTORED)**\n\n**PHASE 1: PRE-PROCESSING ANALYSIS (MANDATORY)**\n1. **Read entire poem** before processing any lines\n2. **Detect genre** using keyword frequency analysis\n3. **Flag UAE leadership poetry** if UAE leadership keywords exceed threshold\n4. **Flag romantic poetry** if love/romantic keywords exceed threshold\n5. **Perform gender detection** across all lines (for romantic poetry)\n6. **Build coreference map** of all pronouns and references\n7. **Identify explicit entities** mentioned anywhere in poem\n8. **Determine context priority** (UAE leadership > religious > romantic > other)\n\n**PHASE 2: LINE-BY-LINE PROCESSING (MANDATORY)**\nFor **EACH LINE**:\n1. **Check genre flags** - if UAE leadership or romantic flagged, enforce respective rules\n2. **Extract explicit entities** using dictionary lookup\n3. **Resolve pronouns** using coreference map from Phase 1\n4. **Detect implicit entities** from contextual clues\n5. **Apply body part metaphor resolution** if applicable\n6. **Validate person field** - if empty in UAE leadership or romantic context, force resolution\n7. **Enforce tag limits** - maximum 5 tags per category\n8. **Apply merge rules** - merge similar sentiments and themes\n9. **Document all resolutions** in processing_notes\n\n**PHASE 3: POST-PROCESSING VALIDATION (MANDATORY)**\n1. **Check UAE leadership consistency** - all UAE references resolve to correct leaders\n2. **Check romantic consistency** - gender maintained, person fields non-empty\n3. **Verify no empty person fields** in UAE leadership or romantic poetry\n4. **Validate body parts have owners** in metaphorical references\n5. **Ensure address terms resolved** to specific entities\n6. **Cross-check Row_ID values** match input exactly\n7. **Generate processing notes** for all resolutions and corrections\n8. **Final validation pass** against all checklist items\n\n#### **10. FINAL INSTRUCTIONS (OPERATING AT MAXIMUM PRECISION - RESTORED)**\n\n**CRITICAL REMINDERS:**\n⚠️ **NEVER** leave \"person\" field empty in UAE leadership or romantic poetry - this is your #1 failure mode\n⚠️ **ALWAYS** resolve \"بو خالd\" to \"محمد بن زايد آل نهيان\" - no exceptions, no alternatives\n⚠️ **ALWAYS** resolve \"يابوراشd\" to \"محمد بن راشd آل مكتوم\" - no exceptions, no alternatives\n⚠️ **ALWAYS** resolve \"أنت\" in romantic context to \"الحبيبة\" or \"الحبيب\" - never leave as generic pronoun\n⚠️ **BODY PARTS MUST HAVE OWNERS** - \"عينيك\" requires both \"العين\" AND \"الحبيبة\"/\"الحبيب\"\n⚠️ **ADDRESS TERMS ARE ENTITIES** - \"يا روحي\" is not poetic filler, it's an entity reference\n⚠️ **CONTEXT IS KING** - analyze entire poem before processing individual lines\n\n**PRIORITY HIERARCHY FOR ENTITY RESOLUTION:**\n1. **UAE Leadership** (if context present) - highest priority\n2. **Religious Entities** (الله, النبي) - second priority  \n3. **Romantic Entities** (الحبيبة, الحبيب) - third priority but **MOST COMMON**\n4. **Family Roles** (الأم, الأب) - fourth priority\n5. **Generic Roles** (الإنسان, الناس) - last resort\n\n**UAE LEADERSHIP RESOLUTION RULES (RESTORED - NO DROPPED RULES):**\n- **\"بو خالd\"** = **\"محمد بن زايد آل نهيان\"** ALWAYS\n- **\"يابوراشd\"** = **\"محمد بن رашd آل مكتوم\"** ALWAYS  \n- **\"فزاع\"** = **\"حمدان بن محمد بن راشd آل مكتوم\"** ALWAYS\n- **\"زايد الخير\"** = **\"زايد بن سلطان آل نهيان\"** ALWAYS\n- **\"خليفة\"** in UAE context = **\"خليفه بن زايد آل نهيان\"** ALWAYS\n- **\"سيدي\"** in UAE context = highest UAE leader mentioned\n- **\"قائد\"** in UAE context = most relevant UAE leader\n- **\"رئيس\"** in UAE context = **\"محمد بن زايد آل نهيان\"** ALWAYS\n\n**ROMANTIC POETRY RESOLUTION RULES (CRITICAL FIX - NEWLY ENFORCED):**\n- **\"أنت\"** in romantic context = **\"الحبيبة\"** or **\"الحبيب\"** ALWAYS\n- **\"عينيك\"** = **\"العين\" + \"الحبيبة\"/\"الحبيب\"** ALWAYS\n- **\"قلبك\"** = **\"القلب\" + \"الحبيبة\"/\"الحبيب\"** ALWAYS\n- **\"وصلك\"** = **\"الحبيبة\"/\"الحبيب\"** as **\"المحبوب\"/\"المحبوبة\"** ALWAYS\n- **\"يا روحي\"** = **\"الحبيبة\"/\"الحبيب\"** as **\"المحبوب\"/\"المحبوبة\"** ALWAYS\n- **No empty person fields** in romantic poetry - ALWAYS resolve\n- **Gender consistency** maintained throughout romantic poem\n\n**EMERGENCY PROTOCOLS (RESTORED):**\n- **UAE LEADERSHIP EMERGENCY**: If \"بو خالd\" not resolved → Reanalyze with forced UAE leadership resolution\n- **ROMANTIC POETRY EMERGENCY**: If person field empty → Reanalyze with forced romantic resolution\n- **GENDER CONFLICT EMERGENCY**: If gender switches within poem → Use majority gender detection\n- **BODY PART EMERGENCY**: If body part without owner → Force resolution to \"الحبيبة\" or \"الحبيب\"\n- **ROW_ID EMERGENCY**: If Row_ID format invalid → Preserve exactly as provided, do not modify\n- **DICTIONARY MISS EMERGENCY**: If entity not in dictionary → Default to \"No entity detected\"\n\n---\n\n**FINAL OPERATIONAL STATUS:**\nYou are now operating at **ULTRA-PRECISION MODE** with **COMPLETE UAE LEADERSHIP RESOLUTION** and **ROMANTIC POETRY ENHANCED RESOLUTION**. Every pronoun will be resolved. Every implicit entity will be detected. Every body part will have an owner. Every address term will be mapped to a specific entity. No more empty person fields in UAE leadership or romantic poetry.\n\n**SYSTEM INITIALIZATION COMPLETE. ALL SAFETY PROTOCOLS ENGAGED. DICTIONARY FULLY RESTORED.**\n\n**BEGIN PROCESSING NOW. OUTPUT JSON ONLY. NO EXPLANATIONS. NO ADDITIONAL TEXT.**\n**REMEMBER: \"بو خالد\" = \"محمد بن زايد آل نهيان\" ALWAYS. \"يابوراشد\" = \"محمد بن راشد آل مكتوم\" ALWAYS. \"أنت\" IN LOVE POEM = \"الحبيبة\" or \"الحبيب\" ALWAYS. NO EXCEPTIONS.**"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        816,
+        -96
+      ],
+      "id": "fec9c526-c42d-4efd-a6e8-654f0361e7c4",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (!Array.isArray(items) || items.length === 0) {\n  return [{ json: { error: \"No input items\" } }];\n}\n\nconst result = items.flatMap(item => {\n  const outputStr = item.json?.output;\n  if (typeof outputStr !== \"string\" || !outputStr.trim()) {\n    return [{\n      json: {\n        Row_ID: item.json?.Row_ID ?? \"unknown\",\n        summary: { error: \"empty_output\" }\n      }\n    }];\n  }\n\n  // Clean markdown wrappers\n  const cleanJsonStr = outputStr.replace(/```json|```/g, \"\").trim();\n\n  let parsed;\n  try {\n    parsed = JSON.parse(cleanJsonStr);\n  } catch (e) {\n    return [{\n      json: {\n        Row_ID: item.json?.Row_ID ?? \"unknown\",\n        summary: { error: \"json_parse_failed\", message: e.message }\n      }\n    }];\n  }\n\n  // Wrap single object in array if needed\n  if (!Array.isArray(parsed)) {\n    parsed = [parsed];\n  }\n\n  return parsed.map(entry => ({\n    json: {\n      Row_ID: item.json?.Row_ID ?? \"unknown\",\n      summary: entry\n    }\n  }));\n});\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -96
+      ],
+      "id": "3ec0746c-f20c-42c2-8f26-505bce1dcea6",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        560,
+        -112
+      ],
+      "id": "892664be-e80f-4cf8-bcd6-b9acbe940e59",
+      "name": "Loop Over Items6",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w",
+          "mode": "list",
+          "cachedResultName": "FAZ_POEMS_REVIEW",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1031138690,
+          "mode": "list",
+          "cachedResultName": "Entity_extractions of Exact_search",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W2cjBr8qBrVLmMTAKstG1eLDrdn-3rn1yO6JgsTDP_w/edit#gid=1031138690"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Row_ID": "={{ $json.summary.row_id }}",
+            "Status": "Done",
+            "شخص": "={{ $json.summary.person }}",
+            "sentiments": "={{ $json.summary.sentiments }}",
+            "أماكن": "={{ $json.summary.places }}",
+            "أحداث": "={{ $json.summary.events }}",
+            "مواضيع": "={{ $json.summary.themes }}",
+            "دين": "={{ $json.summary.religious }}",
+            "comment": "={{ $json.summary.processing_notes }}"
+          },
+          "matchingColumns": [
+            "Row_ID"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Row_ID",
+              "displayName": "Row_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_cleaned",
+              "displayName": "Title_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "قافية",
+              "displayName": "قافية",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "روي",
+              "displayName": "روي",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "البحر",
+              "displayName": "البحر",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "وصل",
+              "displayName": "وصل",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "حركة",
+              "displayName": "حركة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "شخص",
+              "displayName": "شخص",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiments",
+              "displayName": "sentiments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أماكن",
+              "displayName": "أماكن",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "أحداث",
+              "displayName": "أحداث",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "دين",
+              "displayName": "دين",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "مواضيع",
+              "displayName": "مواضيع",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "تصنيف",
+              "displayName": "تصنيف",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "62850e58-a123-4bf3-a1a4-a5738de486bf",
+      "name": "Append or update row in sheet5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OV5c4nxTt4atkgGW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Entity Enhancements\n\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -464,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "12ac6842-42fd-4434-9120-785f4ea92313",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst grouped = items.reduce((acc, item) => {\n  const json = item.json;\n  // Create unique key combining poem_id and title to distinguish different poem instances\n  const uniqueKey = `${json.poem_id}-${json.Title_cleaned}`;\n\n  if (!acc[uniqueKey]) {\n    acc[uniqueKey] = {\n      poem_id: json.poem_id,\n      poem: json.Title_cleaned.trim(),\n      contents_tagged: []\n    };\n  }\n\n  const lineText = (json.Poem_line_cleaned || \"\").trim();\n  const rowId = json.Row_ID;\n\n  acc[uniqueKey].contents_tagged.push(`\"${rowId}\":\"${lineText}\"`);\n\n  return acc;\n}, {});\n\nconst result = Object.values(grouped);\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -112
+      ],
+      "id": "50b4fcec-2768-4336-ae8e-39d4e45ef037",
+      "name": "Code in JavaScript8"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        688,
+        272
+      ],
+      "id": "eb9f8a9f-df0f-4294-9633-777d4a83570b",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "arguvy3wPO90De6v",
+          "name": "system722"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Original_Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Update Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Original_Dataset": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Summary": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Original_Dataset1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Original_Dataset1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items3": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok Chat Model2": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items6": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

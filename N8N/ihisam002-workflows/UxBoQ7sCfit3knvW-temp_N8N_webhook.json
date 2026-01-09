@@ -1,0 +1,182 @@
+{
+  "name": "temp N8N webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "N8N",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        -32
+      ],
+      "id": "eba21e65-b498-4f6d-a7de-848c2d627bae",
+      "name": "Webhook",
+      "webhookId": "9b874cba-429e-49ad-9555-5a3ce40ca2ab"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        576,
+        0
+      ],
+      "id": "416e7e79-fe94-4430-9f48-2d46fbaf5e7b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/smart-endpoint",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        352,
+        0
+      ],
+      "id": "63f1d053-f426-4535-8c1a-e3cc283d7f47",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        144
+      ],
+      "id": "7bf4d6c1-53d8-47f0-be24-3402c24cdcbe",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"n8n_payload\": {\n    \"N8N_query\": {\n      \"Exact_query\": \"بو خالد\",\n      \"tag\": \"بو خالد\",\n      \"confidence_score\": 100,\n      \"expanded_queries\": [\n        {\n          \"query\": \"محمد بن زايد,الشامخ,رئيس الدولة\",\n          \"tag\": \"محمد بن زايد آل نهيان\",\n          \"confidence_score\": 90\n        }\n      ],\n      \"individual_Limit\": 10,\n      \"total_limit\": 15\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        144
+      ],
+      "id": "ec3e4b5f-04fb-4b75-8cdf-3401d437e92a",
+      "name": "بو خالد"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"n8n_payload\": {\n    \"N8N_query\": {\n      \"Exact_query\": \"بو راشد\",\n      \"tag\": \"بو راشد\",\n      \"confidence_score\": 100,\n      \"expanded_queries\": [\n        {\n          \"query\": \"محمد بن راشد,أبي,معلم\",\n          \"tag\": \"محمد بن راشد آل مكتوم\",\n          \"confidence_score\": 90\n        }\n      ],\n      \"individual_Limit\": 20,\n      \"total_limit\": 55\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -32
+      ],
+      "id": "785a82e6-04e1-43b2-af9b-82c31273df8f",
+      "name": "بو راشد"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "بو راشد",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "بو راشد",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "بو خالد": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "بو راشد": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": null
+}

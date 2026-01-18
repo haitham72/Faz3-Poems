@@ -1,681 +1,372 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>بحث ذكي - Hybrid Search V3</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 20px;
-      }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      .search-box {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        margin-bottom: 30px;
-      }
-      h1 {
-        text-align: center;
-        color: #333;
-        margin-bottom: 20px;
-        font-size: 2em;
-      }
-      .search-input-group {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
-      }
-      input[type="text"] {
-        flex: 1;
-        padding: 15px;
-        font-size: 18px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        outline: none;
-        transition: border-color 0.3s;
-      }
-      input[type="text"]:focus {
-        border-color: #667eea;
-      }
-      button {
-        padding: 15px 30px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      button:hover {
-        transform: translateY(-2px);
-      }
-      .test-buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-        flex-wrap: wrap;
-      }
-      .test-btn {
-        padding: 10px 20px;
-        background: #f093fb;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      .test-btn:hover {
-        background: #f5576c;
-      }
-
-      /* Summary Stats */
-      .summary-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-      }
-      .stat-item {
-        text-align: center;
-        padding: 10px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-      }
-      .stat-value {
-        font-size: 28px;
-        font-weight: bold;
-        margin-bottom: 5px;
-      }
-      .stat-label {
-        font-size: 14px;
-        opacity: 0.9;
-      }
-
-      /* Tag Pills */
-      .tags-container {
-        background: white;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .tag-pill {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 6px 15px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      /* Result Cards */
-      .result-card {
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s;
-        border-right: 5px solid #667eea;
-      }
-      .result-card:hover {
-        transform: translateX(-5px);
-      }
-      .result-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-      }
-      .result-title {
-        font-size: 22px;
-        font-weight: bold;
-        color: #667eea;
-        flex: 1;
-      }
-      .result-score {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-weight: bold;
-        font-size: 16px;
-      }
-      .result-poem {
-        font-size: 18px;
-        color: #333;
-        line-height: 2;
-        margin-bottom: 15px;
-        white-space: pre-wrap;
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 8px;
-      }
-      .result-meta {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        font-size: 13px;
-        color: #666;
-        padding-top: 15px;
-        border-top: 1px solid #eee;
-      }
-      .meta-item {
-        background: #f5f5f5;
-        padding: 5px 12px;
-        border-radius: 15px;
-      }
-      .meta-tag {
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-        color: #333;
-        font-weight: 600;
-      }
-      .meta-location {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        color: #333;
-        font-weight: 600;
-      }
-      mark {
-        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: bold;
-      }
-      mark.metadata-highlight {
-        background: linear-gradient(135deg, #ffe5b4 0%, #ff9966 100%);
-        color: #333;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: normal;
-        border: 1px dashed #ff6600;
-      }
-      .loading,
-      .no-results {
-        text-align: center;
-        padding: 40px;
-        color: white;
-        font-size: 18px;
-        display: none;
-      }
-      .show {
-        display: block;
-      }
-      .skeleton {
-        background: linear-gradient(
-          90deg,
-          #f0f0f0 25%,
-          #e0e0e0 50%,
-          #f0f0f0 75%
-        );
-        background-size: 200% 100%;
-        animation: loading 1.5s infinite;
-        border-radius: 8px;
-        margin-bottom: 15px;
-      }
-      .skeleton-title {
-        height: 30px;
-        width: 60%;
-        margin-bottom: 15px;
-      }
-      .skeleton-poem {
-        height: 80px;
-        width: 100%;
-        margin-bottom: 15px;
-      }
-      .skeleton-meta {
-        height: 25px;
-        width: 40%;
-      }
-      @keyframes loading {
-        0% {
-          background-position: 200% 0;
-        }
-        100% {
-          background-position: -200% 0;
-        }
-      }
-      .performance-badge {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-      .fast {
-        color: #10b981;
-      }
-      .slow {
-        color: #ef4444;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="performance-badge" id="perfBadge" style="display: none"></div>
-
-    <div class="container">
-      <div class="search-box">
-        <h1>🔍 البحث الذكي - Hybrid Search V3</h1>
-        <div class="search-input-group">
-          <input
-            type="text"
-            id="searchQuery"
-            placeholder="ابحث عن شخص، مكان، حدث..."
-          />
-          <button onclick="searchPoems()">بحث</button>
-        </div>
-
-        <div class="test-buttons">
-          <button class="test-btn" onclick="testGrouped()">
-            اختبار: استعلام مجمع (بو خالد)
-          </button>
-          <button class="test-btn" onclick="testOldFormat()">
-            اختبار: صيغة قديمة (بو راشد)
-          </button>
-          <button class="test-btn" onclick="testComplex()">
-            اختبار: معقد (زايد)
-          </button>
-        </div>
-      </div>
-
-      <div class="loading" id="loading">⏳ جاري البحث الذكي...</div>
-      <div id="summaryContainer" style="display: none"></div>
-      <div id="tagsContainer" style="display: none"></div>
-      <div class="results" id="results"></div>
+<head>
+<meta charset="UTF-8"/>
+<title>بحث ذكي - Fixed</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+.search-box {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin-bottom: 30px;
+}
+h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 2em; }
+.search-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+input[type="text"] {
+  flex: 1;
+  padding: 15px;
+  font-size: 18px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+}
+input[type="text"]:focus { border-color: #667eea; }
+button {
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover { transform: translateY(-2px); }
+.test-buttons { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+.test-btn {
+  padding: 10px 20px;
+  background: #f093fb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+.stat-item {
+  text-align: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+.stat-value { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+.stat-label { font-size: 14px; opacity: 0.9; }
+.tags-container {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-pill {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.result-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-right: 5px solid #667eea;
+}
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.result-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #667eea;
+  flex: 1;
+}
+.result-score {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-weight: bold;
+}
+.result-poem {
+  font-size: 18px;
+  color: #333;
+  line-height: 2;
+  margin-bottom: 15px;
+  white-space: pre-wrap;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+.result-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #666;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+.meta-item {
+  background: #f5f5f5;
+  padding: 5px 12px;
+  border-radius: 15px;
+}
+.meta-tag {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+  font-weight: 600;
+}
+.meta-location {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+  font-weight: 600;
+}
+mark {
+  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+mark.metadata-highlight {
+  background: linear-gradient(135deg, #ffe5b4 0%, #ff9966 100%);
+  color: #333;
+  border: 1px dashed #ff6600;
+}
+.loading { text-align: center; padding: 40px; color: white; font-size: 18px; display: none; }
+.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="search-box">
+    <h1>🔍 البحث الذكي</h1>
+    <div class="search-input-group">
+      <input type="text" id="searchQuery" placeholder="ابحث عن شخص، مكان، حدث..."/>
+      <button onclick="searchPoems()">بحث</button>
     </div>
+    <div class="test-buttons">
+      <button class="test-btn" onclick="testGrouped()">بو خالد</button>
+      <button class="test-btn" onclick="testOldFormat()">بو راشد</button>
+      <button class="test-btn" onclick="testComplex()">زايد</button>
+    </div>
+  </div>
+  <div class="loading" id="loading">⏳ جاري البحث...</div>
+  <div id="summaryContainer" style="display:none"></div>
+  <div id="tagsContainer" style="display:none"></div>
+  <div id="results"></div>
+</div>
 
-    <script>
-      const CONFIG = {
-        // N8N Webhook URL - REPLACE WITH YOUR WEBHOOK
-        N8N_WEBHOOK_URL: "http://localhost:5678/webhook/N8N",
+<script>
+const CONFIG = {
+  N8N_WEBHOOK_URL: "http://localhost:5678/webhook/N8N",
+  SUPABASE_URL: "https://uffjlburuvsnstvgyito.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MTczMTcsImV4cCI6MjA4MjA5MzMxN30.cywWITSP-aJfuXlzyBYHf9Ipnhu-6_mVCZ30h3b1-38",
+  USE_N8N: true
+};
 
-        // Supabase config (for direct PostgreSQL - optional fallback)
-        SUPABASE_URL: "https://uffjlburuvsnstvgyito.supabase.co",
-        SUPABASE_ANON_KEY:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MTczMTcsImV4cCI6MjA4MjA5MzMxN30.cywWITSP-aJfuXlzyBYHf9Ipnhu-6_mVCZ30h3b1-38",
+document.getElementById("searchQuery").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") searchPoems();
+});
 
-        // Set to true to use N8N, false to use direct PostgreSQL
-        USE_N8N: true,
-      };
+function normalizeForComparison(text) {
+  if (!text) return "";
+  return text
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9]/g, "")
+    .replace(/[\u0640]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/[ى]/g, "ي")
+    .replace(/[ة]/g, "ه");
+}
 
-      document
-        .getElementById("searchQuery")
-        .addEventListener("keypress", function (e) {
-          if (e.key === "Enter") searchPoems();
-        });
+// FIXED: Accept array directly, handle "pos" field
+function highlightText(rawText, matchArray) {
+  if (!matchArray || !Array.isArray(matchArray) || matchArray.length === 0) {
+    return rawText;
+  }
 
-      // Normalizer: Standardizes Arabic text (removes diacritics, unifies alef, etc.)
-      function normalizeForComparison(text) {
-        if (!text) return "";
-        return text
-          .replace(/[^\u0600-\u06FFa-zA-Z0-9]/g, "") // Keep alphanumeric & Arabic
-          .replace(/[\u0640]/g, "") // Remove Tatweel
-          .replace(/[أإآ]/g, "ا")
-          .replace(/[ى]/g, "ي")
-          .replace(/[ة]/g, "ه");
+  let positionsToHighlight = new Set();
+  let metadataWordsToHighlight = new Set();
+  let phrasePartsToHighlight = new Set();
+
+  matchArray.forEach((m) => {
+    const posField = m.pos || m.positions; // Handle both field names
+    const text = m.text;
+
+    if (posField && posField !== "meta" && posField !== "metadata" && posField !== "phrase") {
+      const positions = posField.toString();
+      if (positions.includes("-")) {
+        const [start, end] = positions.split("-").map(Number);
+        for (let i = start; i <= end; i++) positionsToHighlight.add(i);
+      } else if (positions.includes(",")) {
+        positions.split(",").forEach((p) => positionsToHighlight.add(Number(p.trim())));
+      } else {
+        positionsToHighlight.add(Number(positions));
       }
+    } else if (posField === "phrase" && text) {
+      text.split(/\s+/).forEach((w) => {
+        if (w) phrasePartsToHighlight.add(normalizeForComparison(w));
+      });
+    } else if ((posField === "meta" || posField === "metadata") && text) {
+      text.split(/\s+/).forEach((w) => {
+        if (w) metadataWordsToHighlight.add(normalizeForComparison(w));
+      });
+    }
+  });
 
-      // ==========================================
-      // CORE LOGIC: Highlight Text Function
-      // ==========================================
-      function highlightText(rawText, matchData, displayRowId) {
-        let positionsToHighlight = new Set();
-        let metadataWordsToHighlight = new Set();
-        let phrasePartsToHighlight = new Set();
+  if (positionsToHighlight.size === 0 && metadataWordsToHighlight.size === 0 && phrasePartsToHighlight.size === 0) {
+    return rawText;
+  }
 
-        // 1. EXTRACT: Gather all highlight rules from matchData
-        if (Array.isArray(matchData)) {
-          matchData.forEach(processMatch);
-        } else if (matchData && matchData.matched_words) {
-          // If match data belongs to a specific row, ensure we only highlight that row
-          if (matchData.row_id && matchData.row_id !== displayRowId)
-            return rawText;
-          matchData.matched_words.forEach(processMatch);
-        } else {
-          return rawText;
-        }
+  const tokens = rawText.split(/(\s+)/);
+  let wordIndex = 0;
 
-        function processMatch(m) {
-          // Rule A: Numeric Positions (FTS standard)
-          if (
-            m.positions &&
-            m.positions !== "metadata" &&
-            m.positions !== "phrase"
-          ) {
-            const positions = m.positions.toString();
-            if (positions.includes("-")) {
-              const [start, end] = positions.split("-").map(Number);
-              for (let i = start; i <= end; i++) {
-                positionsToHighlight.add(i);
-              }
-            } else if (positions.includes(",")) {
-              positions
-                .split(",")
-                .forEach((p) => positionsToHighlight.add(Number(p.trim())));
-            } else {
-              positionsToHighlight.add(Number(positions));
-            }
-          }
-          // Rule B: Phrase Match (Fix for "بو راشد")
-          // High scores return "positions": "phrase". We split and normalize parts.
-          else if (m.positions === "phrase" && m.text) {
-            m.text.split(/\s+/).forEach((w) => {
-              if (w) phrasePartsToHighlight.add(normalizeForComparison(w));
-            });
-          }
-          // Rule C: Metadata Match (Fuzzy)
-          else if (m.positions === "metadata" && m.text) {
-            m.text.split(/\s+/).forEach((w) => {
-              if (w) metadataWordsToHighlight.add(normalizeForComparison(w));
-            });
-          }
-        }
+  return tokens.map((token) => {
+    if (!token.trim()) return token;
+    const tokenNorm = normalizeForComparison(token);
+    if (!tokenNorm) return token;
 
-        // Optimization: Return early if nothing to highlight
-        if (
-          positionsToHighlight.size === 0 &&
-          metadataWordsToHighlight.size === 0 &&
-          phrasePartsToHighlight.size === 0
-        ) {
-          return rawText;
-        }
+    const isIndexMatch = positionsToHighlight.has(wordIndex);
+    const isPhraseMatch = [...phrasePartsToHighlight].some((target) => 
+      tokenNorm.includes(target) || target.includes(tokenNorm)
+    );
+    const isMetadataMatch = [...metadataWordsToHighlight].some((target) => 
+      tokenNorm.includes(target) || target.includes(tokenNorm)
+    );
 
-        // 2. APPLY: Split text by spaces (preserving structure) and check tokens
-        const tokens = rawText.split(/(\s+)/);
-        let wordIndex = 0;
+    wordIndex++;
 
-        return tokens
-          .map((token) => {
-            if (!token.trim()) return token; // Return whitespace as is
+    if (isIndexMatch || isPhraseMatch) return `<mark>${token}</mark>`;
+    if (isMetadataMatch) return `<mark class="metadata-highlight">${token}</mark>`;
+    return token;
+  }).join("");
+}
 
-            const tokenNorm = normalizeForComparison(token);
-            if (!tokenNorm) return token; // Skip punctuation tokens
+async function searchPoems() {
+  const resultsDiv = document.getElementById("results");
+  const loadingDiv = document.getElementById("loading");
+  
+  document.getElementById("summaryContainer").style.display = "none";
+  document.getElementById("tagsContainer").style.display = "none";
+  loadingDiv.classList.add("show");
+  resultsDiv.innerHTML = "";
 
-            // Check 1: Numeric Index (Exact FTS)
-            const isIndexMatch = positionsToHighlight.has(wordIndex);
+  try {
+    const queryText = document.getElementById("searchQuery").value;
+    const payload = { query: queryText, user_language: "ar" };
 
-            // Check 2: Phrase Part (Substring match allowed for suffixes)
-            const isPhraseMatch = [...phrasePartsToHighlight].some(
-              (target) =>
-                tokenNorm.includes(target) || target.includes(tokenNorm)
-            );
+    const response = await fetch(CONFIG.N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-            // Check 3: Metadata Part
-            const isMetadataMatch = [...metadataWordsToHighlight].some(
-              (target) =>
-                tokenNorm.includes(target) || target.includes(tokenNorm)
-            );
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    
+    const data = await response.json();
+    loadingDiv.classList.remove("show");
 
-            wordIndex++; // Safely increment word count
+    const result = Array.isArray(data) ? data[0] : data;
 
-            // Apply HTML wrapping
-            if (isIndexMatch || isPhraseMatch) {
-              return `<mark>${token}</mark>`;
-            }
-            if (isMetadataMatch) {
-              return `<mark class="metadata-highlight">${token}</mark>`;
-            }
+    if (result && result.results && result.results.length > 0) {
+      displaySummary(result);
+      displayResults(result.results);
+    } else {
+      resultsDiv.innerHTML = '<div class="loading show">😕 لا توجد نتائج</div>';
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    loadingDiv.classList.remove("show");
+    resultsDiv.innerHTML = `<div class="loading show">❌ خطأ: ${error.message}</div>`;
+  }
+}
 
-            return token;
-          })
-          .join("");
-      }
+function displaySummary(data) {
+  const summaryDiv = document.getElementById("summaryContainer");
+  summaryDiv.innerHTML = `
+    <div class="summary-card">
+      <div class="stat-item">
+        <div class="stat-value">${data.poems || 0}</div>
+        <div class="stat-label">قصيدة</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${data.lines || 0}</div>
+        <div class="stat-label">بيت</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${data.results.length}</div>
+        <div class="stat-label">نتيجة</div>
+      </div>
+    </div>`;
+  summaryDiv.style.display = "block";
+}
 
-      // ==========================================
-      // API Interaction
-      // ==========================================
-      async function searchPoems(customPayload = null) {
-        const resultsDiv = document.getElementById("results");
-        const loadingDiv = document.getElementById("loading");
-        const perfBadge = document.getElementById("perfBadge");
+// FIXED: Use result.title, result.line, result.matches.title, result.matches.line, result.sources
+function displayResults(results) {
+  const resultsDiv = document.getElementById("results");
+  let html = "";
 
-        // Clear previous results
-        document.getElementById("summaryContainer").style.display = "none";
-        document.getElementById("tagsContainer").style.display = "none";
+  results.forEach((result) => {
+    const titleHighlighted = highlightText(result.title, result.matches?.title || []);
+    const poemHighlighted = highlightText(result.line, result.matches?.line || []);
+    const hasMetadata = result.matches?.line?.some((w) => w.pos === "meta" || w.pos === "metadata") || false;
 
-        loadingDiv.classList.add("show");
-        resultsDiv.innerHTML = createSkeletonCards(3);
+    html += `
+      <div class="result-card">
+        <div class="result-header">
+          <div class="result-title">${titleHighlighted}</div>
+          <div class="result-score">${result.score}</div>
+        </div>
+        <div class="result-poem">${poemHighlighted}</div>
+        <div class="result-meta">
+          <span class="meta-item">سطر: ${result.row_id}</span>
+          <span class="meta-item meta-location">${result.sources.join(" + ")}</span>
+          ${result.tag ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>` : ""}
+          ${hasMetadata ? '<span class="meta-item" style="background: #ffe5b4;">📊 من البيانات الوصفية</span>' : ""}
+        </div>
+      </div>`;
+  });
 
-        const startTime = performance.now();
+  resultsDiv.innerHTML = html;
+}
 
-        try {
-          const queryText = document.getElementById("searchQuery").value;
-
-          // Build payload
-          const payload = customPayload || {
-            query: queryText,
-            user_language: "ar",
-          };
-
-          console.log("📤 Query payload:", payload);
-
-          let data;
-
-          if (CONFIG.USE_N8N) {
-            const n8nResponse = await fetch(CONFIG.N8N_WEBHOOK_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-
-            if (!n8nResponse.ok) {
-              throw new Error(`N8N error: ${n8nResponse.status}`);
-            }
-
-            data = await n8nResponse.json();
-          } else {
-            // Fallback Logic (Supabase Direct)
-            const pgPayload = customPayload || {
-              N8N_query: {
-                Exact_query: queryText,
-                tag: "user_query",
-                confidence_score: 100,
-                expanded_queries: [],
-                individual_Limit: 10,
-                total_limit: 20,
-              },
-            };
-
-            const response = await fetch(
-              `${CONFIG.SUPABASE_URL}/rest/v1/rpc/hybrid_search_v3_entity_aware`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  apikey: CONFIG.SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
-                },
-                body: JSON.stringify({
-                  n8n_payload: pgPayload,
-                  total_limit: 20,
-                  min_score: 50,
-                }),
-              }
-            );
-
-            if (!response.ok) throw new Error("PostgreSQL Error");
-            data = await response.json();
-          }
-
-          const endTime = performance.now();
-          const duration = Math.round(endTime - startTime);
-
-          loadingDiv.classList.remove("show");
-
-          // Performance Badge
-          perfBadge.textContent = `${duration}ms`;
-          perfBadge.className = `performance-badge ${
-            duration < 500 ? "fast" : "slow"
-          }`;
-          perfBadge.style.display = "block";
-          setTimeout(() => (perfBadge.style.display = "none"), 3000);
-
-          // Handle response array/object differences
-          const result = Array.isArray(data) ? data[0] : data;
-
-          if (result && result.results && result.results.length > 0) {
-            displaySummary(result);
-            displayTags(result.tags);
-            displayResults(result.results);
-          } else {
-            resultsDiv.innerHTML =
-              '<div class="no-results show">😔 لا توجد نتائج</div>';
-          }
-        } catch (error) {
-          console.error("❌ Error:", error);
-          loadingDiv.classList.remove("show");
-          resultsDiv.innerHTML = `<div class="no-results show">❌ خطأ: ${error.message}</div>`;
-        }
-      }
-
-      // ==========================================
-      // Helper Functions
-      // ==========================================
-      function createSkeletonCards(count) {
-        let html = "";
-        for (let i = 0; i < count; i++) {
-          html += `
-                <div class="result-card">
-                    <div class="skeleton skeleton-title"></div>
-                    <div class="skeleton skeleton-poem"></div>
-                    <div class="skeleton skeleton-meta"></div>
-                </div>`;
-        }
-        return html;
-      }
-
-      function displaySummary(data) {
-        const summaryDiv = document.getElementById("summaryContainer");
-        summaryDiv.innerHTML = `
-                <div class="summary-card">
-                    <div class="stat-item">
-                        <div class="stat-value">${data.poems || 0}</div>
-                        <div class="stat-label">قصيدة</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${data.lines || 0}</div>
-                        <div class="stat-label">بيت</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${data.words || 0}</div>
-                        <div class="stat-label">كلمة</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${data.results.length}</div>
-                        <div class="stat-label">نتيجة</div>
-                    </div>
-                </div>`;
-        summaryDiv.style.display = "block";
-      }
-
-      function displayTags(tagsString) {
-        if (!tagsString) return;
-        const tagsDiv = document.getElementById("tagsContainer");
-        const tags = tagsString
-          .split(",")
-          .map((t) => t.trim())
-          .filter((t) => t);
-        if (tags.length === 0) return;
-        tagsDiv.innerHTML = `
-                <div class="tags-container">
-                    ${tags
-                      .map((tag) => `<span class="tag-pill">${tag}</span>`)
-                      .join("")}
-                </div>`;
-        tagsDiv.style.display = "block";
-      }
-
-      function displayResults(results) {
-        const resultsDiv = document.getElementById("results");
-        let html = "";
-
-        results.forEach((result) => {
-          // Highlight Title
-          const titleHighlighted = highlightText(
-            result.title_raw,
-            result.match.title,
-            null
-          );
-
-          // Highlight Poem Line
-          const poemHighlighted = highlightText(
-            result.poem_line_raw,
-            result.match.poem_line,
-            result.row_id
-          );
-
-          // Check if metadata matched
-          const hasMetadata =
-            result.match.poem_line?.matched_words?.some(
-              (w) => w.positions === "metadata"
-            ) || false;
-
-          html += `
-                <div class="result-card">
-                    <div class="result-header">
-                        <div class="result-title">${titleHighlighted}</div>
-                        <div class="result-score">${result.score}</div>
-                    </div>
-                    <div class="result-poem">${poemHighlighted}</div>
-                    <div class="result-meta">
-                        <span class="meta-item">سطر: ${result.row_id}</span>
-                        <span class="meta-item meta-location">
-                            ${result.match_location.join(" + ")}
-                        </span>
-                        ${
-                          result.tag
-                            ? `<span class="meta-item meta-tag">🏷️ ${result.tag}</span>`
-                            : ""
-                        }
-                        ${
-                          hasMetadata
-                            ? '<span class="meta-item" style="background: #ffe5b4;">📊 من البيانات الوصفية</span>'
-                            : ""
-                        }
-                    </div>
-                </div>`;
-        });
-
-        resultsDiv.innerHTML = html;
-      }
-
-      // Test Functions
-      function testGrouped() {
-        document.getElementById("searchQuery").value = "بو خالد";
-        searchPoems();
-      }
-      function testOldFormat() {
-        document.getElementById("searchQuery").value = "بو راشد";
-        searchPoems();
-      }
-      function testComplex() {
-        document.getElementById("searchQuery").value = "زايد";
-        searchPoems();
-      }
-    </script>
-  </body>
+function testGrouped() {
+  document.getElementById("searchQuery").value = "بو خالد";
+  searchPoems();
+}
+function testOldFormat() {
+  document.getElementById("searchQuery").value = "بو راشد";
+  searchPoems();
+}
+function testComplex() {
+  document.getElementById("searchQuery").value = "زايد";
+  searchPoems();
+}
+</script>
+</body>
 </html>

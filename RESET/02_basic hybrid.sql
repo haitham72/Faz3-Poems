@@ -1,112 +1,73 @@
 -- =====================================================
--- HYBRID SEARCH V3: COMPLETE FTS OPTIMIZED + GROUPED QUERIES
--- =====================================================
-
-DROP FUNCTION IF EXISTS hybrid_search_v3_entity_aware CASCADE;
-DROP FUNCTION IF EXISTS get_all_metadata_matches CASCADE;
-DROP FUNCTION IF EXISTS process_single_query CASCADE;
-DROP FUNCTION IF EXISTS get_text_matches CASCADE;
--- =====================================================
--- STEP 1: ADD TSVECTOR COLUMNS (One-time setup)
--- =====================================================
-
-ALTER TABLE "Exact_search" 
-ADD COLUMN IF NOT EXISTS title_tsv tsvector 
-GENERATED ALWAYS AS (to_tsvector('arabic', "Title_cleaned")) STORED;
-
-ALTER TABLE "Exact_search" 
-ADD COLUMN IF NOT EXISTS poem_line_tsv tsvector 
-GENERATED ALWAYS AS (to_tsvector('arabic', "Poem_line_cleaned")) STORED;
-
--- =====================================================
--- STEP 2: CREATE INDEXES
--- =====================================================
-
--- FTS indexes for text search (PRIMARY - super fast)
-CREATE INDEX IF NOT EXISTS idx_title_fts ON "Exact_search" USING GIN (title_tsv);
-CREATE INDEX IF NOT EXISTS idx_poem_fts ON "Exact_search" USING GIN (poem_line_tsv);
-
--- Trigram indexes for metadata columns (SECONDARY - for metadata search)
-CREATE INDEX IF NOT EXISTS idx_shakhsh_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("شخص"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_amakin_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("أماكن"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_ahdath_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("أحداث"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_deen_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("دين"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_mawadee_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("مواضيع"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_sentiments_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic(sentiments) gin_trgm_ops);
-
--- Standard indexes
-CREATE INDEX IF NOT EXISTS idx_exact_poem_id ON "Exact_search" (poem_id);
-CREATE INDEX IF NOT EXISTS idx_exact_row_id ON "Exact_search" ("Row_ID");
-
--- =====================================================
--- STEP 3: MAIN ORCHESTRATOR FUNCTION
--- =====================================================-- =====================================================
--- HYBRID SEARCH V3: COMPLETE FTS OPTIMIZED + GROUPED QUERIES
--- Performance: ~100-500ms (vs 2000ms before)
--- Supports: Single queries + Grouped queries (multiple per tag)
+-- COMPLETE SETUP FOR EXACT_SEARCH_V2
+-- Run these in order:
+-- 1. This file (creates normalize function + table)
+-- 2. Upload CSV
+-- 3. Run 02_hybrid_search_v2.sql
 -- =====================================================
 
 -- =====================================================
--- STEP 1: ADD TSVECTOR COLUMNS (One-time setup)
+-- STEP 1: NORMALIZE_ARABIC FUNCTION (REQUIRED!)
 -- =====================================================
-
-ALTER TABLE "Exact_search" 
-ADD COLUMN IF NOT EXISTS title_tsv tsvector 
-GENERATED ALWAYS AS (to_tsvector('arabic', "Title_cleaned")) STORED;
-
-ALTER TABLE "Exact_search" 
-ADD COLUMN IF NOT EXISTS poem_line_tsv tsvector 
-GENERATED ALWAYS AS (to_tsvector('arabic', "Poem_line_cleaned")) STORED;
-
--- =====================================================
--- STEP 2: CREATE INDEXES
--- =====================================================
-
--- FTS indexes for text search (PRIMARY - super fast)
-CREATE INDEX IF NOT EXISTS idx_title_fts ON "Exact_search" USING GIN (title_tsv);
-CREATE INDEX IF NOT EXISTS idx_poem_fts ON "Exact_search" USING GIN (poem_line_tsv);
-
--- Trigram indexes for metadata columns (SECONDARY - for metadata search)
-CREATE INDEX IF NOT EXISTS idx_shakhsh_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("شخص"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_amakin_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("أماكن"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_ahdath_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("أحداث"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_deen_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("دين"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_mawadee_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic("مواضيع"::text) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_sentiments_normalized_trgm 
-ON "Exact_search" USING GIN (normalize_arabic(sentiments) gin_trgm_ops);
-
--- Standard indexes
-CREATE INDEX IF NOT EXISTS idx_exact_poem_id ON "Exact_search" (poem_id);
-CREATE INDEX IF NOT EXISTS idx_exact_row_id ON "Exact_search" ("Row_ID");
+CREATE OR REPLACE FUNCTION normalize_arabic(text_input TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    IF text_input IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    RETURN regexp_replace(
+        regexp_replace(
+            regexp_replace(
+                regexp_replace(
+                    regexp_replace(
+                        regexp_replace(
+                            regexp_replace(text_input,
+                                '[ًٌٍَُِّْ]', '', 'g'),  -- Remove diacritics
+                            '[أإآ]', 'ا', 'g'),         -- Unify alef
+                        '[ى]', 'ي', 'g'),               -- Unify yaa
+                    '[ة]', 'ه', 'g'),                   -- Unify taa marbouta
+                '[ؤ]', 'و', 'g'),                       -- Unify waw with hamza
+            '[ئ]', 'ي', 'g'),                           -- Unify yaa with hamza
+        '[\u0640]', '', 'g');                           -- Remove tatweel
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- =====================================================
--- STEP 3: MAIN ORCHESTRATOR FUNCTION
+-- STEP 2: HELPER FUNCTION - IS_COMMON_PARTICLE
+-- =====================================================
+CREATE OR REPLACE FUNCTION is_common_particle(word TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    -- Common Arabic particles to filter out
+    RETURN word IN (
+        'في', 'من', 'الى', 'على', 'عن', 'ان', 'هذا', 'هذه',
+        'ذلك', 'تلك', 'هو', 'هي', 'ما', 'لا', 'نعم', 'كل'
+    );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- =====================================================
+-- HYBRID SEARCH V2: OPTIMIZED FOR Exact_search_v2
+-- Performance: ~100-500ms
+-- Supports: Single queries + Grouped queries + Animals metadata
 -- =====================================================
 
-DROP FUNCTION IF EXISTS hybrid_search_v3_entity_aware(JSONB, INT, NUMERIC) CASCADE;
+-- =====================================================
+-- HYBRID SEARCH V2: OPTIMIZED FOR Exact_search_v2
+-- Performance: ~100-500ms
+-- Supports: Single queries + Grouped queries + Animals metadata
+-- =====================================================
 
-CREATE OR REPLACE FUNCTION hybrid_search_v3_entity_aware(
+DROP FUNCTION IF EXISTS hybrid_search_v2_entity_aware CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2 CASCADE;
+DROP FUNCTION IF EXISTS process_single_query_v2 CASCADE;
+DROP FUNCTION IF EXISTS get_text_matches_v2 CASCADE;
+
+
+DROP FUNCTION IF EXISTS hybrid_search_v2_entity_aware(JSONB, INT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION hybrid_search_v2_entity_aware(
     n8n_payload JSONB,
     total_limit INT DEFAULT 50,
     min_score NUMERIC DEFAULT 0.3
@@ -179,7 +140,7 @@ BEGIN
         all_tags := array_append(all_tags, current_tag);
         
         FOR result_row IN (
-            SELECT * FROM process_single_query(
+            SELECT * FROM process_single_query_v2(
                 current_query, q_norm, meaningful_words,
                 current_tag, current_confidence, individual_limit, min_score
             )
@@ -242,7 +203,7 @@ BEGIN
             all_tags := array_append(all_tags, current_tag);
             
             FOR result_row IN (
-                SELECT * FROM process_single_query(
+                SELECT * FROM process_single_query_v2(
                     current_query, q_norm, meaningful_words,
                     current_tag, current_confidence, individual_limit, min_score
                 )
@@ -269,14 +230,27 @@ BEGIN
         total_lines,
         total_words,
         array_to_string(all_tags, ', ')::TEXT,
-        (
-            SELECT jsonb_agg(result ORDER BY (result->>'score')::NUMERIC DESC)
-            FROM (
-                SELECT DISTINCT ON ((result->>'poem_id')::INT) result
-                FROM jsonb_array_elements(temp_results) result
-                ORDER BY (result->>'poem_id')::INT, (result->>'score')::NUMERIC DESC
-            ) deduped
-            LIMIT total_limit
+        jsonb_build_object(
+            'summary', jsonb_build_object(
+                'query', COALESCE(exact_q->>'Exact_query', 'N/A'),
+                'poems', total_poems,
+                'lines', total_lines,
+                'words', total_words,
+                'results', (
+                    SELECT count(DISTINCT (result->>'poem_id')::INT)
+                    FROM jsonb_array_elements(temp_results) result
+                ),
+                'tags', all_tags
+            ),
+            'results', (
+                SELECT jsonb_agg(result ORDER BY (result->>'score')::NUMERIC DESC)
+                FROM (
+                    SELECT DISTINCT ON ((result->>'poem_id')::INT) result
+                    FROM jsonb_array_elements(temp_results) result
+                    ORDER BY (result->>'poem_id')::INT, (result->>'score')::NUMERIC DESC
+                ) deduped
+                LIMIT total_limit
+            )
         );
 END;
 $$;
@@ -285,9 +259,9 @@ $$;
 -- HELPER: Process Single Query
 -- =====================================================
 
-DROP FUNCTION IF EXISTS process_single_query(TEXT, TEXT, TEXT[], TEXT, NUMERIC, INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS process_single_query_v2(TEXT, TEXT, TEXT[], TEXT, NUMERIC, INT, NUMERIC) CASCADE;
 
-CREATE OR REPLACE FUNCTION process_single_query(
+CREATE OR REPLACE FUNCTION process_single_query_v2(
     original_query TEXT,
     q_norm TEXT,
     meaningful_words TEXT[],
@@ -320,7 +294,7 @@ BEGIN
             tm.score as tm_score,
             tm.match_location as tm_match_location,
             tm.match_json as tm_match_json
-        FROM get_text_matches(original_query, q_norm, meaningful_words, match_limit, min_score) tm
+        FROM get_text_matches_v2(original_query, q_norm, meaningful_words, match_limit, min_score) tm
     ),
     
     all_metadata_matches AS (
@@ -332,7 +306,7 @@ BEGIN
             mm.score as mm_score,
             mm.match_location as mm_match_location,
             mm.match_json as mm_match_json
-        FROM get_all_metadata_matches(q_norm, meaningful_words, tag, match_limit, min_score) mm
+        FROM get_all_metadata_matches_v2(q_norm, meaningful_words, tag, match_limit, min_score) mm
     ),
     
     combined AS (
@@ -393,12 +367,32 @@ BEGIN
         jsonb_build_object(
             'poem_id', fr.poem_id,
             'row_id', fr.row_id,
-            'title_raw', fr.title_raw,
-            'poem_line_raw', fr.poem_line_raw,
             'score', round(fr.final_score, 1),
-            'match_location', fr.match_locations,
-            'tag', tag,
-            'match', fr.merged_match_json
+            'title', fr.title_raw,
+            'line', fr.poem_line_raw,
+            'matches', jsonb_build_object(
+                'title', COALESCE(fr.merged_match_json->'title', '[]'::jsonb),
+                'line', COALESCE(
+                    (
+                        SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'text', mw->>'text',
+                                'pos', CASE 
+                                    WHEN mw->>'positions' = 'metadata' THEN 'meta'
+                                    WHEN mw->>'positions' = 'phrase' THEN 'phrase'
+                                    ELSE mw->>'positions'
+                                END
+                            )
+                        )
+                        FROM jsonb_array_elements(
+                            fr.merged_match_json->'poem_line'->'matched_words'
+                        ) mw
+                    ),
+                    '[]'::jsonb
+                )
+            ),
+            'sources', fr.match_locations,
+            'tag', tag
         ) as result_json
     FROM final_results fr
     WHERE fr.final_score >= min_score
@@ -411,9 +405,9 @@ $$;
 -- HELPER: Get Text Matches - FTS OPTIMIZED with OR support
 -- =====================================================
 
-DROP FUNCTION IF EXISTS get_text_matches(TEXT, TEXT, TEXT[], INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS get_text_matches_v2(TEXT, TEXT, TEXT[], INT, NUMERIC) CASCADE;
 
-CREATE OR REPLACE FUNCTION get_text_matches(
+CREATE OR REPLACE FUNCTION get_text_matches_v2(
     original_query TEXT,
     q_norm TEXT,
     meaningful_words TEXT[],
@@ -443,7 +437,7 @@ BEGIN
     FROM unnest(meaningful_words) w
     WHERE trim(w) <> '' AND trim(w) <> 'OR';
     
-    -- PHRASE DETECTION: Check if query contains short words (≤2 chars)
+    -- PHRASE DETECTION: Check if query contains short words (<= 2 chars)
     -- Short words like "بو", "ام" are filtered by FTS, so we need trigram search
     SELECT EXISTS (
         SELECT 1 FROM unnest(string_to_array(q_norm, ' ')) word
@@ -466,7 +460,7 @@ BEGIN
     
     -- STRATEGY: Use completely separate code paths for trigram vs FTS
     IF use_trigram THEN
-        -- TRIGRAM PATH: For phrases with short words like "بو خالد", "ابي"
+        -- TRIGRAM PATH: For phrases with short words like "بو خالد", "ابن"
         RETURN QUERY
         WITH 
         -- Title matches: Return one row per poem with title match
@@ -489,11 +483,11 @@ BEGIN
                     ),
                     'poem_line', '{}'::jsonb
                 ) as match_json
-            FROM "Exact_search" e
+            FROM "Exact_search_v2" e
             WHERE normalize_arabic(e."Title_cleaned") LIKE '%' || normalize_arabic(q_norm) || '%'
               -- Only return if NO poem lines match in this poem
               AND NOT EXISTS (
-                  SELECT 1 FROM "Exact_search" e2
+                  SELECT 1 FROM "Exact_search_v2" e2
                   WHERE e2.poem_id = e.poem_id
                     AND normalize_arabic(e2."Poem_line_cleaned") ILIKE '%' || normalize_arabic(q_norm) || '%'
                     AND word_similarity(normalize_arabic(q_norm), normalize_arabic(e2."Poem_line_cleaned")) > 0.6
@@ -504,8 +498,7 @@ BEGIN
         poem_matches AS (
             -- STAGE 1: Fast ILIKE filter (uses GIN index)
             WITH stage1_candidates AS (
-                SELECT * 
-                FROM "Exact_search" e
+                SELECT * FROM "Exact_search_v2" e
                 WHERE normalize_arabic(e."Poem_line_cleaned") ILIKE '%' || normalize_arabic(q_norm) || '%'
                 LIMIT 200  -- Safety cap
             )
@@ -534,7 +527,7 @@ BEGIN
             FROM stage1_candidates e
             WHERE word_similarity(normalize_arabic(q_norm), normalize_arabic(e."Poem_line_cleaned")) > 
                 CASE 
-                    -- Short queries (≤3 chars): strict threshold
+                    -- Short queries (<= 3 chars): strict threshold
                     WHEN length(replace(q_norm, ' ', '')) <= 3 THEN 0.7
                     -- Multi-word queries: looser threshold for variations
                     WHEN position(' ' IN q_norm) > 0 THEN 0.6
@@ -629,7 +622,7 @@ BEGIN
                 'poem_line', '{}'::jsonb
             ) as match_json
             
-        FROM "Exact_search" e
+        FROM "Exact_search_v2" e
         WHERE 
             CASE 
                 -- Use trigram for phrases with short words (FTS filters them out)
@@ -683,45 +676,45 @@ BEGIN
                                 wa.word,
                                 wa.position,
                                 ROW_NUMBER() OVER (ORDER BY wa.position) as rn
-                            FROM word_array wa
-                            WHERE EXISTS (
-                                SELECT 1 FROM unnest(clean_words) mw
-                                WHERE normalize_arabic(wa.word) = normalize_arabic(mw)
-                            )
-                            ORDER BY wa.position
-                        ),
-                        -- Group consecutive positions into ranges
-                        ranges AS (
+                        FROM word_array wa
+                        WHERE EXISTS (
+                            SELECT 1 FROM unnest(clean_words) mw
+                            WHERE normalize_arabic(wa.word) = normalize_arabic(mw)
+                        )
+                        ORDER BY wa.position
+                    ),
+                    -- Group consecutive positions into ranges
+                    ranges AS (
+                        SELECT 
+                            min(position) as start_pos,
+                            max(position) as end_pos,
+                            count(*) as word_count,
+                            string_agg(word, ' ' ORDER BY position) as matched_text
+                        FROM (
                             SELECT 
-                                min(position) as start_pos,
-                                max(position) as end_pos,
-                                count(*) as word_count,
-                                string_agg(word, ' ' ORDER BY position) as matched_text
-                            FROM (
-                                SELECT 
-                                    word,
-                                    position,
-                                    position - rn as grp
-                                FROM matched_positions
-                            ) grouped
-                            GROUP BY grp
+                                word,
+                                position,
+                                position - rn as grp
+                            FROM matched_positions
+                        ) grouped
+                        GROUP BY grp
+                    )
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', matched_text,
+                            'positions', CASE 
+                                WHEN start_pos = end_pos THEN start_pos::text
+                                ELSE start_pos::text || '-' || end_pos::text
+                            END,
+                            'score', 85
                         )
-                        SELECT jsonb_agg(
-                            jsonb_build_object(
-                                'text', matched_text,
-                                'positions', CASE 
-                                    WHEN start_pos = end_pos THEN start_pos::text
-                                    ELSE start_pos::text || '-' || end_pos::text
-                                END,
-                                'score', 85
-                            )
-                        )
-                        FROM ranges
-                    ), '[]'::jsonb)
+                    )
+                    FROM ranges
+                ), '[]'::jsonb)
                 )
             ) as match_json
             
-        FROM "Exact_search" e
+        FROM "Exact_search_v2" e
         WHERE 
             CASE 
                 -- Use trigram for phrases with short words
@@ -754,10 +747,10 @@ $$;
 -- HELPER: Get ALL Metadata Matches (unchanged)
 -- =====================================================
 
-DROP FUNCTION IF EXISTS get_all_metadata_matches(TEXT, TEXT[], INT, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS get_all_metadata_matches(TEXT, TEXT[], TEXT, INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2(TEXT, TEXT[], INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2(TEXT, TEXT[], TEXT, INT, NUMERIC) CASCADE;
 
-CREATE OR REPLACE FUNCTION get_all_metadata_matches(
+CREATE OR REPLACE FUNCTION get_all_metadata_matches_v2(
     q_norm TEXT,
     meaningful_words TEXT[],
     current_tag TEXT,
@@ -789,7 +782,7 @@ BEGIN
         WHERE word NOT IN ('بن', 'ابن', 'ال', 'آل', 'بنت', '')
           AND length(word) > 0;  -- Keep "بو", "ام", etc for nicknames!
         
-        -- NICKNAME DETECTION: If tag has ≤2 significant words, it's likely a nickname (e.g., "بو خالد")
+        -- NICKNAME DETECTION: If tag has <= 2 significant words, it's likely a nickname (e.g., "بو خالد")
         -- Nicknames won't match entity names like "محمد بن زايد آل نهيان"
         -- Disable tag-based entity name matching - rely on resolved_from matching only
         IF array_length(tag_words, 1) IS NOT NULL AND array_length(tag_words, 1) <= 2 THEN
@@ -801,7 +794,7 @@ BEGIN
     
     RETURN QUERY
     
-    -- شخص column (name + resolved_from highlighting)
+    -- entities column (name + resolved_from highlighting)
     SELECT 
         e.poem_id,
         e."Row_ID" as row_id,
@@ -814,15 +807,15 @@ BEGIN
             -- AND check if entity name matches the TAG (not just query)
             WHEN NOT EXISTS (
                 SELECT 1 
-                FROM jsonb_array_elements(e."شخص") person,
+                FROM jsonb_array_elements(e.entities) person,
                 LATERAL jsonb_array_elements_text(person->'resolved_from') rf
                 WHERE jsonb_typeof(person->'resolved_from') = 'array'  -- Safety check!
                   AND EXISTS (
                     SELECT 1 FROM unnest(meaningful_words) mw
                     WHERE 
-                        (length(normalize_arabic(mw)) > 2 
-                         AND normalize_arabic(rf) LIKE '%' || normalize_arabic(mw) || '%')
-                        OR normalize_arabic(rf) = normalize_arabic(mw)
+                        (length(normalize_arabic(mw::text)) > 2 
+                         AND normalize_arabic(rf::text) LIKE '%' || normalize_arabic(mw) || '%')
+                        OR normalize_arabic(rf::text) = normalize_arabic(mw)
                 )
                 AND (
                     -- NEW: Match entity name against TAG, not query!
@@ -839,14 +832,14 @@ BEGIN
             
             -- Penalize if ALL matched words are short (1-2 chars)
             WHEN (
-                SELECT bool_and(length(normalize_arabic(mw)) <= 2)
+                SELECT bool_and(length(normalize_arabic(mw::text)) <= 2)
                 FROM unnest(meaningful_words) mw
                 WHERE EXISTS (
                     SELECT 1 
-                    FROM jsonb_array_elements(e."شخص") p,
+                    FROM jsonb_array_elements(e.entities) p,
                     LATERAL jsonb_array_elements_text(p->'resolved_from') rf
                     WHERE jsonb_typeof(p->'resolved_from') = 'array'
-                      AND normalize_arabic(rf) LIKE '%' || normalize_arabic(mw) || '%'
+                      AND normalize_arabic(rf::text) LIKE '%' || normalize_arabic(mw) || '%'
                 )
             ) THEN 40.0  -- Very low score for short words only
             
@@ -857,14 +850,14 @@ BEGIN
                     CASE
                         -- If tag provided and entity name matches well
                         WHEN array_length(tag_words, 1) > 0 AND EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
                             WHERE normalize_arabic(person->>'name') = tag_norm
                         ) THEN 70.0
                         
                         -- RELATED ENTITY: Has 'relation' field (father, brother, etc)
                         -- Give medium score (60) - relevant but not primary target
                         WHEN array_length(tag_words, 1) > 0 AND EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
                             WHERE person->>'relation' IS NOT NULL 
                               AND person->>'relation' != ''
                               AND (
@@ -876,7 +869,7 @@ BEGIN
                         
                         -- 3+ significant words match
                         WHEN array_length(tag_words, 1) > 0 AND EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
                             WHERE (
                                 SELECT COUNT(*) >= 3
                                 FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
@@ -886,7 +879,7 @@ BEGIN
                         
                         -- 2 significant words match
                         WHEN array_length(tag_words, 1) > 0 AND EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."شخص") person
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
                             WHERE (
                                 SELECT COUNT(*) = 2
                                 FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
@@ -902,7 +895,7 @@ BEGIN
             )
         END as score,
         
-        ARRAY['شخص']::TEXT[] as match_location,
+        ARRAY['entities']::TEXT[] as match_location,
         jsonb_build_object(
             'title', '[]'::jsonb,
             'poem_line', jsonb_build_object(
@@ -912,35 +905,35 @@ BEGIN
                         jsonb_build_object(
                             'text', resolved_text,
                             'score', CASE 
-                                WHEN length(normalize_arabic(resolved_text)) <= 2 THEN 40
+                                WHEN length(normalize_arabic(resolved_text::text)) <= 2 THEN 40
                                 ELSE 70 
                             END,
                             'positions', 'metadata',
-                            'source', 'شخص_resolved'
+                            'source', 'entities_resolved'
                         )
                     )
                     FROM (
                         SELECT DISTINCT resolved_text
-                        FROM jsonb_array_elements(e."شخص") person,
+                        FROM jsonb_array_elements(e.entities) person,
                         LATERAL jsonb_array_elements_text(person->'resolved_from') resolved_text
                         WHERE jsonb_typeof(person->'resolved_from') = 'array'
                           AND (EXISTS (
                             SELECT 1 FROM unnest(meaningful_words) mw
-                            WHERE length(normalize_arabic(mw)) > 2  -- Require 3+ chars for fuzzy
-                               AND normalize_arabic(resolved_text) LIKE '%' || normalize_arabic(mw) || '%'
+                            WHERE length(normalize_arabic(mw::text)) > 2  -- Require 3+ chars for fuzzy
+                               AND normalize_arabic(resolved_text::text) LIKE '%' || normalize_arabic(mw) || '%'
                         )
                         OR EXISTS (
                             SELECT 1 FROM unnest(meaningful_words) mw
-                            WHERE normalize_arabic(resolved_text) = normalize_arabic(mw)  -- Exact match any length
+                            WHERE normalize_arabic(resolved_text::text) = normalize_arabic(mw)  -- Exact match any length
                         ))
                     ) matches
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
-    WHERE jsonb_array_length(e."شخص") > 0  -- Ensure array is not empty
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.entities) > 0  -- Ensure array is not empty
       AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements(e."شخص") person
+        SELECT 1 FROM jsonb_array_elements(e.entities) person
         WHERE jsonb_typeof(person->'resolved_from') = 'array'
           AND EXISTS (
             SELECT 1 FROM jsonb_array_elements_text(person->'resolved_from') rf
@@ -948,23 +941,23 @@ BEGIN
                 SELECT 1 FROM unnest(meaningful_words) mw
                 WHERE 
                     -- Stricter fuzzy: require 3+ chars
-                    (length(normalize_arabic(mw)) > 2 
-                     AND normalize_arabic(rf) LIKE '%' || normalize_arabic(mw) || '%')
+                    (length(normalize_arabic(mw::text)) > 2 
+                     AND normalize_arabic(rf::text) LIKE '%' || normalize_arabic(mw) || '%')
                     -- OR exact word match (any length)
-                    OR normalize_arabic(rf) = normalize_arabic(mw)
+                    OR normalize_arabic(rf::text) = normalize_arabic(mw)
             )
         )
     )
     
     UNION ALL
     
-    -- أماكن column
+    -- places column
     SELECT 
         e.poem_id,
         e."Row_ID" as row_id,
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
-        -- TAG-BASED SCORING for places (similar to شخص logic)
+        -- TAG-BASED SCORING for places (similar to entities logic)
         CASE
             -- If tag provided, check if place name matches tag
             -- This prevents "محمد ابن راشد ابن مكتوم" (place) from matching "محمد بن زايد" tag
@@ -973,13 +966,13 @@ BEGIN
                     CASE
                         -- Place name exactly matches tag
                         WHEN EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
                             WHERE normalize_arabic(place->>'name') = tag_norm
                         ) THEN 60.0
                         
                         -- 3+ significant words match
                         WHEN EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
                             WHERE (
                                 SELECT COUNT(*) >= 3
                                 FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
@@ -989,7 +982,7 @@ BEGIN
                         
                         -- 2 significant words match
                         WHEN EXISTS (
-                            SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
                             WHERE (
                                 SELECT COUNT(*) = 2
                                 FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
@@ -1003,19 +996,19 @@ BEGIN
             )
             -- No tag provided - fallback to old logic
             WHEN NOT EXISTS (
-                SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+                SELECT 1 FROM jsonb_array_elements(e.places) place
                 WHERE 
                     (length(q_norm) > 2 AND position(q_norm IN normalize_arabic(place->>'name')) > 0)
                     OR normalize_arabic(place->>'name') = q_norm
                     OR EXISTS (
                         SELECT 1 FROM unnest(meaningful_words) mw
-                        WHERE length(normalize_arabic(mw)) > 2 
+                        WHERE length(normalize_arabic(mw::text)) > 2 
                            AND normalize_arabic(place->>'name') LIKE '%' || normalize_arabic(mw) || '%'
                     )
             ) THEN 15.0  -- Irrelevant place
             ELSE 60.0  -- Place matches query
         END as score,
-        ARRAY['أماكن']::TEXT[] as match_location,
+        ARRAY['places']::TEXT[] as match_location,
         jsonb_build_object(
             'title', '[]'::jsonb,
             'poem_line', jsonb_build_object(
@@ -1024,7 +1017,7 @@ BEGIN
                     jsonb_build_object(
                         'text', (
                             SELECT place->>'name' 
-                            FROM jsonb_array_elements(e."أماكن") place 
+                            FROM jsonb_array_elements(e.places) place 
                             WHERE 
                                 (length(q_norm) > 2 AND position(q_norm IN normalize_arabic(place->>'name')) > 0)
                                 OR normalize_arabic(place->>'name') = q_norm
@@ -1032,7 +1025,7 @@ BEGIN
                                     SELECT 1 FROM unnest(meaningful_words) mw
                                     WHERE 
                                         -- For 3+ char words: allow substring
-                                        (length(normalize_arabic(mw)) > 2 
+                                        (length(normalize_arabic(mw::text)) > 2 
                                          AND position(normalize_arabic(mw) IN normalize_arabic(place->>'name')) > 0)
                                         -- For ANY length: require whole-word match
                                         OR ' ' || normalize_arabic(place->>'name') || ' ' LIKE '% ' || normalize_arabic(mw) || ' %'
@@ -1041,15 +1034,15 @@ BEGIN
                         ),
                         'score', 60,
                         'positions', 'metadata',
-                        'source', 'أماكن'
+                        'source', 'places'
                     )
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
-    WHERE jsonb_array_length(e."أماكن") > 0
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.places) > 0
       AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements(e."أماكن") place
+        SELECT 1 FROM jsonb_array_elements(e.places) place
         WHERE 
             -- Stricter: require 3+ chars OR exact match
             (length(q_norm) > 2 AND position(q_norm IN normalize_arabic(place->>'name')) > 0)
@@ -1058,7 +1051,7 @@ BEGIN
                 SELECT 1 FROM unnest(meaningful_words) mw
                 WHERE 
                     -- For 3+ char words: allow substring
-                    (length(normalize_arabic(mw)) > 2 
+                    (length(normalize_arabic(mw::text)) > 2 
                      AND position(normalize_arabic(mw) IN normalize_arabic(place->>'name')) > 0)
                     -- For ANY length: require whole-word match (space boundaries)
                     OR ' ' || normalize_arabic(place->>'name') || ' ' LIKE '% ' || normalize_arabic(mw) || ' %'
@@ -1067,14 +1060,14 @@ BEGIN
     
     UNION ALL
     
-    -- أحداث column
+    -- events column
     SELECT 
         e.poem_id,
         e."Row_ID" as row_id,
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
         60.0 as score,
-        ARRAY['أحداث']::TEXT[] as match_location,
+        ARRAY['events']::TEXT[] as match_location,
         jsonb_build_object(
             'title', '[]'::jsonb,
             'poem_line', jsonb_build_object(
@@ -1083,42 +1076,42 @@ BEGIN
                     jsonb_build_object(
                         'text', (
                             SELECT event 
-                            FROM jsonb_array_elements_text(e."أحداث") event 
-                            WHERE position(q_norm IN normalize_arabic(event)) > 0
+                            FROM jsonb_array_elements_text(e.events) event 
+                            WHERE position(q_norm IN normalize_arabic(event::text)) > 0
                                OR EXISTS (
                                    SELECT 1 FROM unnest(meaningful_words) mw
-                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(event)) > 0
+                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(event::text)) > 0
                                )
                             LIMIT 1
                         ),
                         'score', 60,
                         'positions', 'metadata',
-                        'source', 'أحداث'
+                        'source', 'events'
                     )
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
-    WHERE jsonb_array_length(e."أحداث") > 0
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.events) > 0
       AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements_text(e."أحداث") event
-        WHERE position(q_norm IN normalize_arabic(event)) > 0
+        SELECT 1 FROM jsonb_array_elements_text(e.events) event
+        WHERE position(q_norm IN normalize_arabic(event::text)) > 0
            OR EXISTS (
                SELECT 1 FROM unnest(meaningful_words) mw
-               WHERE position(normalize_arabic(mw) IN normalize_arabic(event)) > 0
+               WHERE position(normalize_arabic(mw) IN normalize_arabic(event::text)) > 0
            )
     )
     
     UNION ALL
     
-    -- دين column
+    -- religion column
     SELECT 
         e.poem_id,
         e."Row_ID" as row_id,
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
         60.0 as score,
-        ARRAY['دين']::TEXT[] as match_location,
+        ARRAY['religion']::TEXT[] as match_location,
         jsonb_build_object(
             'title', '[]'::jsonb,
             'poem_line', jsonb_build_object(
@@ -1127,42 +1120,42 @@ BEGIN
                     jsonb_build_object(
                         'text', (
                             SELECT religion 
-                            FROM jsonb_array_elements_text(e."دين") religion 
-                            WHERE position(q_norm IN normalize_arabic(religion)) > 0
+                            FROM jsonb_array_elements_text(e.religion) religion 
+                            WHERE position(q_norm IN normalize_arabic(religion::text)) > 0
                                OR EXISTS (
                                    SELECT 1 FROM unnest(meaningful_words) mw
-                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(religion)) > 0
+                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(religion::text)) > 0
                                )
                             LIMIT 1
                         ),
                         'score', 60,
                         'positions', 'metadata',
-                        'source', 'دين'
+                        'source', 'religion'
                     )
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
-    WHERE jsonb_array_length(e."دين") > 0
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.religion) > 0
       AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements_text(e."دين") religion
-        WHERE position(q_norm IN normalize_arabic(religion)) > 0
+        SELECT 1 FROM jsonb_array_elements_text(e.religion) religion
+        WHERE position(q_norm IN normalize_arabic(religion::text)) > 0
            OR EXISTS (
                SELECT 1 FROM unnest(meaningful_words) mw
-               WHERE position(normalize_arabic(mw) IN normalize_arabic(religion)) > 0
+               WHERE position(normalize_arabic(mw) IN normalize_arabic(religion::text)) > 0
            )
     )
     
     UNION ALL
     
-    -- مواضيع column
+    -- subjects column
     SELECT 
         e.poem_id,
         e."Row_ID" as row_id,
         e."Title_raw" as title_raw,
         e."Poem_line_raw" as poem_line_raw,
         60.0 as score,
-        ARRAY['مواضيع']::TEXT[] as match_location,
+        ARRAY['subjects']::TEXT[] as match_location,
         jsonb_build_object(
             'title', '[]'::jsonb,
             'poem_line', jsonb_build_object(
@@ -1171,29 +1164,29 @@ BEGIN
                     jsonb_build_object(
                         'text', (
                             SELECT topic 
-                            FROM jsonb_array_elements_text(e."مواضيع") topic 
-                            WHERE position(q_norm IN normalize_arabic(topic)) > 0
+                            FROM jsonb_array_elements_text(e.subjects) topic 
+                            WHERE position(q_norm IN normalize_arabic(topic::text)) > 0
                                OR EXISTS (
                                    SELECT 1 FROM unnest(meaningful_words) mw
-                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(topic)) > 0
+                                   WHERE position(normalize_arabic(mw) IN normalize_arabic(topic::text)) > 0
                                )
                             LIMIT 1
                         ),
                         'score', 60,
                         'positions', 'metadata',
-                        'source', 'مواضيع'
+                        'source', 'subjects'
                     )
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
-    WHERE jsonb_array_length(e."مواضيع") > 0
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.subjects) > 0
       AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements_text(e."مواضيع") topic
-        WHERE position(q_norm IN normalize_arabic(topic)) > 0
+        SELECT 1 FROM jsonb_array_elements_text(e.subjects) topic
+        WHERE position(q_norm IN normalize_arabic(topic::text)) > 0
            OR EXISTS (
                SELECT 1 FROM unnest(meaningful_words) mw
-               WHERE position(normalize_arabic(mw) IN normalize_arabic(topic)) > 0
+               WHERE position(normalize_arabic(mw) IN normalize_arabic(topic::text)) > 0
            )
     )
     
@@ -1221,12 +1214,91 @@ BEGIN
                 )
             )
         ) as match_json
-    FROM "Exact_search" e
+    FROM "Exact_search_v2" e
     WHERE e.sentiments IS NOT NULL
       AND (position(q_norm IN normalize_arabic(e.sentiments)) > 0
            OR EXISTS (
                SELECT 1 FROM unnest(meaningful_words) mw
                WHERE position(normalize_arabic(mw) IN normalize_arabic(e.sentiments)) > 0
-           ));
+           ))
+    
+    UNION ALL
+    
+    -- animals column
+    -- CRITICAL: Only search animals if tag indicates animal search
+    -- UPDATED: Includes full range of analytics animals (birds, horses, wild, sea, insects)
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['animals']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', (
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', resolved_text,
+                            'score', 60,
+                            'positions', 'metadata',
+                            'source', 'animals_resolved'
+                        )
+                    )
+                    FROM (
+                        SELECT DISTINCT resolved_text
+                        FROM jsonb_array_elements(e.animals) animal,
+                        LATERAL jsonb_array_elements_text(animal->'resolved_from') resolved_text
+                        WHERE jsonb_typeof(animal->'resolved_from') = 'array'
+                          AND EXISTS (
+                            SELECT 1 FROM unnest(meaningful_words) mw
+                            WHERE normalize_arabic(resolved_text::text) LIKE '%' || normalize_arabic(mw) || '%'
+                               OR normalize_arabic(resolved_text::text) = normalize_arabic(mw)
+                        )
+                    ) matches
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE 
+        (
+            current_tag ILIKE ANY(ARRAY[
+                -- Generic
+                '%حيوان%', '%animals%', 
+                
+                -- Birds (طير, صقر, عقاب, حمام, يمامة)
+                '%طير%', '%طيور%', '%bird%', '%صقر%', '%falcon%', '%عقاب%', '%eagle%', '%حمام%',
+                
+                -- Horses (خيل, حصان, فرس)
+                '%خيل%', '%حصان%', '%horse%', '%فرس%',
+                
+                -- Camels (إبل, جمل)
+                '%إبل%', '%جمل%', '%camel%',
+                
+                -- Wild Animals (وحش, أسد, غزال, ذئب, فهد, نمر, ثعلب)
+                '%وحش%', '%أسد%', '%lion%', '%غزال%', '%gazelle%', '%ظبي%', 
+                '%ذئب%', '%wolf%', '%فهد%', '%نمر%', '%leopard%', '%ثعلب%',
+                
+                -- Sea & Insects & Reptiles (سمك, بحر, حشرات, نحل, عقرب)
+                '%بحر%', '%سمك%', '%fish%', '%حشر%', '%نحل%', '%bee%', '%عقرب%', 
+                '%ثعبان%', '%أفعى%', '%snake%'
+            ])
+            OR current_tag = 'animals'
+        )
+        AND jsonb_array_length(e.animals) > 0
+        AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(e.animals) animal
+            WHERE jsonb_typeof(animal->'resolved_from') = 'array'
+              AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements_text(animal->'resolved_from') rf
+                WHERE EXISTS (
+                    SELECT 1 FROM unnest(meaningful_words) mw
+                    WHERE normalize_arabic(rf::text) LIKE '%' || normalize_arabic(mw) || '%'
+                       OR normalize_arabic(rf::text) = normalize_arabic(mw)
+                )
+            )
+        );
 END;
 $$;

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Library</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 390px;
+            height: 844px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .page {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .content {
+            padding: 60px 16px 20px 16px;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            height: 60px;
+        }
+        
+        h1 { 
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .lang-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .back { 
+            background: transparent;
+            color: #fff; 
+            padding: 0;
+            border: none; 
+            cursor: pointer; 
+            font-size: 17px;
+        }
+        
+        /* Categories Grid - 3 columns */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .card { 
+            cursor: pointer; 
+            border-radius: 8px; 
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card img { 
+            width: 100%; 
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+        
+        .card-title { 
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        /* Hero Focus Image */
+        .hero {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            position: relative;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .hero img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .hero-text {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+        }
+        
+        .hero-title {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        /* Thumbnails section */
+        .thumbnails {
+            padding: 0;
+        }
+        
+        .thumbnails h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .thumb-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .thumb-card {
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .thumb-card img {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .thumb-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+        
+        .thumb-title {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="page"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://uffjlburuvsnstvgyito.supabase.co/functions/v1';
+        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY5NTM3NDgsImV4cCI6MjA1MjUyOTc0OH0.Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv7yyYVwMJE7fQ';
+
+        let currentLang = 'en';
+        let allSubcategories = [];
+        let currentHero = null;
+        let currentCategoryName = '';
+
+        async function fetchLibraryCategories() {
+            const response = await fetch(`${SUPABASE_URL}/category`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'apikey': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+            return await response.json();
+        }
+
+        async function fetchSubcategories(category) {
+            const response = await fetch(`${SUPABASE_URL}/subcategory`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'apikey': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ category: category })
+            });
+            return await response.json();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            
+            if (allSubcategories.length > 0) {
+                renderSubcategoryPage();
+            } else {
+                showLibrary();
+            }
+        }
+
+        async function showLibrary() {
+            allSubcategories = [];
+            currentHero = null;
+            
+            const categories = await fetchLibraryCategories();
+            
+            const title = currentLang === 'en' ? 'Library' : 'مكتبة';
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <h1>${title}</h1>
+                    <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                </div>
+                <div class="content">
+                    <div class="grid">
+                        ${categories.map(cat => {
+                            const displayName = currentLang === 'en' 
+                                ? cat.Carousel_Group_text_EN 
+                                : cat.Carousel_Group_text_AR;
+                            
+                            return `
+                                <div class="card" onclick='showSubcategories("${cat.Carousel_Group_text_EN}", "${displayName}")'>
+                                    <img src="${cat.url_thumbnail_view}" alt="${displayName}">
+                                    <div class="card-overlay">
+                                        <div class="card-title">${displayName}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function showSubcategories(categoryKey, displayName) {
+            currentCategoryName = displayName;
+            allSubcategories = await fetchSubcategories(categoryKey);
+            
+            if (allSubcategories.length > 0) {
+                currentHero = allSubcategories[0];
+                renderSubcategoryPage();
+            }
+        }
+
+        function renderSubcategoryPage() {
+            const thumbnails = allSubcategories.filter(item => item.ID !== currentHero.ID);
+            
+            const backText = currentLang === 'en' ? '← Back' : '→ رجوع';
+            const moreText = currentLang === 'en' ? 'More' : 'المزيد';
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            
+            const heroTitle = currentLang === 'en' 
+                ? currentHero.subcategory_text_en 
+                : currentHero.subcategory_text_ar;
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <button class="back" onclick="showLibrary()">${backText}</button>
+                    <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                </div>
+                <div class="content">
+                    <!-- Hero Focus Image -->
+                    <div class="hero">
+                        <img src="${currentHero.url_focus}" alt="${heroTitle}">
+                        <div class="hero-text">
+                            <div class="hero-title">${heroTitle}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rest as Thumbnails -->
+                    <div class="thumbnails">
+                        <h2>${moreText}</h2>
+                        <div class="thumb-grid">
+                            ${thumbnails.map(item => {
+                                const thumbTitle = currentLang === 'en' 
+                                    ? item.subcategory_text_en 
+                                    : item.subcategory_text_ar;
+                                
+                                return `
+                                    <div class="thumb-card" onclick='promoteToHero(${item.ID})'>
+                                        <img src="${item.url_thumbnail_view}" alt="${thumbTitle}">
+                                        <div class="thumb-overlay">
+                                            <div class="thumb-title">${thumbTitle}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function promoteToHero(itemId) {
+            const clickedItem = allSubcategories.find(item => item.ID === itemId);
+            
+            if (clickedItem) {
+                currentHero = clickedItem;
+                renderSubcategoryPage();
+            }
+        }
+
+        showLibrary();
+    </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    console.log('📥 Incoming request:', JSON.stringify(body, null, 2))
+    console.log('ðŸ“¥ Incoming request:', JSON.stringify(body, null, 2))
 
     // Extract parameters - handle multiple N8N wrapper formats
     let n8n_payload = body.n8n_payload 
@@ -72,7 +72,7 @@ serve(async (req) => {
           const queryStr = eq.query.toString().trim()
           
           // Just clean and return - keep as comma string
-          console.log(`✅ Keeping as comma string: "${queryStr}"`)
+          console.log(`âœ… Keeping as comma string: "${queryStr}"`)
           return {
             query: queryStr,
             tag: eq.tag,
@@ -84,7 +84,7 @@ serve(async (req) => {
         // Case 2: Array format - convert BACK to comma string
         if (eq.queries && Array.isArray(eq.queries)) {
           const queryStr = eq.queries.join(',')
-          console.log(`✅ Converting array back to comma string: [${eq.queries.join(', ')}] → "${queryStr}"`)
+          console.log(`âœ… Converting array back to comma string: [${eq.queries.join(', ')}] â†’ "${queryStr}"`)
           return {
             query: queryStr,
             tag: eq.tag,
@@ -94,15 +94,15 @@ serve(async (req) => {
         }
         
         // Case 3: Malformed - return as-is and let SQL handle error
-        console.warn('⚠️ Unexpected query format:', eq)
+        console.warn('âš ï¸ Unexpected query format:', eq)
         return eq
       })
     }
 
-    console.log('📤 Converted payload:', JSON.stringify({ N8N_query: query }, null, 2))
+    console.log('ðŸ“¤ Converted payload:', JSON.stringify({ N8N_query: query }, null, 2))
 
     // ============================================
-    // CALL POSTGRESQL FUNCTION
+    // CALL POSTGRESQL FUNCTION - UPDATED TO V2
     // ============================================
 
     const supabaseClient = createClient(
@@ -115,14 +115,15 @@ serve(async (req) => {
       }
     )
 
-    const { data, error } = await supabaseClient.rpc('hybrid_search_v3_entity_aware', {
+    // CHANGED: hybrid_search_v3_entity_aware â†’ hybrid_search_v2_entity_aware
+    const { data, error } = await supabaseClient.rpc('hybrid_search_v2_entity_aware', {
       n8n_payload: { N8N_query: query },
       total_limit: total_limit,
       min_score: min_score
     })
 
     if (error) {
-      console.error('❌ Database error:', error)
+      console.error('âŒ Database error:', error)
       return new Response(
         JSON.stringify({ 
           error: error.message,
@@ -133,10 +134,21 @@ serve(async (req) => {
       )
     }
 
-    console.log('✅ Success! Returned', data?.[0]?.results?.length || 0, 'results')
+    // ============================================
+    // UNWRAP NESTED RESPONSE
+    // ============================================
+    // The RPC returns: [{results: {summary: {}, results: []}}]
+    // We want: {summary: {}, results: []}
+    
+    const response = data[0]?.results?.results ? {
+      summary: data[0].results.summary,
+      results: data[0].results.results
+    } : (data[0]?.results || {});
+
+    console.log('âœ… Success! Returned', response.results?.length || 0, 'results')
 
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(response),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -144,7 +156,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('❌ Edge function error:', error)
+    console.error('âŒ Edge function error:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,

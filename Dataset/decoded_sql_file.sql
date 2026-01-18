@@ -1,0 +1,1234 @@
+-- =====================================================
+-- COMPLETE SETUP FOR EXACT_SEARCH_V2
+-- Run these in order:
+-- 1. This file (creates normalize function + table)
+-- 2. Upload CSV
+-- 3. Run 02_hybrid_search_v2.sql
+-- =====================================================
+
+-- =====================================================
+-- STEP 1: NORMALIZE_ARABIC FUNCTION (REQUIRED!)
+-- =====================================================
+CREATE OR REPLACE FUNCTION normalize_arabic(text_input TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    IF text_input IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    RETURN regexp_replace(
+        regexp_replace(
+            regexp_replace(
+                regexp_replace(
+                    regexp_replace(
+                        regexp_replace(
+                            regexp_replace(text_input,
+                                '[]', '', 'g'),  -- Remove diacritics
+                            '[أإآ]', 'ا', 'g'),         -- Unify alef
+                        '[ى]', 'ي', 'g'),               -- Unify yaa
+                    '[ة]', 'ه', 'g'),                   -- Unify taa marbouta
+                '[ؤ]', 'و', 'g'),                       -- Unify waw with hamza
+            '[ئ]', 'ي', 'g'),                           -- Unify yaa with hamza
+        '[\u0640]', '', 'g');                           -- Remove tatweel
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- =====================================================
+-- STEP 2: HELPER FUNCTION - IS_COMMON_PARTICLE
+-- =====================================================
+CREATE OR REPLACE FUNCTION is_common_particle(word TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    -- Common Arabic particles to filter out
+    RETURN word IN (
+        'في', 'من', 'الى', 'على', 'عن', 'ان', 'هذا', 'هذه',
+        'ذلك', 'تلك', 'هو', 'هي', 'ما', 'لا', 'نعم', 'كل'
+    );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- =====================================================
+-- HYBRID SEARCH V2: OPTIMIZED FOR Exact_search_v2
+-- Performance: ~100-500ms
+-- Supports: Single queries + Grouped queries + Animals metadata
+-- =====================================================
+
+-- =====================================================
+-- HYBRID SEARCH V2: OPTIMIZED FOR Exact_search_v2
+-- Performance: ~100-500ms
+-- Supports: Single queries + Grouped queries + Animals metadata
+-- =====================================================
+
+DROP FUNCTION IF EXISTS hybrid_search_v2_entity_aware CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2 CASCADE;
+DROP FUNCTION IF EXISTS process_single_query_v2 CASCADE;
+DROP FUNCTION IF EXISTS get_text_matches_v2 CASCADE;
+
+
+DROP FUNCTION IF EXISTS hybrid_search_v2_entity_aware(JSONB, INT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION hybrid_search_v2_entity_aware(
+    n8n_payload JSONB,
+    total_limit INT DEFAULT 50,
+    min_score NUMERIC DEFAULT 0.3
+)
+RETURNS TABLE(
+    query_type TEXT,
+    query_text TEXT,
+    query_weight NUMERIC,
+    entity_boost INT,
+    tag TEXT,
+    poems INT,
+    lines INT,
+    words INT,
+    tags TEXT,
+    results JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    exact_q JSONB;
+    expanded_queries JSONB;
+    individual_limit INT;
+    
+    current_query TEXT;
+    current_queries TEXT[];  -- NEW: Support array of queries
+    current_tag TEXT;
+    current_confidence NUMERIC;
+    
+    q_norm TEXT;
+    query_words TEXT[];
+    meaningful_words TEXT[];
+    current_word TEXT;
+    
+    result_row RECORD;
+    temp_results JSONB := '[]'::JSONB;
+    all_tags TEXT[] := ARRAY[]::TEXT[];
+    total_poems INT := 0;
+    total_lines INT := 0;
+    total_words INT := 0;
+BEGIN
+    exact_q := n8n_payload->'N8N_query';
+    expanded_queries := n8n_payload->'N8N_query'->'expanded_queries';
+    individual_limit := COALESCE((n8n_payload->'N8N_query'->>'individual_Limit')::INT, 10);
+    
+    -- Collect all terms and tags in one CTE
+    WITH all_query_strings AS (
+        SELECT exact_q->>'Exact_query' as q, exact_q->>'tag' as t
+        WHERE exact_q->>'Exact_query' IS NOT NULL
+        UNION ALL
+        SELECT exp->>'query', exp->>'tag'
+        FROM jsonb_array_elements(expanded_queries) exp
+        WHERE exp->>'query' IS NOT NULL
+    ),
+    split_terms AS (
+        SELECT DISTINCT trim(term) as term
+        FROM all_query_strings,
+        LATERAL unnest(string_to_array(q, ',')) term
+        WHERE trim(term) != '' AND trim(term) != 'OR'
+    )
+    SELECT 
+        array_agg(normalize_arabic(term)),
+        array_to_string(array_agg(normalize_arabic(term)), ' '),
+        (SELECT array_agg(DISTINCT t) FROM all_query_strings WHERE t IS NOT NULL)
+    INTO meaningful_words, q_norm, all_tags
+    FROM split_terms;
+    
+    current_query := array_to_string(meaningful_words, ',');
+    current_tag := COALESCE(all_tags[1], 'combined');
+    current_confidence := 100;
+    
+    -- ==========================================
+    -- PHASE 3: EFFICIENT AGGREGATION (no loop)
+    -- ==========================================
+    RETURN QUERY
+    WITH raw_results AS (
+        SELECT * FROM process_single_query_v2(
+            current_query, q_norm, meaningful_words,
+            current_tag, current_confidence, total_limit, min_score
+        )
+    ),
+    stats AS (
+        SELECT 
+            COUNT(DISTINCT poem_id)::INT as poem_count,
+            COUNT(*)::INT as line_count,
+            SUM(array_length(string_to_array(poem_line_raw, ' '), 1))::INT as word_count
+        FROM raw_results
+    ),
+    deduped AS (
+        SELECT DISTINCT ON (poem_id) result_json, final_score
+        FROM raw_results
+        ORDER BY poem_id, final_score DESC
+        LIMIT total_limit
+    )
+    SELECT 
+        CASE WHEN exact_q IS NOT NULL THEN 'exact' ELSE 'expanded' END::TEXT,
+        exact_q->>'Exact_query',
+        current_confidence,
+        10,
+        array_to_string(all_tags, ', ')::TEXT,
+        COALESCE((SELECT poem_count FROM stats), 0),
+        COALESCE((SELECT line_count FROM stats), 0),
+        COALESCE((SELECT word_count FROM stats), 0),
+        array_to_string(all_tags, ', ')::TEXT,
+        jsonb_build_object(
+            'summary', jsonb_build_object(
+                'query', exact_q->>'Exact_query',
+                'poems', (SELECT poem_count FROM stats),
+                'lines', (SELECT line_count FROM stats),
+                'words', (SELECT word_count FROM stats),
+                'results', (SELECT COUNT(*) FROM deduped),
+                'tags', all_tags
+            ),
+            'results', (SELECT jsonb_agg(result_json ORDER BY final_score DESC) FROM deduped)
+        );
+END;
+$$;
+
+-- =====================================================
+-- HELPER: Process Single Query
+-- =====================================================
+
+DROP FUNCTION IF EXISTS process_single_query_v2(TEXT, TEXT, TEXT[], TEXT, NUMERIC, INT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION process_single_query_v2(
+    original_query TEXT,
+    q_norm TEXT,
+    meaningful_words TEXT[],
+    tag TEXT,
+    confidence NUMERIC,
+    match_limit INT,
+    min_score NUMERIC
+)
+RETURNS TABLE(
+    poem_id INT,
+    row_id INT,
+    title_raw TEXT,
+    poem_line_raw TEXT,
+    final_score NUMERIC,
+    match_locations TEXT[],
+    tag_out TEXT,
+    result_json JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH 
+    text_matches AS (
+        SELECT 
+            tm.poem_id as tm_poem_id,
+            tm.row_id as tm_row_id,
+            tm.title_raw as tm_title_raw,
+            tm.poem_line_raw as tm_poem_line_raw,
+            tm.score as tm_score,
+            tm.match_location as tm_match_location,
+            tm.match_json as tm_match_json
+        FROM get_text_matches_v2(original_query, q_norm, meaningful_words, match_limit, min_score) tm
+    ),
+    
+    all_metadata_matches AS (
+        SELECT 
+            mm.poem_id as mm_poem_id,
+            mm.row_id as mm_row_id,
+            mm.title_raw as mm_title_raw,
+            mm.poem_line_raw as mm_poem_line_raw,
+            mm.score as mm_score,
+            mm.match_location as mm_match_location,
+            mm.match_json as mm_match_json
+        FROM get_all_metadata_matches_v2(q_norm, meaningful_words, tag, match_limit, min_score) mm
+    ),
+    
+    combined AS (
+        SELECT 
+            tm_poem_id as c_poem_id, 
+            tm_row_id as c_row_id, 
+            tm_title_raw as c_title_raw, 
+            tm_poem_line_raw as c_poem_line_raw,
+            tm_score as c_score, 
+            tm_match_location as c_match_location, 
+            tm_match_json as c_match_json,
+            FALSE as is_metadata
+        FROM text_matches
+        
+        UNION ALL
+        
+        SELECT 
+            mm_poem_id as c_poem_id, 
+            mm_row_id as c_row_id, 
+            mm_title_raw as c_title_raw, 
+            mm_poem_line_raw as c_poem_line_raw,
+            mm_score as c_score, 
+            mm_match_location as c_match_location, 
+            mm_match_json as c_match_json,
+            TRUE as is_metadata
+        FROM all_metadata_matches
+    ),
+    
+    -- NO AGGREGATION - Return ALL matching rows!
+    final_results AS (
+        SELECT 
+            c.c_poem_id as poem_id,
+            c.c_row_id as row_id,
+            c.c_title_raw as title_raw,
+            c.c_poem_line_raw as poem_line_raw,
+            
+            -- Keep original scores from each match type
+            c.c_score as final_score,
+            
+            -- Collect all match locations for this specific row
+            array_agg(DISTINCT unnest_val) as match_locations,
+            
+            -- Use the match_json from this specific row
+            c.c_match_json as merged_match_json
+        FROM combined c
+        CROSS JOIN LATERAL unnest(c.c_match_location) as unnest_val
+        GROUP BY c.c_poem_id, c.c_row_id, c.c_title_raw, c.c_poem_line_raw, c.c_score, c.c_match_json
+    )
+    
+    SELECT 
+        fr.poem_id,
+        fr.row_id,
+        fr.title_raw,
+        fr.poem_line_raw,
+        fr.final_score,
+        fr.match_locations,
+        tag as tag_out,
+        jsonb_build_object(
+            'poem_id', fr.poem_id,
+            'row_id', fr.row_id,
+            'score', round(fr.final_score, 1),
+            'title', fr.title_raw,
+            'line', fr.poem_line_raw,
+            'matches', jsonb_build_object(
+                'title', COALESCE(fr.merged_match_json->'title', '[]'::jsonb),
+                'line', COALESCE(
+                    (
+                        SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'text', mw->>'text',
+                                'pos', CASE 
+                                    WHEN mw->>'positions' = 'metadata' THEN 'meta'
+                                    WHEN mw->>'positions' = 'phrase' THEN 'phrase'
+                                    ELSE mw->>'positions'
+                                END
+                            )
+                        )
+                        FROM jsonb_array_elements(
+                            fr.merged_match_json->'poem_line'->'matched_words'
+                        ) mw
+                    ),
+                    '[]'::jsonb
+                )
+            ),
+            'sources', fr.match_locations,
+            'tag', tag
+        ) as result_json
+    FROM final_results fr
+    WHERE fr.final_score >= min_score
+    ORDER BY fr.final_score DESC
+    LIMIT match_limit;
+END;
+$$;
+
+-- =====================================================
+-- HELPER: Get Text Matches - FTS OPTIMIZED with OR support
+-- =====================================================
+
+DROP FUNCTION IF EXISTS get_text_matches_v2(TEXT, TEXT, TEXT[], INT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION get_text_matches_v2(
+    original_query TEXT,
+    q_norm TEXT,
+    meaningful_words TEXT[],
+    match_limit INT,
+    min_score NUMERIC
+)
+RETURNS TABLE(
+    poem_id INT,
+    row_id INT,
+    title_raw TEXT,
+    poem_line_raw TEXT,
+    score NUMERIC,
+    match_location TEXT[],
+    match_json JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    word_count INT := array_length(meaningful_words, 1);
+    ts_query tsquery;
+    clean_words TEXT[];
+    has_short_words BOOLEAN := FALSE;
+    use_trigram BOOLEAN := FALSE;
+BEGIN
+    -- Remove empty strings, whitespace, and 'OR' from meaningful_words
+    SELECT array_agg(w) INTO clean_words
+    FROM unnest(meaningful_words) w
+    WHERE trim(w) <> '' AND trim(w) <> 'OR';
+    
+    -- PHRASE DETECTION: Check if query contains short words (<= 2 chars)
+    -- Short words like "بو", "ام" are filtered by FTS, so we need trigram search
+    SELECT EXISTS (
+        SELECT 1 FROM unnest(string_to_array(q_norm, ' ')) word
+        WHERE length(word) > 0 AND length(word) <= 2
+    ) INTO has_short_words;
+    
+    -- Use trigram if: has short words OR clean_words is empty (all words filtered)
+    use_trigram := has_short_words OR clean_words IS NULL OR array_length(clean_words, 1) IS NULL;
+    
+    -- Build tsquery (only if using FTS)
+    IF NOT use_trigram THEN
+        IF position(' OR ' IN original_query) > 0 THEN
+            -- Grouped query: use OR (|) operator
+            ts_query := to_tsquery('arabic', array_to_string(clean_words, ' | '));
+        ELSE
+            -- Single query: use AND (&) operator  
+            ts_query := to_tsquery('arabic', array_to_string(clean_words, ' & '));
+        END IF;
+    END IF;
+    
+    -- STRATEGY: Use completely separate code paths for trigram vs FTS
+    IF use_trigram THEN
+        -- TRIGRAM PATH: For phrases with short words like "بو خالد", "ابن"
+        RETURN QUERY
+        WITH 
+        -- Title matches: Return one row per poem with title match
+        title_only_matches AS (
+            SELECT DISTINCT ON (e.poem_id)
+                e.poem_id,
+                NULL::INT as row_id,  -- No specific line
+                e."Title_raw" as title_raw,
+                NULL::TEXT as poem_line_raw,  -- Title-only, no line
+                100.0 as score,
+                ARRAY['title']::TEXT[] as match_location,
+                jsonb_build_object(
+                    'title', jsonb_build_array(
+                        jsonb_build_object(
+                            'text', q_norm,
+                            'score', 100,
+                            'positions', 'phrase',
+                            'match_type', 'title_only'
+                        )
+                    ),
+                    'poem_line', '{}'::jsonb
+                ) as match_json
+            FROM "Exact_search_v2" e
+            WHERE normalize_arabic(e."Title_cleaned") LIKE '%' || q_norm || '%'
+              -- Only return if NO poem lines match in this poem
+              AND NOT EXISTS (
+                  SELECT 1 FROM "Exact_search_v2" e2
+                  WHERE e2.poem_id = e.poem_id
+                    AND e2."Poem_line_cleaned" ILIKE '%' || q_norm || '%'
+                    AND word_similarity(q_norm, e2."Poem_line_cleaned") > 0.6
+              )
+            ORDER BY e.poem_id
+        ),
+        
+        poem_matches AS (
+            -- STAGE 1: Fast ILIKE filter (uses GIN index)
+            WITH stage1_candidates AS (
+                SELECT * FROM "Exact_search_v2" e
+                WHERE normalize_arabic(e."Poem_line_cleaned") ILIKE '%' || q_norm || '%'
+                LIMIT 200  -- Safety cap
+            )
+            -- STAGE 2: Precision word_similarity scoring
+            SELECT 
+                e.poem_id,
+                e."Row_ID" as row_id,
+                e."Title_raw" as title_raw,
+                e."Poem_line_raw" as poem_line_raw,
+                -- Score from word_similarity (0-100 scale)
+                (word_similarity(normalize_arabic(q_norm), normalize_arabic(e."Poem_line_cleaned")) * 100)::NUMERIC as score,
+                ARRAY['poem_line']::TEXT[] as match_location,
+                jsonb_build_object(
+                    'title', '[]'::jsonb,
+                    'poem_line', jsonb_build_object(
+                        'row_id', e."Row_ID",
+                        'matched_words', jsonb_build_array(
+                            jsonb_build_object(
+                                'text', q_norm,
+                                'score', ROUND(word_similarity(normalize_arabic(q_norm), normalize_arabic(e."Poem_line_cleaned")) * 100),
+                                'positions', 'phrase'  -- Simple marker - frontend will highlight the query text
+                            )
+                        )
+                    )
+                ) as match_json
+            FROM stage1_candidates e
+            WHERE word_similarity(normalize_arabic(q_norm), normalize_arabic(e."Poem_line_cleaned")) > 
+                CASE 
+                    -- Short queries (<= 3 chars): strict threshold
+                    WHEN length(replace(q_norm, ' ', '')) <= 3 THEN 0.7
+                    -- Multi-word queries: looser threshold for variations
+                    WHEN position(' ' IN q_norm) > 0 THEN 0.6
+                    -- Default: strict
+                    ELSE 0.7
+                END
+        )
+        
+        SELECT * FROM title_only_matches
+        UNION ALL
+        SELECT * FROM poem_matches
+        ORDER BY score DESC
+        LIMIT match_limit;
+        
+    ELSE
+        -- FTS PATH: For normal queries
+        RETURN QUERY
+    WITH 
+    title_matches AS (
+        SELECT 
+            e.poem_id,
+            e."Row_ID" as row_id,
+            e."Title_raw" as title_raw,
+            e."Poem_line_raw" as poem_line_raw,
+            ARRAY['title']::TEXT[] as match_location,
+            
+            -- FTS-BASED SCORING (boosted 1000x to reach 100+ range)
+            (
+                ts_rank(e.title_tsv, ts_query) * 1000
+                
+                + CASE WHEN ' ' || e."Title_cleaned" || ' ' LIKE '% ' || q_norm || ' %'
+                    THEN 50.0 ELSE 0 END
+                
+                + CASE 
+                    WHEN word_count >= 3 THEN 15.0 + (word_count - 3) * 3
+                    WHEN word_count = 2 THEN 10.0
+                    ELSE 5.0 
+                  END
+                
+                - CASE WHEN position(normalize_arabic(q_norm) IN normalize_arabic(e."Title_cleaned")) = 0 
+                    THEN 5.0 ELSE 0 END
+            )::numeric as title_score,
+            
+            -- Highlighting: Word positions in Title_raw with consecutive word merging
+            jsonb_build_object(
+                'title', COALESCE((
+                    WITH word_array AS (
+                        SELECT word, idx-1 as position
+                        FROM unnest(string_to_array(e."Title_cleaned", ' ')) WITH ORDINALITY AS u(word, idx)
+                        WHERE word <> ''
+                    ),
+                    matched_positions AS (
+                        SELECT 
+                            wa.word,
+                            wa.position,
+                            ROW_NUMBER() OVER (ORDER BY wa.position) as rn
+                        FROM word_array wa
+                        WHERE EXISTS (
+                            SELECT 1 FROM unnest(clean_words) mw
+                            WHERE wa.word = mw
+                        )
+                        ORDER BY wa.position
+                    ),
+                    -- Group consecutive positions into ranges
+                    ranges AS (
+                        SELECT 
+                            min(position) as start_pos,
+                            max(position) as end_pos,
+                            count(*) as word_count,
+                            string_agg(word, ' ' ORDER BY position) as matched_text
+                        FROM (
+                            SELECT 
+                                word,
+                                position,
+                                position - rn as grp
+                            FROM matched_positions
+                        ) grouped
+                        GROUP BY grp
+                    )
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', matched_text,
+                            'positions', CASE 
+                                WHEN start_pos = end_pos THEN start_pos::text
+                                ELSE start_pos::text || '-' || end_pos::text
+                            END,
+                            'score', 85
+                        )
+                    )
+                    FROM ranges
+                ), '[]'::jsonb),
+                'poem_line', '{}'::jsonb
+            ) as match_json
+            
+        FROM "Exact_search_v2" e
+        WHERE 
+            CASE 
+                -- Use trigram for phrases with short words (FTS filters them out)
+                WHEN use_trigram THEN
+                    ' ' || e."Title_cleaned" || ' ' LIKE '% ' || q_norm || ' %'
+                -- Use FTS for normal queries
+                ELSE
+                    e.title_tsv @@ ts_query
+            END
+        ORDER BY e.poem_id, title_score DESC
+    ),
+    
+    poem_matches AS (
+        SELECT 
+            e.poem_id,
+            e."Row_ID" as row_id,
+            e."Title_raw" as title_raw,
+            e."Poem_line_raw" as poem_line_raw,
+            ARRAY['poem_line']::TEXT[] as match_location,
+            
+            -- FTS-BASED SCORING
+            (
+                ts_rank(e.poem_line_tsv, ts_query) * 1000
+                
+                + CASE WHEN ' ' || e."Poem_line_cleaned" || ' ' LIKE '% ' || q_norm || ' %'
+                    THEN 40.0 ELSE 0 END
+                
+                + CASE 
+                    WHEN word_count >= 3 THEN 10.0 + (word_count - 3) * 3
+                    WHEN word_count = 2 THEN 7.0
+                    ELSE 3.0 
+                  END
+                
+                - CASE WHEN position(normalize_arabic(q_norm) IN normalize_arabic(e."Poem_line_cleaned")) = 0 
+                    THEN 5.0 ELSE 0 END
+            )::numeric as poem_score,
+            
+            -- Highlighting: Word positions with RANGE support for consecutive words
+            jsonb_build_object(
+                'title', '[]'::jsonb,
+                'poem_line', jsonb_build_object(
+                    'row_id', e."Row_ID",
+                    'matched_words', COALESCE((
+                        WITH word_array AS (
+                            SELECT word, idx-1 as position
+                            FROM unnest(string_to_array(e."Poem_line_cleaned", ' ')) WITH ORDINALITY AS u(word, idx)
+                            WHERE word <> ''
+                        ),
+                        matched_positions AS (
+                            SELECT 
+                                wa.word,
+                                wa.position,
+                                ROW_NUMBER() OVER (ORDER BY wa.position) as rn
+                        FROM word_array wa
+                        WHERE EXISTS (
+                            SELECT 1 FROM unnest(clean_words) mw
+                            WHERE wa.word = mw
+                        )
+                        ORDER BY wa.position
+                    ),
+                    -- Group consecutive positions into ranges
+                    ranges AS (
+                        SELECT 
+                            min(position) as start_pos,
+                            max(position) as end_pos,
+                            count(*) as word_count,
+                            string_agg(word, ' ' ORDER BY position) as matched_text
+                        FROM (
+                            SELECT 
+                                word,
+                                position,
+                                position - rn as grp
+                            FROM matched_positions
+                        ) grouped
+                        GROUP BY grp
+                    )
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', matched_text,
+                            'positions', CASE 
+                                WHEN start_pos = end_pos THEN start_pos::text
+                                ELSE start_pos::text || '-' || end_pos::text
+                            END,
+                            'score', 85
+                        )
+                    )
+                    FROM ranges
+                ), '[]'::jsonb)
+                )
+            ) as match_json
+            
+        FROM "Exact_search_v2" e
+        WHERE 
+            CASE 
+                -- Use trigram for phrases with short words
+                WHEN use_trigram THEN
+                    ' ' || e."Poem_line_cleaned" || ' ' LIKE '% ' || q_norm || ' %'
+                -- Use FTS for normal queries
+                ELSE
+                    e.poem_line_tsv @@ ts_query
+            END
+    )
+    
+    SELECT 
+        tm.poem_id, tm.row_id, tm.title_raw, tm.poem_line_raw, 
+        tm.title_score as score, tm.match_location, tm.match_json 
+    FROM title_matches tm 
+    WHERE tm.title_score >= min_score
+    
+    UNION ALL
+    
+    SELECT 
+        pm.poem_id, pm.row_id, pm.title_raw, pm.poem_line_raw, 
+        pm.poem_score as score, pm.match_location, pm.match_json 
+    FROM poem_matches pm 
+    WHERE pm.poem_score >= min_score;
+    END IF;  -- Close the IF use_trigram ELSE block
+END;
+$$;
+
+-- =====================================================
+-- HELPER: Get ALL Metadata Matches (unchanged)
+-- =====================================================
+
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2(TEXT, TEXT[], INT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS get_all_metadata_matches_v2(TEXT, TEXT[], TEXT, INT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION get_all_metadata_matches_v2(
+    q_norm TEXT,
+    meaningful_words TEXT[],
+    current_tag TEXT,
+    match_limit INT,
+    min_score NUMERIC
+)
+RETURNS TABLE(
+    poem_id INT,
+    row_id INT,
+    title_raw TEXT,
+    poem_line_raw TEXT,
+    score NUMERIC,
+    match_location TEXT[],
+    match_json JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    tag_words TEXT[];
+    tag_norm TEXT;
+BEGIN
+    -- Extract significant words from tag for entity matching
+    -- Skip ONLY structural particles: بن, ابن, ال, آل, بنت
+    -- Keep ALL other words including short ones (important for nicknames like "بو خالد")
+    IF current_tag IS NOT NULL AND current_tag != '' THEN
+        tag_norm := current_tag;
+        SELECT array_agg(word) INTO tag_words
+        FROM unnest(string_to_array(tag_norm, ' ')) word
+        WHERE word NOT IN ('بن', 'ابن', 'ال', 'آل', 'بنت', '')
+          AND length(word) > 0;  -- Keep "بو", "ام", etc for nicknames!
+        
+        -- NICKNAME DETECTION: If tag has <= 2 significant words, it's likely a nickname (e.g., "بو خالد")
+        -- Nicknames won't match entity names like "محمد بن زايد آل نهيان"
+        -- Disable tag-based entity name matching - rely on resolved_from matching only
+        IF array_length(tag_words, 1) IS NOT NULL AND array_length(tag_words, 1) <= 2 THEN
+            tag_words := ARRAY[]::TEXT[];  -- Disable tag scoring for nicknames
+        END IF;
+    ELSE
+        tag_words := ARRAY[]::TEXT[];
+    END IF;
+    
+    RETURN QUERY
+    
+    -- entities column (name + resolved_from highlighting)
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        
+        -- SCORE WITH TAG-BASED ENTITY VERIFICATION
+        CASE
+            -- CRITICAL SAFETY: Check if fuzzy matched word is in resolved_from
+            -- AND check if entity name matches the TAG (not just query)
+            WHEN NOT EXISTS (
+                SELECT 1 
+                FROM jsonb_array_elements(e.entities) person,
+                LATERAL jsonb_array_elements_text(person->'resolved_from') rf
+                WHERE jsonb_typeof(person->'resolved_from') = 'array'  -- Safety check!
+                  AND EXISTS (
+                    SELECT 1 FROM unnest(meaningful_words) mw
+                    WHERE 
+                        (length(mw::text) > 2 
+                         AND rf::text LIKE '%' || mw || '%')
+                        OR rf::text = mw
+                )
+                AND (
+                    -- NEW: Match entity name against TAG, not query!
+                    -- Count significant words that match between entity name and tag
+                    array_length(tag_words, 1) IS NULL  -- No tag provided (fallback to old logic)
+                    OR person->>'name' = tag_norm  -- Exact match
+                    OR (
+                        SELECT COUNT(*) >= 2  -- At least 2 significant words match
+                        FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                        WHERE position(tw IN person->>'name') > 0
+                    )
+                )
+            ) THEN 10.0  -- DANGEROUS: fuzzy match not verified OR entity doesn't match tag
+            
+            -- Penalize if ALL matched words are short (1-2 chars)
+            WHEN (
+                SELECT bool_and(length(mw::text) <= 2)
+                FROM unnest(meaningful_words) mw
+                WHERE EXISTS (
+                    SELECT 1 
+                    FROM jsonb_array_elements(e.entities) p,
+                    LATERAL jsonb_array_elements_text(p->'resolved_from') rf
+                    WHERE jsonb_typeof(p->'resolved_from') = 'array'
+                      AND rf::text LIKE '%' || mw || '%'
+                )
+            ) THEN 40.0  -- Very low score for short words only
+            
+            -- TAG-BASED SCORING: Score based on how well entity name matches tag
+            -- This is the DEFAULT now - always check entity relevance!
+            ELSE (
+                SELECT 
+                    CASE
+                        -- If tag provided and entity name matches well
+                        WHEN array_length(tag_words, 1) > 0 AND EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
+                            WHERE person->>'name' = tag_norm
+                        ) THEN 70.0
+                        
+                        -- RELATED ENTITY: Has 'relation' field (father, brother, etc)
+                        -- Give medium score (60) - relevant but not primary target
+                        WHEN array_length(tag_words, 1) > 0 AND EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
+                            WHERE person->>'relation' IS NOT NULL 
+                              AND person->>'relation' != ''
+                              AND (
+                                  SELECT COUNT(*) >= 1
+                                  FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                                  WHERE position(tw IN person->>'name') > 0
+                              )
+                        ) THEN 60.0
+                        
+                        -- 3+ significant words match
+                        WHEN array_length(tag_words, 1) > 0 AND EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
+                            WHERE (
+                                SELECT COUNT(*) >= 3
+                                FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                                WHERE position(tw IN person->>'name') > 0
+                            )
+                        ) THEN 65.0
+                        
+                        -- 2 significant words match
+                        WHEN array_length(tag_words, 1) > 0 AND EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.entities) person
+                            WHERE (
+                                SELECT COUNT(*) = 2
+                                FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                                WHERE position(tw IN person->>'name') > 0
+                            )
+                        ) THEN 50.0
+                        
+                        -- Only 1 word matches OR no tag provided
+                        WHEN array_length(tag_words, 1) > 0 THEN 15.0  -- Tag provided but weak match
+                        
+                        ELSE 70.0  -- No tag provided - trust the match
+                    END
+            )
+        END as score,
+        
+        ARRAY['entities']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', (
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', resolved_text,
+                            'score', CASE 
+                                WHEN length(resolved_text::text) <= 2 THEN 40
+                                ELSE 70 
+                            END,
+                            'positions', 'metadata',
+                            'source', 'entities_resolved'
+                        )
+                    )
+                    FROM (
+                        SELECT DISTINCT resolved_text
+                        FROM jsonb_array_elements(e.entities) person,
+                        LATERAL jsonb_array_elements_text(person->'resolved_from') resolved_text
+                        WHERE jsonb_typeof(person->'resolved_from') = 'array'
+                          AND (EXISTS (
+                            SELECT 1 FROM unnest(meaningful_words) mw
+                            WHERE length(mw::text) > 2  -- Require 3+ chars for fuzzy
+                               AND resolved_text::text LIKE '%' || mw || '%'
+                        )
+                        OR EXISTS (
+                            SELECT 1 FROM unnest(meaningful_words) mw
+                            WHERE resolved_text::text = mw  -- Exact match any length
+                        ))
+                    ) matches
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.entities) > 0  -- Ensure array is not empty
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(e.entities) person
+        WHERE jsonb_typeof(person->'resolved_from') = 'array'
+          AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(person->'resolved_from') rf
+            WHERE EXISTS (
+                SELECT 1 FROM unnest(meaningful_words) mw
+                WHERE 
+                    -- Stricter fuzzy: require 3+ chars
+                    (length(mw::text) > 2 
+                     AND rf::text LIKE '%' || mw || '%')
+                    -- OR exact word match (any length)
+                    OR rf::text = mw
+            )
+        )
+    )
+    
+    UNION ALL
+    
+    -- places column
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        -- TAG-BASED SCORING for places (similar to entities logic)
+        CASE
+            -- If tag provided, check if place name matches tag
+            -- This prevents "محمد ابن راشد ابن مكتوم" (place) from matching "محمد بن زايد" tag
+            WHEN array_length(tag_words, 1) > 0 THEN (
+                SELECT 
+                    CASE
+                        -- Place name exactly matches tag
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
+                            WHERE place->>'name' = tag_norm
+                        ) THEN 60.0
+                        
+                        -- 3+ significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
+                            WHERE (
+                                SELECT COUNT(*) >= 3
+                                FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                                WHERE position(tw IN place->>'name') > 0
+                            )
+                        ) THEN 50.0
+                        
+                        -- 2 significant words match
+                        WHEN EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(e.places) place
+                            WHERE (
+                                SELECT COUNT(*) = 2
+                                FROM unnest(COALESCE(tag_words, ARRAY[]::TEXT[])) tw
+                                WHERE position(tw IN place->>'name') > 0
+                            )
+                        ) THEN 35.0
+                        
+                        -- Only 1 word matches (probably wrong place!)
+                        ELSE 15.0
+                    END
+            )
+            -- No tag provided - fallback to old logic
+            WHEN NOT EXISTS (
+                SELECT 1 FROM jsonb_array_elements(e.places) place
+                WHERE 
+                    (length(q_norm) > 2 AND position(q_norm IN place->>'name') > 0)
+                    OR place->>'name' = q_norm
+                    OR EXISTS (
+                        SELECT 1 FROM unnest(meaningful_words) mw
+                        WHERE length(mw::text) > 2 
+                           AND place->>'name' LIKE '%' || mw || '%'
+                    )
+            ) THEN 15.0  -- Irrelevant place
+            ELSE 60.0  -- Place matches query
+        END as score,
+        ARRAY['places']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', jsonb_build_array(
+                    jsonb_build_object(
+                        'text', (
+                            SELECT place->>'name' 
+                            FROM jsonb_array_elements(e.places) place 
+                            WHERE 
+                                (length(q_norm) > 2 AND position(q_norm IN place->>'name') > 0)
+                                OR place->>'name' = q_norm
+                                OR EXISTS (
+                                    SELECT 1 FROM unnest(meaningful_words) mw
+                                    WHERE 
+                                        -- For 3+ char words: allow substring
+                                        (length(mw::text) > 2 
+                                         AND position(mw IN place->>'name') > 0)
+                                        -- For ANY length: require whole-word match
+                                        OR ' ' || place->>'name' || ' ' LIKE '% ' || mw || ' %'
+                                )
+                            LIMIT 1
+                        ),
+                        'score', 60,
+                        'positions', 'metadata',
+                        'source', 'places'
+                    )
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.places) > 0
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(e.places) place
+        WHERE 
+            -- Stricter: require 3+ chars OR exact match
+            (length(q_norm) > 2 AND position(q_norm IN place->>'name') > 0)
+            OR place->>'name' = q_norm
+            OR EXISTS (
+                SELECT 1 FROM unnest(meaningful_words) mw
+                WHERE 
+                    -- For 3+ char words: allow substring
+                    (length(mw::text) > 2 
+                     AND position(mw IN place->>'name') > 0)
+                    -- For ANY length: require whole-word match (space boundaries)
+                    OR ' ' || place->>'name' || ' ' LIKE '% ' || mw || ' %'
+            )
+    )
+    
+    UNION ALL
+    
+    -- events column
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['events']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', jsonb_build_array(
+                    jsonb_build_object(
+                        'text', (
+                            SELECT event 
+                            FROM jsonb_array_elements_text(e.events) event 
+                            WHERE position(q_norm IN event::text) > 0
+                               OR EXISTS (
+                                   SELECT 1 FROM unnest(meaningful_words) mw
+                                   WHERE position(mw IN event::text) > 0
+                               )
+                            LIMIT 1
+                        ),
+                        'score', 60,
+                        'positions', 'metadata',
+                        'source', 'events'
+                    )
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.events) > 0
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(e.events) event
+        WHERE position(q_norm IN event::text) > 0
+           OR EXISTS (
+               SELECT 1 FROM unnest(meaningful_words) mw
+               WHERE position(mw IN event::text) > 0
+           )
+    )
+    
+    UNION ALL
+    
+    -- religion column
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['religion']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', jsonb_build_array(
+                    jsonb_build_object(
+                        'text', (
+                            SELECT religion 
+                            FROM jsonb_array_elements_text(e.religion) religion 
+                            WHERE position(q_norm IN religion::text) > 0
+                               OR EXISTS (
+                                   SELECT 1 FROM unnest(meaningful_words) mw
+                                   WHERE position(mw IN religion::text) > 0
+                               )
+                            LIMIT 1
+                        ),
+                        'score', 60,
+                        'positions', 'metadata',
+                        'source', 'religion'
+                    )
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.religion) > 0
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(e.religion) religion
+        WHERE position(q_norm IN religion::text) > 0
+           OR EXISTS (
+               SELECT 1 FROM unnest(meaningful_words) mw
+               WHERE position(mw IN religion::text) > 0
+           )
+    )
+    
+    UNION ALL
+    
+    -- subjects column
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['subjects']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', jsonb_build_array(
+                    jsonb_build_object(
+                        'text', (
+                            SELECT topic 
+                            FROM jsonb_array_elements_text(e.subjects) topic 
+                            WHERE position(q_norm IN topic::text) > 0
+                               OR EXISTS (
+                                   SELECT 1 FROM unnest(meaningful_words) mw
+                                   WHERE position(mw IN topic::text) > 0
+                               )
+                            LIMIT 1
+                        ),
+                        'score', 60,
+                        'positions', 'metadata',
+                        'source', 'subjects'
+                    )
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE jsonb_array_length(e.subjects) > 0
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(e.subjects) topic
+        WHERE position(q_norm IN topic::text) > 0
+           OR EXISTS (
+               SELECT 1 FROM unnest(meaningful_words) mw
+               WHERE position(mw IN topic::text) > 0
+           )
+    )
+    
+    UNION ALL
+    
+    -- sentiments column
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['sentiments']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', jsonb_build_array(
+                    jsonb_build_object(
+                        'text', e.sentiments,
+                        'score', 60,
+                        'positions', 'metadata',
+                        'source', 'sentiments'
+                    )
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE e.sentiments IS NOT NULL
+      AND (position(q_norm IN e.sentiments) > 0
+           OR EXISTS (
+               SELECT 1 FROM unnest(meaningful_words) mw
+               WHERE position(mw IN e.sentiments) > 0
+           ))
+    
+    UNION ALL
+    
+    -- animals column
+    -- CRITICAL: Only search animals if tag indicates animal search
+    -- UPDATED: Includes full range of analytics animals (birds, horses, wild, sea, insects)
+    SELECT 
+        e.poem_id,
+        e."Row_ID" as row_id,
+        e."Title_raw" as title_raw,
+        e."Poem_line_raw" as poem_line_raw,
+        60.0 as score,
+        ARRAY['animals']::TEXT[] as match_location,
+        jsonb_build_object(
+            'title', '[]'::jsonb,
+            'poem_line', jsonb_build_object(
+                'row_id', e."Row_ID",
+                'matched_words', (
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'text', resolved_text,
+                            'score', 60,
+                            'positions', 'metadata',
+                            'source', 'animals_resolved'
+                        )
+                    )
+                    FROM (
+                        SELECT DISTINCT resolved_text
+                        FROM jsonb_array_elements(e.animals) animal,
+                        LATERAL jsonb_array_elements_text(animal->'resolved_from') resolved_text
+                        WHERE jsonb_typeof(animal->'resolved_from') = 'array'
+                          AND EXISTS (
+                            SELECT 1 FROM unnest(meaningful_words) mw
+                            WHERE resolved_text::text LIKE '%' || mw || '%'
+                               OR resolved_text::text = mw
+                        )
+                    ) matches
+                )
+            )
+        ) as match_json
+    FROM "Exact_search_v2" e
+    WHERE 
+        (
+            current_tag ILIKE ANY(ARRAY[
+                -- Generic
+                '%حيوان%', '%animals%', 
+                
+                -- Birds (طير, صقر, عقاب, حمام, يمامة)
+                '%طير%', '%طيور%', '%bird%', '%صقر%', '%falcon%', '%عقاب%', '%eagle%', '%حمام%',
+                
+                -- Horses (خيل, حصان, فرس)
+                '%خيل%', '%حصان%', '%horse%', '%فرس%',
+                
+                -- Camels (إبل, جمل)
+                '%إبل%', '%جمل%', '%camel%',
+                
+                -- Wild Animals (وحش, أسد, غزال, ذئب, فهد, نمر, ثعلب)
+                '%وحش%', '%أسد%', '%lion%', '%غزال%', '%gazelle%', '%ظبي%', 
+                '%ذئب%', '%wolf%', '%فهد%', '%نمر%', '%leopard%', '%ثعلب%',
+                
+                -- Sea & Insects & Reptiles (سمك, بحر, حشرات, نحل, عقرب)
+                '%بحر%', '%سمك%', '%fish%', '%حشر%', '%نحل%', '%bee%', '%عقرب%', 
+                '%ثعبان%', '%أفعى%', '%snake%'
+            ])
+            OR current_tag = 'animals'
+        )
+        AND jsonb_array_length(e.animals) > 0
+        AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(e.animals) animal
+            WHERE jsonb_typeof(animal->'resolved_from') = 'array'
+              AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements_text(animal->'resolved_from') rf
+                WHERE EXISTS (
+                    SELECT 1 FROM unnest(meaningful_words) mw
+                    WHERE rf::text LIKE '%' || mw || '%'
+                       OR rf::text = mw
+                )
+            )
+        );
+END;
+$$;

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Library App</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        /* iPhone container - always centered */
+        .iphone {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .page {
+            width: 100%;
+            height: calc(100% - 83px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+        }
+        
+        /* RTL support */
+        .rtl {
+            direction: rtl;
+        }
+        
+        .content {
+            padding: 60px 0 0 0;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 390px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            height: 60px;
+        }
+        
+        .header-left,
+        .header-right {
+            flex: 0 0 auto;
+            min-width: 60px;
+        }
+        
+        .header-center {
+            flex: 1;
+            text-align: center;
+        }
+        
+        h1 { 
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .lang-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .back { 
+            background: transparent;
+            color: #fff; 
+            padding: 0;
+            border: none; 
+            cursor: pointer; 
+            font-size: 17px;
+        }
+        
+        /* Bottom Tab Bar - centered */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 390px;
+            height: 83px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+            z-index: 100;
+        }
+        
+        .tab-container {
+            display: flex;
+            gap: 80px;
+            align-items: center;
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 4px 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .tab-item.active {
+            color: #fff;
+        }
+        
+        .tab-icon {
+            font-size: 24px;
+        }
+        
+        /* Hero Focus Image */
+        .hero-container {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .hero {
+            width: 100%;
+            position: relative;
+        }
+        
+        .hero img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+        
+        .hero-text {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 40px 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.95));
+            text-align: center;
+        }
+        
+        .hero-title {
+            font-size: 64px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 12px;
+        }
+        
+        .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        /* Rail section */
+        .rail {
+            margin-bottom: 24px;
+        }
+        
+        .rail-header {
+            padding: 0 16px 12px 16px;
+        }
+        
+        .rail-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        /* Normal rail - smooth flowing scroll */
+        .rail-scroll {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            gap: 8px;
+            padding: 0 16px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            cursor: grab;
+        }
+        
+        .rail-scroll:active {
+            cursor: grabbing;
+        }
+        
+        .rail-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Featured rail - snappy 2x cards */
+        .rail-scroll.featured {
+            scroll-snap-type: x mandatory;
+        }
+        
+        .rail-card {
+            flex: 0 0 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* Featured cards - 3:2 aspect ratio (taller) */
+        .rail-card.featured {
+            flex: 0 0 320px;
+            scroll-snap-align: start;
+        }
+        
+        .rail-card img {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
+        
+        /* Featured cards 3:2 ratio */
+        .rail-card.featured img {
+            aspect-ratio: 3 / 4;
+        }
+        
+        .rail-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            pointer-events: none;
+            text-align: center;
+        }
+        
+        .rail-card-title {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        .rail-card.featured .rail-card-title {
+            font-size: 16px;
+        }
+        
+        /* Library Grid View */
+        .grid-content {
+            padding: 60px 16px 20px 16px;
+        }
+        
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .card { 
+            cursor: pointer; 
+            border-radius: 8px; 
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card img { 
+            width: 100%; 
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+        
+        .card-title { 
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        /* More section */
+        .more-section {
+            padding: 0 16px 20px 16px;
+        }
+        
+        .more-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .more-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .more-card {
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .more-card img {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
+        
+        .more-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            pointer-events: none;
+            text-align: center;
+        }
+        
+        .more-card-title {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+    <div class="iphone">
+        <div id="app" class="page"></div>
+        <div id="tabBar" class="tab-bar"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://uffjlburuvsnstvgyito.supabase.co/functions/v1';
+        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY5NTM3NDgsImV4cCI6MjA1MjUyOTc0OH0.Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv7yyYVwMJE7fQ';
+
+        let currentLang = 'en';
+        let currentTab = 'home';
+        let allCategories = [];
+        let categoryData = {};
+
+        async function fetchLibraryCategories() {
+            const response = await fetch(`${SUPABASE_URL}/category`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'apikey': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+            return await response.json();
+        }
+
+        async function fetchSubcategories(category) {
+            const response = await fetch(`${SUPABASE_URL}/subcategory`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'apikey': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ category: category })
+            });
+            return await response.json();
+        }
+
+        function applyRTL() {
+            const app = document.getElementById('app');
+            if (currentLang === 'ar') {
+                app.classList.add('rtl');
+            } else {
+                app.classList.remove('rtl');
+            }
+        }
+
+        function renderTabBar() {
+            const homeText = currentLang === 'en' ? 'Home' : 'الرئيسية';
+            const libraryText = currentLang === 'en' ? 'Library' : 'مكتبة';
+            
+            document.getElementById('tabBar').innerHTML = `
+                <div class="tab-container">
+                    <div class="tab-item ${currentTab === 'home' ? 'active' : ''}" onclick="switchTab('home')">
+                        <div class="tab-icon">🏠</div>
+                        <div>${homeText}</div>
+                    </div>
+                    <div class="tab-item ${currentTab === 'library' ? 'active' : ''}" onclick="switchTab('library')">
+                        <div class="tab-icon">📚</div>
+                        <div>${libraryText}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            if (tab === 'home') {
+                showHome();
+            } else {
+                showLibraryGrid();
+            }
+            renderTabBar();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            if (currentTab === 'home') {
+                showHome();
+            } else {
+                showLibraryGrid();
+            }
+            renderTabBar();
+        }
+
+        async function showHome() {
+            currentTab = 'home';
+            
+            if (allCategories.length === 0) {
+                allCategories = await fetchLibraryCategories();
+                
+                for (const cat of allCategories) {
+                    if (!categoryData[cat.Carousel_Group_text_EN]) {
+                        categoryData[cat.Carousel_Group_text_EN] = await fetchSubcategories(cat.Carousel_Group_text_EN);
+                    }
+                }
+            }
+
+            const title = currentLang === 'en' ? 'Home' : 'الرئيسية';
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            const featuredText = currentLang === 'en' ? 'Featured' : 'مميز';
+            
+            const firstCategory = allCategories[0];
+            const firstCategoryItems = categoryData[firstCategory.Carousel_Group_text_EN];
+            const heroItem = firstCategoryItems[0];
+            
+            const heroTitle = currentLang === 'en' 
+                ? heroItem.subcategory_text_en 
+                : heroItem.subcategory_text_ar;
+            
+            const heroCategory = currentLang === 'en'
+                ? heroItem.Category_EN
+                : heroItem.Category_AR;
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <div class="header-left"></div>
+                    <div class="header-center">
+                        <h1>${title}</h1>
+                    </div>
+                    <div class="header-right">
+                        <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                    </div>
+                </div>
+                <div class="content">
+                    <!-- Hero -->
+                    <div class="hero-container">
+                        <div class="hero">
+                            <img src="${heroItem.url_focus}" alt="${heroTitle}">
+                            <div class="hero-text">
+                                <div class="hero-title">${heroTitle}</div>
+                                <div class="hero-subtitle">${heroCategory}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Featured Rail (3:2 cards with snap) - ALL categories -->
+                    <div class="rail">
+                        <div class="rail-header">
+                            <div class="rail-title">${featuredText}</div>
+                        </div>
+                        <div class="rail-scroll featured">
+                            ${allCategories.map(cat => {
+                                const displayName = currentLang === 'en' 
+                                    ? cat.Carousel_Group_text_EN 
+                                    : cat.Carousel_Group_text_AR;
+                                
+                                return `
+                                    <div class="rail-card featured" onclick='showCategoryFromFeatured("${cat.Carousel_Group_text_EN}", "${cat.url_thumbnail_view}")'>
+                                        <img src="${cat.url_thumbnail_view}" alt="${displayName}">
+                                        <div class="rail-card-overlay">
+                                            <div class="rail-card-title">${displayName}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- ALL Category Rails (smooth scrolling) -->
+                    ${allCategories.map(cat => {
+                        const railTitle = currentLang === 'en' 
+                            ? cat.Carousel_Group_text_EN 
+                            : cat.Carousel_Group_text_AR;
+                        
+                        const items = categoryData[cat.Carousel_Group_text_EN] || [];
+                        
+                        return `
+                            <div class="rail">
+                                <div class="rail-header">
+                                    <div class="rail-title">${railTitle}</div>
+                                </div>
+                                <div class="rail-scroll" data-rail="${cat.Carousel_Group_text_EN}">
+                                    ${items.map(item => {
+                                        const itemTitle = currentLang === 'en' 
+                                            ? item.subcategory_text_en 
+                                            : item.subcategory_text_ar;
+                                        
+                                        return `
+                                            <div class="rail-card" data-id="${item.ID}">
+                                                <img src="${item.url_thumbnail_view}" alt="${itemTitle}">
+                                                <div class="rail-card-overlay">
+                                                    <div class="rail-card-title">${itemTitle}</div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            applyRTL();
+            setupRailClickHandlers();
+        }
+
+        async function showLibraryGrid() {
+            currentTab = 'library';
+            
+            if (allCategories.length === 0) {
+                allCategories = await fetchLibraryCategories();
+                
+                for (const cat of allCategories) {
+                    if (!categoryData[cat.Carousel_Group_text_EN]) {
+                        categoryData[cat.Carousel_Group_text_EN] = await fetchSubcategories(cat.Carousel_Group_text_EN);
+                    }
+                }
+            }
+            
+            const title = currentLang === 'en' ? 'Library' : 'مكتبة';
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <div class="header-left"></div>
+                    <div class="header-center">
+                        <h1>${title}</h1>
+                    </div>
+                    <div class="header-right">
+                        <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                    </div>
+                </div>
+                <div class="grid-content">
+                    <div class="grid">
+                        ${allCategories.map(cat => {
+                            const displayName = currentLang === 'en' 
+                                ? cat.Carousel_Group_text_EN 
+                                : cat.Carousel_Group_text_AR;
+                            
+                            return `
+                                <div class="card" onclick='showCategoryFromLibrary("${cat.Carousel_Group_text_EN}", "${cat.url_thumbnail_view}")'>
+                                    <img src="${cat.url_thumbnail_view}" alt="${displayName}">
+                                    <div class="card-overlay">
+                                        <div class="card-title">${displayName}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            applyRTL();
+        }
+
+        // When clicked from Featured or Library - use the clicked image's Focus variant
+        function showCategoryFromFeatured(categoryKey, thumbnailUrl) {
+            // Convert thumbnail URL to focus URL
+            const focusUrl = thumbnailUrl.replace('/thumbnail_view/', '/Focus/').replace('_thumbnail_view.jpg', '_Focus.jpg');
+            showSubcategoriesWithHero(categoryKey, focusUrl);
+        }
+
+        function showCategoryFromLibrary(categoryKey, thumbnailUrl) {
+            // Convert thumbnail URL to focus URL
+            const focusUrl = thumbnailUrl.replace('/thumbnail_view/', '/Focus/').replace('_thumbnail_view.jpg', '_Focus.jpg');
+            showSubcategoriesWithHero(categoryKey, focusUrl);
+        }
+
+        async function showSubcategoriesWithHero(categoryKey, heroFocusUrl) {
+            const items = categoryData[categoryKey];
+            if (!items || items.length === 0) return;
+            
+            const backText = currentLang === 'en' ? '← Back' : '→ رجوع';
+            const moreText = currentLang === 'en' ? 'More' : 'المزيد';
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            
+            // Find the category name
+            const category = allCategories.find(cat => cat.Carousel_Group_text_EN === categoryKey);
+            const heroTitle = currentLang === 'en' 
+                ? category.Carousel_Group_text_EN 
+                : category.Carousel_Group_text_AR;
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <div class="header-left">
+                        <button class="back" onclick="${currentTab === 'home' ? 'showHome()' : 'showLibraryGrid()'}">${backText}</button>
+                    </div>
+                    <div class="header-center"></div>
+                    <div class="header-right">
+                        <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="hero-container">
+                        <div class="hero">
+                            <img src="${heroFocusUrl}" alt="${heroTitle}">
+                            <div class="hero-text">
+                                <div class="hero-title">${heroTitle}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${items.length > 0 ? `
+                        <div class="more-section">
+                            <div class="more-title">${moreText}</div>
+                            <div class="more-grid">
+                                ${items.map(item => {
+                                    const thumbTitle = currentLang === 'en' 
+                                        ? item.subcategory_text_en 
+                                        : item.subcategory_text_ar;
+                                    
+                                    return `
+                                        <div class="more-card" onclick='showDetail(${item.ID})'>
+                                            <img src="${item.url_thumbnail_view}" alt="${thumbTitle}">
+                                            <div class="more-card-overlay">
+                                                <div class="more-card-title">${thumbTitle}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            applyRTL();
+        }
+
+        function setupRailClickHandlers() {
+            document.querySelectorAll('.rail-scroll:not(.featured)').forEach(rail => {
+                let isScrolling = false;
+                let startX = 0;
+                let scrollLeft = 0;
+
+                rail.addEventListener('mousedown', (e) => {
+                    isScrolling = true;
+                    startX = e.pageX - rail.offsetLeft;
+                    scrollLeft = rail.scrollLeft;
+                });
+
+                rail.addEventListener('mousemove', (e) => {
+                    if (!isScrolling) return;
+                    e.preventDefault();
+                    const x = e.pageX - rail.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    rail.scrollLeft = scrollLeft - walk;
+                });
+
+                rail.addEventListener('mouseup', () => {
+                    isScrolling = false;
+                });
+
+                rail.addEventListener('mouseleave', () => {
+                    isScrolling = false;
+                });
+
+                rail.addEventListener('click', (e) => {
+                    const card = e.target.closest('.rail-card');
+                    if (card && Math.abs(rail.scrollLeft - scrollLeft) < 5) {
+                        const itemId = parseInt(card.dataset.id);
+                        if (itemId) showDetail(itemId);
+                    }
+                });
+            });
+        }
+
+        function showDetail(itemId) {
+            let selectedItem = null;
+            let categoryItems = [];
+            
+            for (const catKey in categoryData) {
+                const items = categoryData[catKey];
+                const found = items.find(item => item.ID === itemId);
+                if (found) {
+                    selectedItem = found;
+                    categoryItems = items;
+                    break;
+                }
+            }
+            
+            if (!selectedItem) return;
+            
+            const title = currentLang === 'en' ? selectedItem.subcategory_text_en : selectedItem.subcategory_text_ar;
+            const category = currentLang === 'en' ? selectedItem.Category_EN : selectedItem.Category_AR;
+            const langButton = currentLang === 'en' ? 'عربي' : 'EN';
+            const backText = currentLang === 'en' ? '← Back' : '→ رجوع';
+            const moreText = currentLang === 'en' ? 'More' : 'المزيد';
+            
+            const relatedItems = categoryItems.filter(item => item.ID !== itemId);
+            
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <div class="header-left">
+                        <button class="back" onclick="showHome()">${backText}</button>
+                    </div>
+                    <div class="header-center"></div>
+                    <div class="header-right">
+                        <button class="lang-toggle" onclick="toggleLanguage()">${langButton}</button>
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="hero-container">
+                        <div class="hero">
+                            <img src="${selectedItem.url_focus}" alt="${title}">
+                            <div class="hero-text">
+                                <div class="hero-title">${title}</div>
+                                <div class="hero-subtitle">${category}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${relatedItems.length > 0 ? `
+                        <div class="more-section">
+                            <div class="more-title">${moreText}</div>
+                            <div class="more-grid">
+                                ${relatedItems.map(item => {
+                                    const itemTitle = currentLang === 'en' 
+                                        ? item.subcategory_text_en 
+                                        : item.subcategory_text_ar;
+                                    
+                                    return `
+                                        <div class="more-card" onclick='showDetail(${item.ID})'>
+                                            <img src="${item.url_thumbnail_view}" alt="${itemTitle}">
+                                            <div class="more-card-overlay">
+                                                <div class="more-card-title">${itemTitle}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            applyRTL();
+        }
+
+        // Start app
+        showHome();
+        renderTabBar();
+    </script>
+</body>
+</html>

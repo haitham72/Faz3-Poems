@@ -1,0 +1,1286 @@
+{
+  "name": "Audio_Gen_power",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "dfc864a9-2f43-41c3-ac0d-541dc268d76e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.minimax.io/v1/t2a_v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-api-Z0FgZdSpHquczUOWcVA9rt-Fm5RXOXmPqvYnqcZKRyWsXf_5UI9f4dBftqDcNgkQ_VgkE5UwnfQPWCsit_c0v_AQS6DQmoiBEt42Iuhi9Wx0_Qs8iXqdMVI"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"speech-2.6-turbo\",\n  \"text\": \"{{ $json.tashkeel_for_audio }}\",\n  \"stream\": false,\n  \"voice_setting\": {\n    \"voice_id\": \"moss_audio_5c5c1f07-faa9-11f0-8952-5ace2b61f1a5\",\n    \"speed\": 1,\n    \"vol\": 1,\n    \"pitch\": 0,\n    \"text_normalization\": false,\n    \"latex_read\": false\n  },\n  \"audio_setting\": {\n    \"sample_rate\": 32000,\n    \"bitrate\": 128000,\n    \"format\": \"mp3\",\n    \"channel\": 2\n  },\n  \"pronunciation_dict\": {\n    \"tone\": [\n      \"Omg/Oh my god\"\n    ]\n  },\n  \"language_boost\": \"Arabic\",\n  \"voice_modify\": {\n    \"pitch\": 0,\n    \"intensity\": 0,\n    \"timbre\": 0\n  },\n  \"output_format\": \"url\",\n  \"subtitle_enable\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        672,
+        144
+      ],
+      "id": "83996713-f970-4224-ac40-799a6d2dd50e",
+      "name": "slow"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s",
+          "mode": "list",
+          "cachedResultName": "Diwan-Hamdan-WIP",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1212174414,
+          "mode": "list",
+          "cachedResultName": "Full_poems",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit#gid=1212174414"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "statud",
+              "lookupValue": "Ready"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "85181e3e-15f2-44cc-976d-ce85595c7fa5",
+      "name": "Get row(s) in sheet5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9323f684-73f5-4a5d-bef7-5e7c1e7ea8ba",
+                    "leftValue": "={{ $json.Audio_style }}",
+                    "rightValue": "power",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "power"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Audio_style }}",
+                    "rightValue": "=slow",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "530d0dab-7404-45f1-acaa-9ff61fee0e4b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "slow"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "192b3200-b031-423e-92db-623703bc4a44",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cb735a82-97ec-4991-8847-a5a0758f9220",
+              "name": "tashkeel_for_audio",
+              "value": "={{ $json.tashkeel_for_audio.replace(/\\n/g, \"\\\\n\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        144
+      ],
+      "id": "50c4eb0f-0343-4a0d-b8a6-e71da7fb1396",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.audio }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        880,
+        144
+      ],
+      "id": "8dc97e4b-79b7-482e-8e10-63c88058a7d6",
+      "name": "audio"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('slow').item.json.data.subtitle_file }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        144
+      ],
+      "id": "b760f250-4034-4676-abc1-b592e6bf651c",
+      "name": "audio1"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Loop Over Items').item.json.poem_id }}-{{ $('Loop Over Items').item.json.Titlecleaned }}.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En",
+          "mode": "list",
+          "cachedResultName": "AI_Audio",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1088,
+        144
+      ],
+      "id": "935e6a59-8aa3-4683-ba08-4b9326d5f9c4",
+      "name": "mp3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "EhDaI5EBjWfLCuKj",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Loop Over Items').item.json.poem_id }}-{{ $('Loop Over Items').item.json.Titlecleaned }}.txt",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En",
+          "mode": "list",
+          "cachedResultName": "AI_Audio",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1520,
+        144
+      ],
+      "id": "8ce22b61-10e0-4b49-9293-25bbf6fdcd43",
+      "name": "str",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "EhDaI5EBjWfLCuKj",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        208,
+        128
+      ],
+      "id": "1348a217-7e40-4b66-acae-c1f59ef7fa46",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.minimax.io/v1/t2a_v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-api-Z0FgZdSpHquczUOWcVA9rt-Fm5RXOXmPqvYnqcZKRyWsXf_5UI9f4dBftqDcNgkQ_VgkE5UwnfQPWCsit_c0v_AQS6DQmoiBEt42Iuhi9Wx0_Qs8iXqdMVI"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"speech-2.6-turbo\",\n  \"text\": \"{{ $json.tashkeel_for_audio }}\",\n  \"stream\": false,\n  \"voice_setting\": {\n    \"voice_id\": \"moss_audio_ed772ca0-e45b-11f0-ba81-d66d70904105\",\n    \"speed\": 1,\n    \"vol\": 1,\n    \"pitch\": 0,\n    \"text_normalization\": false,\n    \"latex_read\": false\n  },\n  \"audio_setting\": {\n    \"sample_rate\": 32000,\n    \"bitrate\": 128000,\n    \"format\": \"mp3\",\n    \"channel\": 2\n  },\n  \"pronunciation_dict\": {\n    \"tone\": [\n      \"Omg/Oh my god\"\n    ]\n  },\n  \"language_boost\": \"Arabic\",\n  \"voice_modify\": {\n    \"pitch\": 0,\n    \"intensity\": 0,\n    \"timbre\": 0\n  },\n  \"output_format\": \"url\",\n  \"subtitle_enable\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "9f82fa2c-7034-4c5d-8a24-360e963660d0",
+      "name": "slow1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cb735a82-97ec-4991-8847-a5a0758f9220",
+              "name": "tashkeel_for_audio",
+              "value": "={{ $json.tashkeel_for_audio.replace(/\\n/g, \"\\\\n\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -128
+      ],
+      "id": "09ddc6fc-0b8e-4efc-982e-916a55da8b74",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.audio }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        880,
+        -128
+      ],
+      "id": "d526aca1-9c14-45ad-9574-6e8a14f46c7a",
+      "name": "audio2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('slow1').item.json.data.subtitle_file }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        -128
+      ],
+      "id": "0b363733-e556-458b-b3d5-36fb6d6a1eee",
+      "name": "audio3"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Loop Over Items1').item.json.poem_id }}-{{ $('Loop Over Items1').item.json.Titlecleaned }}.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En",
+          "mode": "list",
+          "cachedResultName": "AI_Audio",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1088,
+        -128
+      ],
+      "id": "1ca89d8b-9725-4ba0-a1ca-9796fa185c41",
+      "name": "mp",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "EhDaI5EBjWfLCuKj",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Loop Over Items1').item.json.poem_id }}-{{ $('Loop Over Items1').item.json.Titlecleaned }}.txt",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En",
+          "mode": "list",
+          "cachedResultName": "AI_Audio",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1yMyuJJUxrTkvqXaioNnO7uz9Jn6S19En"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1520,
+        -128
+      ],
+      "id": "ea86f2d2-c815-4170-b96d-30a3ee93c3e6",
+      "name": "str1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "EhDaI5EBjWfLCuKj",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        208,
+        -144
+      ],
+      "id": "edc08d34-7ee3-477a-b8e5-b3a42da91c97",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s",
+          "mode": "list",
+          "cachedResultName": "Diwan-Hamdan-WIP",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1212174414,
+          "mode": "list",
+          "cachedResultName": "Full_poems",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit#gid=1212174414"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "poem_id": "={{ $('Loop Over Items1').item.json.poem_id }}",
+            "audio_status": "Faz3_Original_Audio",
+            "Faz3_AI": "={{ $('mp').item.json.webContentLink }}",
+            "subtitle": "={{ $json.webContentLink }}"
+          },
+          "matchingColumns": [
+            "poem_id"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "related_poems",
+              "displayName": "related_poems",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Titlecleaned",
+              "displayName": "Titlecleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Extended_Summary",
+              "displayName": "Extended_Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "قافية",
+              "displayName": "قافية",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "البحر",
+              "displayName": "البحر",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audio_status",
+              "displayName": "audio_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tashkeel_for_audio",
+              "displayName": "tashkeel_for_audio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Faz3_AI",
+              "displayName": "Faz3_AI",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "subtitle",
+              "displayName": "subtitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Faz3_Original_Audio",
+              "displayName": "Faz3_Original_Audio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Ai_Song",
+              "displayName": "Ai_Song",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_Focus",
+              "displayName": "Drive_New_Focus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_thumbnail_Raw",
+              "displayName": "Drive_New_thumbnail_Raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_thumbnail_view",
+              "displayName": "Drive_New_thumbnail_view",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "entities",
+              "displayName": "entities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "places",
+              "displayName": "places",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "subjects",
+              "displayName": "subjects",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "religion",
+              "displayName": "religion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sentiments",
+              "displayName": "Sentiments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1728,
+        -128
+      ],
+      "id": "efea0487-ad28-4643-bf84-bd3a1f0d6d50",
+      "name": "Append or update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s",
+          "mode": "list",
+          "cachedResultName": "Diwan-Hamdan-WIP",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1212174414,
+          "mode": "list",
+          "cachedResultName": "Full_poems",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lb5N8aEJbgQtZe3qkXoucD8T9DzS-a2ohtvW7v3715s/edit#gid=1212174414"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "poem_id": "={{ $('Loop Over Items').item.json.poem_id }}",
+            "audio_status": "Faz3_Original_Audio",
+            "Faz3_AI": "={{ $('mp3').item.json.webContentLink }}",
+            "subtitle": "={{ $json.webContentLink }}"
+          },
+          "matchingColumns": [
+            "poem_id"
+          ],
+          "schema": [
+            {
+              "id": "poem_id",
+              "displayName": "poem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "related_poems",
+              "displayName": "related_poems",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title_raw",
+              "displayName": "Title_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_raw",
+              "displayName": "Poem_line_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Titlecleaned",
+              "displayName": "Titlecleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poem_line_cleaned",
+              "displayName": "Poem_line_cleaned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Extended_Summary",
+              "displayName": "Extended_Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "قافية",
+              "displayName": "قافية",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "البحر",
+              "displayName": "البحر",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audio_status",
+              "displayName": "audio_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tashkeel_for_audio",
+              "displayName": "tashkeel_for_audio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Faz3_AI",
+              "displayName": "Faz3_AI",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "subtitle",
+              "displayName": "subtitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Faz3_Original_Audio",
+              "displayName": "Faz3_Original_Audio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Ai_Song",
+              "displayName": "Ai_Song",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_Focus",
+              "displayName": "Drive_New_Focus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_thumbnail_Raw",
+              "displayName": "Drive_New_thumbnail_Raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Drive_New_thumbnail_view",
+              "displayName": "Drive_New_thumbnail_view",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "entities",
+              "displayName": "entities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "places",
+              "displayName": "places",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "subjects",
+              "displayName": "subjects",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "religion",
+              "displayName": "religion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sentiments",
+              "displayName": "Sentiments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1728,
+        144
+      ],
+      "id": "de99de41-dd39-4eb4-905e-61340a7b0c27",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet5": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slow": {
+      "main": [
+        [
+          {
+            "node": "audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "slow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audio": {
+      "main": [
+        [
+          {
+            "node": "mp3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audio1": {
+      "main": [
+        [
+          {
+            "node": "str",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mp3": {
+      "main": [
+        [
+          {
+            "node": "audio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "str": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slow1": {
+      "main": [
+        [
+          {
+            "node": "audio2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "slow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audio2": {
+      "main": [
+        [
+          {
+            "node": "mp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audio3": {
+      "main": [
+        [
+          {
+            "node": "str1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mp": {
+      "main": [
+        [
+          {
+            "node": "audio3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "str1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "04bbfb8f-e0e0-42c8-b172-be4fe2a127a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b33e808ea3a7adcb981912ea69060c30d87f8a9969db580f521dcc2fe15594e8"
+  },
+  "id": "fSE3IjrqpamOxQTT",
+  "tags": []
+}

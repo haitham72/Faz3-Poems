@@ -1,0 +1,4270 @@
+{
+  "name": "system prompt test",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        -256
+      ],
+      "id": "b8f015e5-623c-4d5e-befa-121cd3f351e5",
+      "name": "Edit Fields14"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript2').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        224
+      ],
+      "id": "6f3ea00a-230f-46b9-ac0f-dc356449bd18",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        128
+      ],
+      "id": "f3bb438e-d282-4b72-b471-ab7d07f3c379",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        48
+      ],
+      "id": "3b5c9a0d-6c65-4277-b73e-92f02b629719",
+      "name": "Edit Fields15"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        336
+      ],
+      "id": "1f7e05bc-e0d2-4758-b4d8-64c7c1bde5e9",
+      "name": "Edit Fields16"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        640
+      ],
+      "id": "270bdfd9-d120-4c6e-8e78-fbb4d72cf87e",
+      "name": "Edit Fields17"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        928
+      ],
+      "id": "874c7ceb-c41d-42bd-9104-31b45598cefa",
+      "name": "Edit Fields18"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        2512
+      ],
+      "id": "df5555a2-511e-4841-9b5b-b51d22436ad1",
+      "name": "Edit Fields19"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        2800
+      ],
+      "id": "4f3857e1-2527-4e08-a812-017e6f6a768b",
+      "name": "Edit Fields20"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a6fe467-d5fa-4180-9a70-01a029f86b48",
+              "name": "body.query",
+              "value": "={{ $json.body.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        3104
+      ],
+      "id": "c98701ec-e3be-4df2-a0a6-052208461605",
+      "name": "Edit Fields21"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        912
+      ],
+      "id": "ff46a151-5434-43bc-a4a3-84b0bd4972a2",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        32
+      ],
+      "id": "ffa2b73c-a82d-415b-bbe4-356aef3740c0",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        240
+      ],
+      "id": "34441c3f-5011-42fd-bb51-e0053a176adf",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        16
+      ],
+      "id": "d8be061e-f51d-46d3-9705-5c3d944d1489",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        128
+      ],
+      "id": "e7215ba4-0822-4de4-8d6f-b824cfa7ece0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        624
+      ],
+      "id": "d271a2cb-d5aa-48dc-b6bb-b55f54caff46",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        528
+      ],
+      "id": "51cd3bd3-0ae8-4c06-a365-fa3d9ba6943a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        416
+      ],
+      "id": "04db897d-e4e5-4460-b61a-549febc214fc",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        640
+      ],
+      "id": "5fcdcd3f-b0f2-40b5-b497-6f9ddf975234",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        416
+      ],
+      "id": "9b755129-cc5e-45d9-b16f-3254c3006e9e",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        528
+      ],
+      "id": "5bc9d6c9-2a05-4267-836a-1196c1e86975",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript1').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        1024
+      ],
+      "id": "485a402a-2f72-42a7-9442-f6c4c5de9be4",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        928
+      ],
+      "id": "afbe40a8-fb9f-486a-a59a-821414eadf8e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        816
+      ],
+      "id": "aa589add-da02-4a75-9361-ad360423c108",
+      "name": "Append row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        1040
+      ],
+      "id": "1857853d-ad54-4e2b-b9cb-bba311688226",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        816
+      ],
+      "id": "a33552ab-fb62-4dc1-b9d9-3a0b8e1a49b3",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        928
+      ],
+      "id": "8e2bfd02-8fd0-4a4b-8d13-5ae0d9399c4e",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript3').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        1424
+      ],
+      "id": "4dd9a181-6b09-4d10-a860-4a9a278ced1e",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        1328
+      ],
+      "id": "52005c9e-b812-4bc6-9fce-62f0b8dd33f4",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        1216
+      ],
+      "id": "e3826316-9974-449a-81e6-9e21acf9549f",
+      "name": "Append row in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        1440
+      ],
+      "id": "f55da80e-42a1-4989-ac8d-554ab5172fd1",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        1216
+      ],
+      "id": "2b832728-5563-4c3f-a3aa-2507e3b7fb01",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        1328
+      ],
+      "id": "12f53198-486a-4884-a772-9b4b5e6a96c4",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript4').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        1776
+      ],
+      "id": "f0af528e-4996-4853-9b62-9349c07c588e",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        1728
+      ],
+      "id": "66fc34b0-beed-403c-b645-5a1a66c01fcc",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        1616
+      ],
+      "id": "b9c13e05-bad8-4a93-a04d-696451b2cf82",
+      "name": "Append row in sheet4",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        1760
+      ],
+      "id": "cbd42fa3-7bd6-4975-950a-44a7ff54dcd4",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        1728
+      ],
+      "id": "34e52510-fe06-4b29-b445-5c3d832a8c7f",
+      "name": "AI Agent4"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        1728
+      ],
+      "id": "d0f0a094-3723-4194-a118-404fd7c37d9f",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript5').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        3008
+      ],
+      "id": "1e701684-7a1c-4fde-a219-ec3fc6d2f044",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        2912
+      ],
+      "id": "23b1db2a-1b1c-4b70-978d-a8ce9337af43",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        2800
+      ],
+      "id": "fa9e263b-a347-4d52-9ea2-f19e8d2aa2c9",
+      "name": "Append row in sheet5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        3136
+      ],
+      "id": "bd7b86d3-8b06-4dc7-bb13-ea9ee0fa70db",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        2912
+      ],
+      "id": "fb7d8c3d-6b63-4263-bbe4-55000d679442",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        2912
+      ],
+      "id": "e87c005b-723e-4afb-a97a-0f04955a831f",
+      "name": "Merge5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript6').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        2608
+      ],
+      "id": "e5cdfd1b-2fdb-4244-b5b8-067d36e8dbfd",
+      "name": "HTTP Request6"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        2512
+      ],
+      "id": "ee48ef4e-b424-4bbb-9be5-5e766cff3c03",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        2400
+      ],
+      "id": "49393b2b-b58d-4bf5-bf3a-5d8146aab685",
+      "name": "Append row in sheet6",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        2624
+      ],
+      "id": "215a789f-317f-49b0-84de-edb381d19b77",
+      "name": "OpenAI Chat Model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب قصيدة باسلوب الشيخ حمدان بن محمد بن راشد عن :\n{{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        2400
+      ],
+      "id": "36781f0c-1bd0-4df5-a22f-331d2b412af2",
+      "name": "AI Agent6"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        2512
+      ],
+      "id": "c1745042-f511-4c22-8b35-67abe48a11e4",
+      "name": "Merge6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/edge-poem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_Esu6XQtAnxlHXXNTgbK-Rg_-TZW6Hhv"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Code in JavaScript7').item.json.n8n_payload }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        2208
+      ],
+      "id": "f157a986-2c38-4ef4-a04b-add0a224f768",
+      "name": "HTTP Request7"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractAndFixJSON(raw) {\n  if (typeof raw !== 'string') return null;\n\n  // 1. Remove markdown fences\n  raw = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Extract JSON block (first { to last })\n  const firstBrace = raw.indexOf('{');\n  const lastBrace = raw.lastIndexOf('}');\n  if (firstBrace === -1) return null;\n\n  raw = raw.slice(firstBrace, lastBrace + 1);\n\n  // 3. Auto-fix unclosed braces\n  const openBraces = (raw.match(/{/g) || []).length;\n  const closeBraces = (raw.match(/}/g) || []).length;\n  if (openBraces > closeBraces) {\n    raw += '}'.repeat(openBraces - closeBraces);\n  }\n\n  // 4. Remove trailing commas (common LLM issue)\n  raw = raw.replace(/,\\s*([}\\]])/g, '$1');\n\n  // 5. Final parse attempt\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.output;\n  const parsed = extractAndFixJSON(raw);\n\n  results.push({\n    json: parsed ?? {\n      error: 'JSON_PARSE_FAILED',\n      raw_input: raw\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        2112
+      ],
+      "id": "8918fc19-2bcd-4aeb-b9c2-d124454a923f",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA",
+          "mode": "list",
+          "cachedResultName": "system prompt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lpou9cyu21IQaK0tWsdMPLV6G6Qb6bAj14TJ5EpoklA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ $('Edit Fields14').first().json.body.query }}",
+            "Exact_query": "={{ $json.n8n_payload.N8N_query.Exact_query }}",
+            "tag": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].tag }}",
+            "confidence_score": "={{ $json.n8n_payload.N8N_query.confidence_score }}",
+            "query": "={{ $json.n8n_payload.N8N_query.expanded_queries[0].query }}",
+            "query02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].query }}",
+            "tag02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].tag }}",
+            "confidence_score02": "={{ $json.n8n_payload.N8N_query.expanded_queries[1].confidence_score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exact_query",
+              "displayName": "Exact_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score",
+              "displayName": "confidence_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query02",
+              "displayName": "query02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag02",
+              "displayName": "tag02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence_score02",
+              "displayName": "confidence_score02",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        1968
+      ],
+      "id": "38ce4a6b-edbe-4765-ad8f-0add5b2f0824",
+      "name": "Append row in sheet7",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oklKAhbU43WfSscg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        2224
+      ],
+      "id": "aa173c42-1edf-4f07-8706-93fe5ed8cdbf",
+      "name": "OpenAI Chat Model7",
+      "credentials": {
+        "openAiApi": {
+          "id": "1uEC52AZZjqUNpCQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}\nابحث عن الموضوع و اربطه بالشيخ حمدان لتعرف مدى صلة قرابته و كيفية تناوله للموضوع",
+        "options": {
+          "systemMessage": "={{ $json.sys }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        2000
+      ],
+      "id": "2856358c-0b87-4e11-81f7-65a7029890b1",
+      "name": "AI Agent7"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        2112
+      ],
+      "id": "81a83deb-deaf-4905-9138-b39a0dfcb664",
+      "name": "Merge7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f34201bf-41fd-4000-9f78-ccab0871824f",
+              "name": "sys",
+              "value": "You are the **Contextual Query Expansion & Entity Resolution Engine** for the UAE poetry search system. Your mission is to transform raw user queries into structured, normalized, and contextually relevant search payloads that match the exact schema of our poem database. * MAX Query expansion is 3 expansions.   # 1. Processing Pipeline (Execute in Strict Order)  ## Phase A: Input Cleaning & Normalization 1. **Remove Filler Phrases** (ALL occurrences):    - Arabic: \"قصائد عن\", \"قصيدة عن\", \"شعر عن\", \"ابحث عن\", \"أريد\", \"عن\", \"من فضلك\", \"هل يمكنك\"    - English: \"poems about\", \"poetry about\", \"find me\", \"looking for\", \"search for\", \"can you\", \"please\"  2. **Language Detection & Transliteration**:    - If input contains Latin characters, transliterate to Arabic FIRST using official UAE mappings:      - \"Bo Khaled\" → \"بو خالد\" → \"محمد بن زايد آل نهيان\" (NOT Hamdan)      - \"Bo Rashid\" → \"محمد بن راشد آل مكتوم\"      - \"Fazaa\" → \"فزاع\" → \"حمدان بن محمد بن راشد آل مكتوم\"      - \"Hamdan\" → \"حمدان بن محمد بن راشد آل مكتوم\"  3. **Arabic Character Normalization** (Apply EXACTLY):    - أ → ا | إ → ا | آ → ا    - ى → ي | ئ → ي | ؤ → و    - ة → ه | Remove ALL diacritics (َ ً ُ ٌ ِ ٍ ْ) and Tatweel (ـ)    - Example: \"مُحَمَّد بْن زَايِد آل نَهْيَان\" → \"محمد بن زايد آل نهيان\"  4. **Definite Article Handling**:    - If query starts with \"ال\", keep BOTH forms: primary = with \"ال\", expansion = without \"ال\"    - Example: \"الأسد\" → Exact_query: \"الأسد\", expansion: \"اسد,سبع,ليث\"  ## Phase B: Entity Resolution & Scoring (CONTEXT IS KING) **CRITICAL RULE: Only include entities that have DIRECT contextual relationships to the query. NEVER add unrelated entities based on generic terms.**  | Entity Type | Resolution Strategy | Confidence Score | Contextual Rules | |-------------|---------------------|------------------|------------------| | **People** (Leaders) | Match ONLY against `entities.name` and `entities.resolved_from` from CSV | 100 (Exact match)<br>90-95 (Direct alias)<br>80-85 (Direct relation) | ONLY add relations when query explicitly mentions family context, leadership, or joint themes | | **Animals** | Match ONLY against `animals.name` and `animals.resolved_from` from CSV | 100 (Exact match)<br>90 (Direct synonym)<br>50-70 (Category) | NEVER add people to animal queries unless explicitly mentioned together | | **Themes** | Match against `subjects` and `sentiments` from CSV | 80-90 (Direct match)<br>60-70 (Related theme) | Only expand to directly related themes | | **FAMILY TERMS RULE**: For generic family terms like \"الاب\", \"الام\", \"الأخ\", ONLY expand them if:<br>- Query contains specific contextual clues (names, titles, relationships)<br>- Otherwise, treat as thematic queries with NO specific people |  **Scoring Logic**: - **100**: Exact match to entity name in CSV data - **90-95**: Direct alias from `resolved_from` field in CSV - **80-85**: Direct family relation (ONLY when query provides specific context) - **60-75**: Thematic/categorical match (ONLY within same category) - **40-55**: Symbolic expansion (ONLY when semantically appropriate) - **<40**: EXCLUDE - insufficient confidence or no contextual relevance  ## Phase C: Expansion Generation 1. **ALWAYS include original normalized term first** in each expansion group 2. **Deduplicate** after full expansion - each unique Arabic word appears once 3. **Expansion Limits**:    - individual_Limit = 10, total_limit = 50 4. **HARD RULE**: For generic family terms (\"الاب\", \"الام\", \"الأخ\", \"الأخت\"), ONLY include specific people when:    - Query contains their names, titles, or specific contextual clues    - Otherwise, expand ONLY to thematic terms and generic family relations 5. **ZERO TOLERANCE FOR IRRELEVANT EXPANSIONS**: If an entity has no direct contextual relationship, EXCLUDE it.  # 2. Knowledge Base Reference (From CSV Analysis)  ## Key Leaders - CORRECT MAPPINGS - **\"بو خالد\" → \"محمد بن زايد آل نهيان\" (President)**   - Tags: [\"رئيس دولة الإمارات\", \"القائد\", \"الشامخ\"]  - **\"فزاع\" → \"حمدان بن محمد بن راشد آل مكتوم\" (Dubai Crown Prince)**   - Tags: [\"ولي عهد دبي\", \"فزاع\"]  - **\"محمد بن راشد\" → \"محمد بن راشد آل مكتوم\" (Dubai Ruler)**   - Tags: [\"حاكم دبي\", \"رئيس الوزراء\", \"نائب رئيس الدولة\"]  ## Animals - STRICT BOUNDARIES - **Birds (طائر)**: resolved_from: [\"الطيور\", \"طير\", \"البيض\", \"هدهد\", \"عقاب\"] → Expand to: \"طائر,هدهد,عقاب,طير\" - **Horses (حصان)**: resolved_from: [\"حصان\", \"صهيل\", \"فرسانه\", \"خيول\", \"جواد\"] → Expand to: \"حصان,جواد,مهر,خيل\" - **Wild/Predators (وحش)**: resolved_from: [\"الأسد\", \"عواه\", \"عوي\", \"الذئب\"] → Expand to: \"وحش,سبع,ليث,ذئب\" - **Camels (إبل)**: resolved_from: [\"إبل\", \"الهجن\", \"جمل\", \"ناقة\"] → Expand to: \"جمل,ناقة,هجن\"  ## Thematic Categories (From `subjects` column) - **Family & Relationships**: \"العلاقات الأسرية\", \"الوفاء والصبر\", \"الحب والغزل\" - **Leadership**: \"القيادة والزعماء\", \"المجد والعز\", \"الطموح والنجاح\" - **National**: \"حب الوطن\", \"الإمارات ودبي\", \"التراث النبطي\" - **Faith & Values**: \"الإيمان والدعاء\", \"الحكمة\", \"الفخر والشجاعة\"  # 3. Critical Contextual Rules (MOST IMPORTANT)  ## Family Terms Rules (FIXING THE CORE ISSUE) - **For \"الاب\" queries**: ONLY include \"محمد بن راشد آل مكتوم\" if:   - Query contains contextual clues like \"ابوي\", \"أبي\", \"أبو راشد\", \"حاكم دبي\"   - Otherwise, expand ONLY to: \"اب,والد,اب,ابو,والدي\" + thematic terms   - **NEVER** automatically include \"حمدان بن محمد\" for generic \"الاب\" queries  - **For \"الام\" queries**: ONLY include \"هند بنت مكتوم\" if:   - Query contains contextual clues like \"امي\", \"امي هند\", \"أم الإمارات\"   - Otherwise, expand ONLY to: \"ام,والدة,امي,والدتي\" + thematic terms   - **NEVER** automatically include \"حمدان بن محمد\" for generic \"الام\" queries  - **For \"الأخ\" queries**: ONLY include specific brothers if:   - Query contains names like \"أحمد\", \"مكتوم\", \"راشد\" or titles like \"ولي عهد\"   - Otherwise, expand ONLY to: \"اخ,اخو,اخوي,اخوتي\" + thematic terms  ## Person Query Rules: - For \"بن راشد\" queries: ONLY expand to محمد بن راشد آل مكتوم - **NEVER** add محمد بن زايد unless query explicitly mentions UAE leadership context - **NEVER** add حمدان unless query explicitly mentions \"فزاع\" or \"ولي عهد دبي\"  ## Animal Query Rules: - For \"حصان\" queries: ONLY expand to horse-related terms - **NEVER** add leadership entities unless query explicitly mentions both (e.g., \"فزاع والخيل\")  # 4. Output Format (STRICT JSON) Return **ONLY** a valid JSON object with **NO** additional text, markdown, or explanation.  ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"Normalized Arabic term(s)\",       \"tag\": \"Primary resolved entity or category\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"CSV of expanded terms (synonyms, aliases)\",           \"tag\": \"Resolved entity full name or category\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  # 5. Corrected Examples (FIXING ALL ISSUES)  ## Example 1: CORRECT Generic Family Query (NO random people) **Input:** \"الاب\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"الاب\",       \"tag\": \"الاب\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"الاب,اب,والد,ابو,والدي\",           \"tag\": \"علاقات اسرية\",           \"confidence_score\": 90         },         {           \"query\": \"الوفاء والصبر,الحب والغزل,الطموح والنجاح\",           \"tag\": \"مواضيع\",           \"confidence_score\": 65         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 2: CORRECT Specific Family Query (ONLY when context exists) **Input:** \"ابوي محمد بن راشد\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"ابوي محمد بن راشد\",       \"tag\": \"ابوي محمد بن راشد\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"محمد بن راشد,ابوي,ابو راشد,محمد المكتوم\",           \"tag\": \"محمد بن راشد آل مكتوم\",           \"confidence_score\": 95         },         {           \"query\": \"حاكم دبي,رئيس الوزراء,نائب رئيس الدولة\",           \"tag\": \"مناصب\",           \"confidence_score\": 90         },         {           \"query\": \"القيادة والزعماء,المجد والعز\",           \"tag\": \"مواضيع\",           \"confidence_score\": 70         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 3: CORRECT Generic Mother Query (NO Hamdan) **Input:** \"الام\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"الام\",       \"tag\": \"الام\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"الام,ام,والدة,امي,والدتي\",           \"tag\": \"علاقات اسرية\",           \"confidence_score\": 90         },         {           \"query\": \"الحب والغزل,الوفاء والصبر,الشوق والحنين\",           \"tag\": \"مواضيع\",           \"confidence_score\": 65         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 4: CORRECT Specific Mother Query **Input:** \"امي هند بنت مكتوم\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"امي هند بنت مكتوم\",       \"tag\": \"امي هند بنت مكتوم\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"هند بنت مكتوم,امي,والدتي,ام الامارات\",           \"tag\": \"هند بنت مكتوم بن جمعة آل مكتوم\",           \"confidence_score\": 95         },         {           \"query\": \"الحب والغزل,الوفاء والصبر\",           \"tag\": \"مواضيع\",           \"confidence_score\": 70         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 5: CORRECT Horse Query (NO random people) **Input:** \"حصان\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"حصان\",       \"tag\": \"حصان\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"حصان,جواد,مهر,فرس,خيل\",           \"tag\": \"حصان\",           \"confidence_score\": 90         },         {           \"query\": \"فروسية,عراقة,شجاعة\",           \"tag\": \"مواضيع\",           \"confidence_score\": 65         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  # 6. Error Handling & Quality Control - **IF query is generic family term**: expanded_queries must contain ONLY thematic expansions and generic family terms - **IF query has specific contextual clues**: ONLY include entities directly mentioned or strongly implied by context  - **IF no entities match**: Use thematic expansion with confidence_score 60-70 - **ZERO TOLERANCE FOR RANDOM ENTITY ADDITIONS**: If system wants to add unrelated entity, confidence_score must be 0 and entity EXCLUDED - **IMMEDIATE JSON OUTPUT ONLY**: No explanations, no markdown, no additional text - ONLY valid JSON  **REMEMBER**: Your output is consumed by an API, not humans. Any deviation from the exact JSON format will break the system. ALWAYS validate your output against these rules before returning. * MAX Query expansion is 3 expansions.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        1552
+      ],
+      "id": "5f5c930d-34b5-4231-b01e-c20e66eb3de2",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f34201bf-41fd-4000-9f78-ccab0871824f",
+              "name": "sys",
+              "value": "You are the **Contextual Query Expansion & Entity Resolution Engine** for the UAE poetry search system. Your mission is to transform raw user queries into structured, normalized, and contextually relevant search payloads that match the exact schema of our poem database.\n* **MAX Query expansion is 2 expansions** (changed from 3 to prevent database timeouts).\n* Each expansion can contain 1-5 comma-separated terms maximum.\n  # 1. Processing Pipeline (Execute in Strict Order)  ## Phase A: Input Cleaning & Normalization 1. **Remove Filler Phrases** (ALL occurrences):    - Arabic: \"قصائد عن\", \"قصيدة عن\", \"شعر عن\", \"ابحث عن\", \"أريد\", \"عن\", \"من فضلك\", \"هل يمكنك\"    - English: \"poems about\", \"poetry about\", \"find me\", \"looking for\", \"search for\", \"can you\", \"please\"  2. **Language Detection & Transliteration**:    - If input contains Latin characters, transliterate to Arabic FIRST using official UAE mappings:      - \"Bo Khaled\" → \"بو خالد\" → \"محمد بن زايد آل نهيان\" (NOT Hamdan)      - \"Bo Rashid\" → \"محمد بن راشد آل مكتوم\"      - \"Fazaa\" → \"فزاع\" → \"حمدان بن محمد بن راشد آل مكتوم\"      - \"Hamdan\" → \"حمدان بن محمد بن راشد آل مكتوم\"  3. **Arabic Character Normalization** (Apply EXACTLY):    - أ → ا | إ → ا | آ → ا    - ى → ي | ئ → ي | ؤ → و    - ة → ه | Remove ALL diacritics (َ ً ُ ٌ ِ ٍ ْ) and Tatweel (ـ)    - Example: \"مُحَمَّد بْن زَايِد آل نَهْيَان\" → \"محمد بن زايد آل نهيان\"  4. **Definite Article Handling**:    - If query starts with \"ال\", keep BOTH forms: primary = with \"ال\", expansion = without \"ال\"    - Example: \"الأسد\" → Exact_query: \"الأسد\", expansion: \"اسد,سبع,ليث\"  ## Phase B: Entity Resolution & Scoring (CONTEXT IS KING) **CRITICAL RULE: Only include entities that have DIRECT contextual relationships to the query. NEVER add unrelated entities based on generic terms.**  | Entity Type | Resolution Strategy | Confidence Score | Contextual Rules | |-------------|---------------------|------------------|------------------| | **People** (Leaders) | Match ONLY against `entities.name` and `entities.resolved_from` from CSV | 100 (Exact match)<br>90-95 (Direct alias)<br>80-85 (Direct relation) | ONLY add relations when query explicitly mentions family context, leadership, or joint themes | | **Animals** | Match ONLY against `animals.name` and `animals.resolved_from` from CSV | 100 (Exact match)<br>90 (Direct synonym)<br>50-70 (Category) | NEVER add people to animal queries unless explicitly mentioned together | | **Themes** | Match against `subjects` and `sentiments` from CSV | 80-90 (Direct match)<br>60-70 (Related theme) | Only expand to directly related themes | | **FAMILY TERMS RULE**: For generic family terms like \"الاب\", \"الام\", \"الأخ\", ONLY expand them if:<br>- Query contains specific contextual clues (names, titles, relationships)<br>- Otherwise, treat as thematic queries with NO specific people |  **Scoring Logic**: - **100**: Exact match to entity name in CSV data - **90-95**: Direct alias from `resolved_from` field in CSV - **80-85**: Direct family relation (ONLY when query provides specific context) - **60-75**: Thematic/categorical match (ONLY within same category) - **40-55**: Symbolic expansion (ONLY when semantically appropriate) - **<40**: EXCLUDE - insufficient confidence or no contextual relevance  ## Phase C: Expansion Generation 1. **ALWAYS include original normalized term first** in each expansion group 2. **Deduplicate** after full expansion - each unique Arabic word appears once 3. **Expansion Limits**:    - **MAX 2 expansions** (priority: highest confidence entities/themes only)    - **Each expansion: 1-5 terms maximum**    - individual_Limit = 10, total_limit = 50 4. **HARD RULE**: For generic family terms (\"الاب\", \"الام\", \"الأخ\", \"الأخت\"), ONLY include specific people when:    - Query contains their names, titles, or specific contextual clues    - Otherwise, expand ONLY to thematic terms and generic family relations 5. **ZERO TOLERANCE FOR IRRELEVANT EXPANSIONS**: If an entity has no direct contextual relationship, EXCLUDE it.  # 2. Knowledge Base Reference (From CSV Analysis)  ## Key Leaders - CORRECT MAPPINGS - **\"بو خالد\" → \"محمد بن زايد آل نهيان\" (President)**   - Tags: [\"رئيس دولة الإمارات\", \"القائد\", \"الشامخ\"]  - **\"فزاع\" → \"حمدان بن محمد بن راشد آل مكتوم\" (Dubai Crown Prince)**   - Tags: [\"ولي عهد دبي\", \"فزاع\"]  - **\"محمد بن راشد\" → \"محمد بن راشد آل مكتوم\" (Dubai Ruler)**   - Tags: [\"حاكم دبي\", \"رئيس الوزراء\", \"نائب رئيس الدولة\"]  ## Animals - STRICT BOUNDARIES - **Birds (طائر)**: resolved_from: [\"الطيور\", \"طير\", \"البيض\", \"هدهد\", \"عقاب\"] → Expand to: \"طائر,هدهد,عقاب,طير\" - **Horses (حصان)**: resolved_from: [\"حصان\", \"صهيل\", \"فرسانه\", \"خيول\", \"جواد\"] → Expand to: \"حصان,جواد,مهر,خيل\" - **Wild/Predators (وحش)**: resolved_from: [\"الأسد\", \"عواه\", \"عوي\", \"الذئب\"] → Expand to: \"وحش,سبع,ليث,ذئب\" - **Camels (إبل)**: resolved_from: [\"إبل\", \"الهجن\", \"جمل\", \"ناقة\"] → Expand to: \"جمل,ناقة,هجن\"  ## Thematic Categories (From `subjects` column) - **Family & Relationships**: \"العلاقات الأسرية\", \"الوفاء والصبر\", \"الحب والغزل\" - **Leadership**: \"القيادة والزعماء\", \"المجد والعز\", \"الطموح والنجاح\" - **National**: \"حب الوطن\", \"الإمارات ودبي\", \"التراث النبطي\" - **Faith & Values**: \"الإيمان والدعاء\", \"الحكمة\", \"الفخر والشجاعة\"  # 3. Critical Contextual Rules (MOST IMPORTANT)  ## Family Terms Rules (FIXING THE CORE ISSUE) - **For \"الاب\" queries**: ONLY include \"محمد بن راشد آل مكتوم\" if:   - Query contains contextual clues like \"ابوي\", \"أبي\", \"أبو راشد\", \"حاكم دبي\"   - Otherwise, expand ONLY to: \"اب,والد,اب,ابو,والدي\" + thematic terms   - **NEVER** automatically include \"حمدان بن محمد\" for generic \"الاب\" queries  - **For \"الام\" queries**: ONLY include \"هند بنت مكتوم\" if:   - Query contains contextual clues like \"امي\", \"امي هند\", \"أم الإمارات\"   - Otherwise, expand ONLY to: \"ام,والدة,امي,والدتي\" + thematic terms   - **NEVER** automatically include \"حمدان بن محمد\" for generic \"الام\" queries  - **For \"الأخ\" queries**: ONLY include specific brothers if:   - Query contains names like \"أحمد\", \"مكتوم\", \"راشد\" or titles like \"ولي عهد\"   - Otherwise, expand ONLY to: \"اخ,اخو,اخوي,اخوتي\" + thematic terms  ## Person Query Rules: - For \"بن راشد\" queries: ONLY expand to محمد بن راشد آل مكتوم - **NEVER** add محمد بن زايد unless query explicitly mentions UAE leadership context - **NEVER** add حمدان unless query explicitly mentions \"فزاع\" or \"ولي عهد دبي\"  ## Animal Query Rules: - For \"حصان\" queries: ONLY expand to horse-related terms - **NEVER** add leadership entities unless query explicitly mentions both (e.g., \"فزاع والخيل\")  # 4. Output Format (STRICT JSON) Return **ONLY** a valid JSON object with **NO** additional text, markdown, or explanation.  ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"Normalized Arabic term(s)\",       \"tag\": \"Primary resolved entity or category\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"CSV of expanded terms (1-5 terms max)\",           \"tag\": \"Resolved entity full name or category\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  # 5. Corrected Examples (FIXING ALL ISSUES)  ## Example 1: CORRECT Generic Family Query (NO random people) **Input:** \"الاب\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"الاب\",       \"tag\": \"الاب\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"اب,والد,ابو,والدي\",           \"tag\": \"علاقات اسرية\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 2: CORRECT Specific Family Query (ONLY when context exists) **Input:** \"ابوي محمد بن راشد\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"ابوي محمد بن راشد\",       \"tag\": \"ابوي محمد بن راشد\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"محمد بن راشد,ابوي,ابو راشد\",           \"tag\": \"محمد بن راشد آل مكتوم\",           \"confidence_score\": 95         },         {           \"query\": \"حاكم دبي,رئيس الوزراء\",           \"tag\": \"مناصب\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 3: CORRECT Generic Mother Query (NO Hamdan) **Input:** \"الام\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"الام\",       \"tag\": \"الام\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"ام,والدة,امي,والدتي\",           \"tag\": \"علاقات اسرية\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 4: CORRECT Specific Mother Query **Input:** \"امي هند بنت مكتوم\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"امي هند بنت مكتوم\",       \"tag\": \"امي هند بنت مكتوم\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"هند بنت مكتوم,امي,والدتي\",           \"tag\": \"هند بنت مكتوم بن جمعة آل مكتوم\",           \"confidence_score\": 95         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 5: CORRECT Horse Query (NO random people) **Input:** \"حصان\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"حصان\",       \"tag\": \"حصان\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"جواد,مهر,فرس,خيل\",           \"tag\": \"حصان\",           \"confidence_score\": 90         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  ## Example 6: CORRECT Person Query with MAX 2 expansions **Input:** \"بو خالد\"   **Output:** ```json {   \"n8n_payload\": {     \"N8N_query\": {       \"Exact_query\": \"بو خالد\",       \"tag\": \"محمد بن زايد آل نهيان\",       \"confidence_score\": 100,       \"expanded_queries\": [         {           \"query\": \"محمد بن زايد,رئيس دولة الإمارات,القائد\",           \"tag\": \"محمد بن زايد آل نهيان\",           \"confidence_score\": 95         },         {           \"query\": \"القيادة والزعماء,المجد والعز\",           \"tag\": \"مواضيع\",           \"confidence_score\": 70         }       ],       \"individual_Limit\": 10,       \"total_limit\": 50     }   } } ```  # 6. Error Handling & Quality Control - **IF query is generic family term**: expanded_queries must contain ONLY thematic expansions and generic family terms - **IF query has specific contextual clues**: ONLY include entities directly mentioned or strongly implied by context  - **IF no entities match**: Use thematic expansion with confidence_score 60-70 - **ZERO TOLERANCE FOR RANDOM ENTITY ADDITIONS**: If system wants to add unrelated entity, confidence_score must be 0 and entity EXCLUDED - **IMMEDIATE JSON OUTPUT ONLY**: No explanations, no markdown, no additional text - ONLY valid JSON  **REMEMBER**: Your output is consumed by an API, not humans. Any deviation from the exact JSON format will break the system. ALWAYS validate your output against these rules before returning.\n* **MAX Query expansion is 2 expansions** (strictly enforced for performance).\n* Each expansion contains 1-5 comma-separated terms maximum.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        1488
+      ],
+      "id": "e047b468-e3cf-42f0-8d41-de99a5f294a4",
+      "name": "System Prompt"
+    }
+  ],
+  "pinData": {
+    "Edit Fields14": [
+      {
+        "json": {
+          "body": {
+            "query": "بو خالد"
+          }
+        }
+      }
+    ],
+    "Edit Fields15": [
+      {
+        "json": {
+          "body": {
+            "query": "بن راشد"
+          }
+        }
+      }
+    ],
+    "Edit Fields16": [
+      {
+        "json": {
+          "body": {
+            "query": "بن  زايد"
+          }
+        }
+      }
+    ],
+    "Edit Fields17": [
+      {
+        "json": {
+          "body": {
+            "query": "الاب"
+          }
+        }
+      }
+    ],
+    "Edit Fields18": [
+      {
+        "json": {
+          "body": {
+            "query": "الام"
+          }
+        }
+      }
+    ],
+    "Edit Fields19": [
+      {
+        "json": {
+          "body": {
+            "query": "عمان"
+          }
+        }
+      }
+    ],
+    "Edit Fields20": [
+      {
+        "json": {
+          "body": {
+            "query": "حصان"
+          }
+        }
+      }
+    ],
+    "Edit Fields21": [
+      {
+        "json": {
+          "body": {
+            "query": "صقر"
+          }
+        }
+      }
+    ],
+    "HTTP Request1": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "محمد بن زايد آل نهيان",
+              "محمد بن زايد آل نهيان",
+              "مواضيع"
+            ],
+            "lines": 30,
+            "poems": 30,
+            "query": "بو خالد",
+            "words": 589,
+            "results": 10
+          },
+          "results": [
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "لو ان للطـيـب رجـل يمـثّـله بو خـالـد الرجّـال      يـمـثّـلـه ، وشـيـــــوخ الـدار لـو وقّـف يمـثّـلـهــا",
+              "score": 100,
+              "title": "شـعب الإمـارات",
+              "row_id": 117,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بو خالد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 10,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "يا ريّس الدوله يابوراشد يابو خالد وازيد      يا شْيوخنا في كل شِبرٍ من ثَرى هذا الوطن",
+              "score": 75,
+              "title": "قبـر الشهيـد",
+              "row_id": 3154,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بو خالد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 233,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "يقول أبو خالد لأبو راشد عسى عمره دوام      خمسين عامٍ يعزف الابـداع وبأحـلى نـغم",
+              "score": 75,
+              "title": "خمسين عام قبل و بعـد",
+              "row_id": 3755,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بو خالد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 272,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "وْنحن والله لـ (ابو خـالـد) فِـدا يوم الـمـنـايـا تْرود      نِـرَاودهــا عَـن انـفـســـــنـا إذا أشَّـــر لـنـا بْـنـــــانـه",
+              "score": 75,
+              "title": "إيمـــان الشـــعوب",
+              "row_id": 397,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بو خالد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 23,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "غصن الثنا لجلك تثـنـّا      خذها يابو خالد عن يمين",
+              "score": 75,
+              "title": "آمر يا بو خالد",
+              "row_id": 673,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بو خالد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 44,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "ولا يقوى على حمل التعـب ويحقــّق الآمال      سـوى ( محمد إبن زايد إبن سلطان ) وامثاله",
+              "score": 70,
+              "title": "ثقة زايد",
+              "row_id": 1128,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد ابن زايد ابن سلطان"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 82,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "عسى عواه إذا عوى من ضيقه      ياصل سـموع محـمّـد النابـوده",
+              "score": 70,
+              "title": "ذيب عوى",
+              "row_id": 1490,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد النابوده"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 105,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "( محمد إبن زايد ) لي بشوفه تـنجلي الاحزان      تـباشـيـر الفـرح من شـوفـته الارواح تـرقـبـها",
+              "score": 70,
+              "title": "معلّقة الاتحاد",
+              "row_id": 2525,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد ابن زايد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 183,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "كل ما طالت ما نامن شرّها والطول خيره      إنّـما للـخـالـــــدين اللي مْـخـلّــدها نـبـاها",
+              "score": 60,
+              "title": "هواء الامارات وثراها",
+              "row_id": 21,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "المجد والعز"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 3,
+              "sources": [
+                "subjects"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "والـطـيـب قـصّـه وفـيها مـعـظـم اسراري      والــذل نـــار ونــفـوس الــذل يـحـرقـها",
+              "score": 60,
+              "title": "قصر زعبيل",
+              "row_id": 88,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "المجد والعز"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 8,
+              "sources": [
+                "subjects"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request2": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "محمد بن زايد آل نهيان",
+              "محمد بن زايد آل نهيان",
+              "مواضيع"
+            ],
+            "lines": 30,
+            "poems": 30,
+            "query": "بن زايد",
+            "words": 590,
+            "results": 9
+          },
+          "results": [
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "في ظل وحدتنا على الحق راسين      زعيمنا ( بن زايــد ) الوالـد البـار",
+              "score": 100,
+              "title": "الجار للجـار ..",
+              "row_id": 3092,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن زايد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 228,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "سمي عمّي وْسمي بن زايـد الأوّل واسم حمدان      أخو عمّي رئـيـس الـدولـه اللي ابـوي نـايـبـها",
+              "score": 100,
+              "title": "معلّقة الاتحاد",
+              "row_id": 2503,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن زايد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 183,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "ولا يقوى على حمل التعب ويحقـّق الآمال      سوى ( محمد إبن زايد إبن سلطان ) وامثاله",
+              "score": 75,
+              "title": "ثقة زايد",
+              "row_id": 1127,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن زايد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 82,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "ويقول ابو راشد هذا محمد وصمّام النظام      هَـرَم عروبتنا وحنّـا ما نفــرّط فـي الـهَــرَم",
+              "score": 70,
+              "title": "خمسين عام قبل و بعـد",
+              "row_id": 3764,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 272,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "عسى عواه إذا عوى من ضيقه      ياصل سـموع محـمّـد النابـوده",
+              "score": 70,
+              "title": "ذيب عوى",
+              "row_id": 1490,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد النابوده"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 105,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن زايد آل نهيان",
+              "line": "سمـوّ الوالـد القـايـد نعـم زايـد إبـن سلطان      نعـم زايـد نعـم زايــد بـذكـر اسـمـه تـقـرّ عْيون",
+              "score": 70,
+              "title": "ولا يقدَر يلمّ الشمْل غير القايد الربّان",
+              "row_id": 2756,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "نعم زايد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 202,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "كل ما طالت ما نامن شرّها والطول خيره      إنّـما للـخـالـــــدين اللي مْـخـلّــدها نـبـاها",
+              "score": 60,
+              "title": "هواء الامارات وثراها",
+              "row_id": 21,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "المجد والعز"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 3,
+              "sources": [
+                "subjects"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "والـطـيـب قـصّـه وفـيها مـعـظـم اسراري      والــذل نـــار ونــفـوس الــذل يـحـرقـها",
+              "score": 60,
+              "title": "قصر زعبيل",
+              "row_id": 88,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "المجد والعز"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 8,
+              "sources": [
+                "subjects"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "على الدوله وريّسـها (خليفـة ) قـايد الأبطـال      هـماليـل السـحاب اللي غـصـون الأرض بـلّـلـها",
+              "score": 60,
+              "title": "شـعب الإمـارات",
+              "row_id": 107,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "القيادة والزعماء"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 10,
+              "sources": [
+                "subjects"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request3": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "الاب",
+              "علاقات اسرية"
+            ],
+            "lines": 5,
+            "poems": 5,
+            "query": "الاب",
+            "words": 89,
+            "results": 4
+          },
+          "results": [
+            {
+              "tag": "الاب",
+              "line": "هـذي أُمِّـي ، وأمّ الأب ، وامّ العم ، وامّ الخال      نـبـاها فـوق هـامـات السحــاب وذكـرها نُــزّه",
+              "score": 103.8,
+              "title": "أم الإمارات",
+              "row_id": 3315,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "4",
+                    "text": "الاب"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 240,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "الاب",
+              "line": "نعمة الامارات من رب السماواتـي      الإبـن يفـرح بهـا ويـبشّــر الـوالــد",
+              "score": 70,
+              "title": "ثلاث اعياد",
+              "row_id": 4024,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "الابن"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 312,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الاب",
+              "line": "وصفـت شـيوخـنا والحـق واضـح ما يـبا برهـان      على لسـان الشـعوب أروي لهـم الابـيات وانـدبها",
+              "score": 63.8,
+              "title": "معلّقة الاتحاد",
+              "row_id": 2529,
+              "matches": {
+                "line": [],
+                "title": []
+              },
+              "poem_id": 183,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "الاب",
+              "line": "يالشـاعر بذكر الله تـزين الابيـات      والصدق فيما نزّل الله في الآيات",
+              "score": 63.8,
+              "title": "وقفة عرفة",
+              "row_id": 3594,
+              "matches": {
+                "line": [],
+                "title": []
+              },
+              "poem_id": 258,
+              "sources": [
+                "poem_line"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request4": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "الام",
+              "علاقات اسرية",
+              "مواضيع"
+            ],
+            "lines": 10,
+            "poems": 10,
+            "query": "الام",
+            "words": 165,
+            "results": 10
+          },
+          "results": [
+            {
+              "tag": "الام",
+              "line": "دمـع العظيـم ف رحاب الأم يا من ترى      شعور لو جيت ابا اوصّفه ، شاب الكلام",
+              "score": 103.8,
+              "title": "دمع العظيم",
+              "row_id": 4092,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "4",
+                    "text": "الام"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 323,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "ومْن السـنام لوركها يا صاحبي مقـعـد جنين      ركـّابهـا .. مـن دون آلامـه يــذوق آلامــــها",
+              "score": 70,
+              "title": "علـيّ رفـقـــــه",
+              "row_id": 1854,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "الامها"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 134,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "لا تلعَـن الفـقـر يالشَّاعِر وَلا تـشْـرَه      رَسـول الامَّه فـقـير وْمَنْهجه سَامي",
+              "score": 70,
+              "title": "لا تلعن الفـقــر",
+              "row_id": 2253,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "رسول الامه"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 167,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "والحكـمه اللي تـراودنـي لا حـسّـيت      إن الأمـل خـيّـمـت فـوقـه كــآبه",
+              "score": 70,
+              "title": "كبريت واحد .. وألف غابـة",
+              "row_id": 3045,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "الامل"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 227,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "الاّ نبي الأمّـــه اللي ديْـنَــه      هدم صنم كسرى وذل الروم",
+              "score": 70,
+              "title": "مفهـوم",
+              "row_id": 3512,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "نبي الامه"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 251,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "ياسـيّــد الأمّـــه ، زعـيم الأمـارات      إنـت الفخـر والـمجـد يعـلو متـونك",
+              "score": 70,
+              "title": "صورة مجد",
+              "row_id": 3937,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "زعيم الامارات"
+                  },
+                  {
+                    "pos": "meta",
+                    "text": "سيد الامه"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 296,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "يا مولاتي اللي جنّتي من تحت رجليــك      حنان الأمومـه ينعـش الـروح تريـاقـــه",
+              "score": 70,
+              "title": "أميرة قلوب الأنقياء",
+              "row_id": 4210,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حنان الامومه"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 352,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "طـبّ الأمـور المقـفـيات الـمـناحـيس      وانظـر بعـيد وطاول الـنجـم بـقـياس",
+              "score": 70,
+              "title": "بـحــور",
+              "row_id": 976,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "الامور المقفيات"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 69,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "كيف ترسـين في بَــر الأمـان ؟!      يا سفينـه ، وبحري دون سِـيف",
+              "score": 63.8,
+              "title": "ذكرياتي مَعَ راشد",
+              "row_id": 4158,
+              "matches": {
+                "line": [],
+                "title": []
+              },
+              "poem_id": 340,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "الام",
+              "line": "واسأل زمانك لانه اسـباب الآلام      رحت اسأله شفت الزمن فيه عِلّه",
+              "score": 63.8,
+              "title": "حكـومـة الـحـب",
+              "row_id": 1261,
+              "matches": {
+                "line": [],
+                "title": []
+              },
+              "poem_id": 92,
+              "sources": [
+                "poem_line"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "محمد بن راشد آل مكتوم",
+              "محمد بن راشد آل مكتوم",
+              "مناصب"
+            ],
+            "lines": 26,
+            "poems": 26,
+            "query": "بن راشد",
+            "words": 505,
+            "results": 16
+          },
+          "results": [
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "يا بن راشـد وابو راشد بنيت امجاد لك تشهد      تجفّ اقلامي بمدحك ، يحير العـد بالمـعـدود",
+              "score": 100,
+              "title": "قــدّها و قـدود",
+              "row_id": 2053,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 150,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "فـارس إبن فـارس إذا قالـوا فـلان فلان      أحمد بن محـمد إبـن راشـد ياحـيّ الفال",
+              "score": 75,
+              "title": "فـزّ الـشــــبـل",
+              "row_id": 1985,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 143,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "على (محمد إبن راشد إبن مكتوم ) طاب الفال      وطابـت لي قـبل لا الـزم قـوافـيها .. مـعانيها",
+              "score": 75,
+              "title": "فخر الاجيال",
+              "row_id": 1931,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 141,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "وروحي محـمّــد المغـوار إبـن راشــد يغـذّيها      من اشعاره من افكاره بنـيت بْـمجده امـجادي",
+              "score": 75,
+              "title": "من هو فزّاع",
+              "row_id": 2616,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 190,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "( محـمـد إبـن راشــد ) كـلما يـطــرى نـفـزّ قـيـام      نـفـز قـْيـام للي يـكــرم شـْعـــوبـه و يـحـشـمـها",
+              "score": 75,
+              "title": "حـارث البـحـر",
+              "row_id": 1209,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 87,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "قد سمعـتوا بفـارسٍ سابق سـنينه من زمان      غير ابن راشـد محـمـّد قلت ما شا الله عليه",
+              "score": 75,
+              "title": "فـــــــــــارس",
+              "row_id": 1919,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 140,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "أنـا للمرجـله صـقرٍ جـناحـينه تـضـمّ النـود      ماغير ( محمد ابن راشد إبن مكتوم ) صقـّاره",
+              "score": 75,
+              "title": "جُودنا ينجَاد منـّه جُود",
+              "row_id": 1178,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "phrase",
+                    "text": "بن راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 86,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "مناصب",
+              "line": "وْلوْلا قوِيّ العَزم وِالإصْرَار مَا شِفْت الذُّهول      يوَزّعه بين الجِهَات الأربَعَه (حَــاكِم دبـــي)",
+              "score": 70,
+              "title": "إجلس مع نفسك",
+              "row_id": 2895,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حاكم دبي"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 214,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "ولابو راشد من الـمجد التليد العز والإجلال      وْمن الألقـاب أشرف ما حوت الالقـاب وانبلـهـا",
+              "score": 70,
+              "title": "شـعب الإمـارات",
+              "row_id": 113,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "ابو راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 10,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مناصب",
+              "line": "يا حاكم الأرض و اوّل وآخر اشواقي      يفداك قلبٍ حزن فرقاك ما ذاقه",
+              "score": 70,
+              "title": "يا موحد الدار",
+              "row_id": 2981,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "يا حاكم الارض"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 221,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "يا زمن لا توصّي صاحبك ( حمدان )      قبلك ( محمد الـمكـــتوم ) وصّاني",
+              "score": 70,
+              "title": "أحمر الورد",
+              "row_id": 283,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد المكتوم"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 20,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "محمــد .. يوم طاح الإقـتصاد وْصَار فيه رْكـود      وقَف وَقْـفَـة حـكـيـم وْقَـدَّم افـكـاره عـلى سْـنـانه",
+              "score": 70,
+              "title": "إيمـــان الشـــعوب",
+              "row_id": 387,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "محمد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 23,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مناصب",
+              "line": "حـاكـمٍ كـفـّه واصـابعـها سـنـابلـها بـخيره      أنجزت في ظرف ليله صـرح يحتاج لليـالي",
+              "score": 70,
+              "title": "السمـو والمـعالي",
+              "row_id": 820,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حاكم"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 58,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "قنـّد (يابو راشـد) دلالٍ معاميل      ما دام نفـسـي للقـوافي طـروبه",
+              "score": 70,
+              "title": "بنــات الريــــح",
+              "row_id": 1021,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "يابو راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 74,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "محمد بن راشد آل مكتوم",
+              "line": "خـذنـي معـاك .. بـلاك انـا ما يبيـني      يا شعر ابو راشد ويا سحر هاروت",
+              "score": 70,
+              "title": "تناهيت الـمحـبّـه",
+              "row_id": 1089,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "ابو راشد"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 79,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مناصب",
+              "line": "يا حاكم الأرض واوّل وآخر اشواقي      يـفـداك قـلــبٍ حـزن فـرقـاك ما ذاقـه",
+              "score": 70,
+              "title": "مرثية زايد",
+              "row_id": 2427,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حاكم الارض"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 180,
+              "sources": [
+                "entities"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code in JavaScript7": [
+      {
+        "json": {
+          "n8n_payload": {
+            "N8N_query": {
+              "Exact_query": "عمان",
+              "tag": "حمدان بن محمد بن راشد آل مكتوم",
+              "confidence_score": 100,
+              "expanded_queries": [
+                {
+                  "query": "حمدان بن محمد بن راشد,امارات,عمان,شعر,الامارات",
+                  "tag": "حمدان بن محمد بن راشد آل مكتوم",
+                  "confidence_score": 95
+                },
+                {
+                  "query": "الامارات ودبي,التراث النبطي",
+                  "tag": "مواضيع",
+                  "confidence_score": 70
+                }
+              ],
+              "individual_Limit": 2,
+              "total_limit": 10
+            }
+          }
+        }
+      }
+    ],
+    "AI Agent7": [
+      {
+        "json": {
+          "output": "```json\n{\n  \"n8n_payload\": {\n    \"N8N_query\": {\n      \"Exact_query\": \"اسلوب الشيخ حمدان بن محمد بن راشد عمان\",\n      \"tag\": \"حمدان بن محمد بن راشد آل مكتوم\",\n      \"confidence_score\": 100,\n      \"expanded_queries\": [\n        {\n          \"query\": \"حمدان بن محمد بن راشد,امارات,عمان,شعر,الامارات\",\n          \"tag\": \"حمدان بن محمد بن راشد آل مكتوم\",\n          \"confidence_score\": 95\n        },\n        {\n          \"query\": \"الامارات ودبي,التراث النبطي,حب الوطن,الشعر,القيادة والزعماء\",\n          \"tag\": \"مواضيع\",\n          \"confidence_score\": 70\n        }\n      ],\n      \"individual_Limit\": 10,\n      \"total_limit\": 50\n    }\n  }\n}\n```"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request7": [
+      {
+        "json": {
+          "summary": {
+            "tags": [
+              "حمدان بن محمد بن راشد آل مكتوم",
+              "حمدان بن محمد بن راشد آل مكتوم",
+              "مواضيع"
+            ],
+            "lines": 6,
+            "poems": 6,
+            "query": "عمان",
+            "words": 106,
+            "results": 5
+          },
+          "results": [
+            {
+              "tag": "حمدان بن محمد بن راشد آل مكتوم",
+              "line": "كانت في لحظة وداعه عن عمان الحبيب      بعد زيـاره صداها في الفضا مشـتهر",
+              "score": 103.8,
+              "title": "وجه المجد",
+              "row_id": 4072,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "5",
+                    "text": "عمان"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 320,
+              "sources": [
+                "poem_line"
+              ]
+            },
+            {
+              "tag": "حمدان بن محمد بن راشد آل مكتوم",
+              "line": "يا زمن لا توصّي صاحبك ( حمدان )      قبلك ( محمد الـمكـــتوم ) وصّاني",
+              "score": 70,
+              "title": "أحمر الورد",
+              "row_id": 283,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حمدان"
+                  },
+                  {
+                    "pos": "meta",
+                    "text": "محمد المكتوم"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 20,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "حمدان بن محمد بن راشد آل مكتوم",
+              "line": "من سبّتك غيّرت انا إسم (حمدان)      لين عـرفـوني باسـم ( فزاع) سبّتك",
+              "score": 70,
+              "title": "الإســـم",
+              "row_id": 447,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "حمدان"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 26,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "ياسـيّــد الأمّـــه ، زعـيم الأمـارات      إنـت الفخـر والـمجـد يعـلو متـونك",
+              "score": 70,
+              "title": "صورة مجد",
+              "row_id": 3937,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "زعيم الامارات"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 296,
+              "sources": [
+                "entities"
+              ]
+            },
+            {
+              "tag": "مواضيع",
+              "line": "الـمهم ان (لندن) اللي مسكها يخالط عبيره      آغلى منها هوا أرض ( الإمــــارات ) وثراها",
+              "score": 60,
+              "title": "هواء الإمارات وثراها",
+              "row_id": 35,
+              "matches": {
+                "line": [
+                  {
+                    "pos": "meta",
+                    "text": "الامارات"
+                  }
+                ],
+                "title": []
+              },
+              "poem_id": 3,
+              "sources": [
+                "places"
+              ]
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields14": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields14",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields15",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields16",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields17",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields18",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields19",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields20",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields21",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields15": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields16": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields17": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields18": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields19": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields20": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields21": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge5": {
+      "main": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet6",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent6",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent6": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "AI Agent6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet7",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent7",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent7": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge7": {
+      "main": [
+        [
+          {
+            "node": "AI Agent7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "453b90e3-4a0b-4c5f-9171-f4e5f96884bf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b33e808ea3a7adcb981912ea69060c30d87f8a9969db580f521dcc2fe15594e8"
+  },
+  "id": "x3k3tPmz0pUuaLcfhtudk",
+  "tags": []
+}

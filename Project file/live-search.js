@@ -1,5 +1,5 @@
 // live-search.js
-import { normalize, mapLatinToArabic } from './utils.js';
+import { normalize, mapLatinToArabic } from "./utils.js";
 
 let flexIndex = null;
 let poemsData = [];
@@ -12,51 +12,59 @@ export function buildIndex(rows) {
     title_raw: r.title_raw,
     poem_line_raw: r.poem_line_raw,
     summary: r.summary,
-    title_clean: normalize(r.title_raw),
-    line_clean: normalize(r.poem_line_raw),
-    shaks: r.shaks,
-    amakin: r.amakin,
-    ahdath: r.ahdath,
-    mawadi3: r.mawadi3,
-    sentiments: r.sentiments,
-    qafiya: r.qafiya,
-    bahr: r.bahr,
-    naw3: r.naw3,
-    tasnif: r.tasnif
+    title_clean: normalize(r.title_cleaned || r.title_raw || ""),
+    line_clean: normalize(r.poem_line_cleaned || r.poem_line_raw || ""),
+    entities: r.entities || "[]",
+    places: r.places || "[]",
+    events: r.events || "[]",
+    subjects: r.subjects || "[]",
+    sentiments: r.sentiments || "[]",
+    category: r.category || "",
   }));
 
   flexIndex = new FlexSearch.Document({
     document: {
       id: "idx",
-      store: ["poem_id", "row_id", "title_raw", "poem_line_raw", "summary", "shaks", "amakin", "ahdath", "mawadi3", "sentiments", "qafiya", "bahr", "naw3", "tasnif"],
+      store: [
+        "poem_id",
+        "row_id",
+        "title_raw",
+        "poem_line_raw",
+        "summary",
+        "entities",
+        "places",
+        "events",
+        "subjects",
+        "sentiments",
+        "category",
+      ],
       index: [
         { field: "title_clean", tokenize: "forward", weight: 3 },
-        { field: "line_clean", tokenize: "forward", weight: 1 }
-      ]
+        { field: "line_clean", tokenize: "forward", weight: 1 },
+      ],
     },
     tokenize: "forward",
-    cache: true
+    cache: true,
   });
 
-  poemsData.forEach(doc => flexIndex.add(doc));
-  return poemsData;
+  poemsData.forEach((doc) => flexIndex.add(doc));
 }
 
 export function liveSearch(query) {
   if (!query.trim()) return [];
-  
+
   const arabicQuery = mapLatinToArabic(query);
   const normQuery = normalize(arabicQuery);
 
   const rawResults = flexIndex.search(normQuery, {
     enrich: true,
-    limit: 100
+    limit: 100,
   });
 
   const candidateMap = new Map();
-  rawResults.forEach(bucket => {
+  rawResults.forEach((bucket) => {
     if (bucket.result) {
-      bucket.result.forEach(r => {
+      bucket.result.forEach((r) => {
         if (!candidateMap.has(r.id)) {
           candidateMap.set(r.id, r.doc);
         }
@@ -65,8 +73,8 @@ export function liveSearch(query) {
   });
 
   const candidates = Array.from(candidateMap.values());
-  
-  const scored = candidates.map(doc => {
+
+  const scored = candidates.map((doc) => {
     let score = 0;
     const title = doc.title_clean || "";
     const line = doc.line_clean || "";
@@ -82,7 +90,7 @@ export function liveSearch(query) {
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 50).map(s => s.doc);
+  return scored.slice(0, 50).map((s) => s.doc);
 }
 
 export function getPoemsData() {

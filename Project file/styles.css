@@ -13,6 +13,27 @@
   padding: 0;
   box-sizing: border-box;
 }
+.mode-btn {
+  padding: 10px 20px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.mode-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.mode-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
 body {
   font-family: "Noto Naskh Arabic", "Segoe UI", Arial, sans-serif;

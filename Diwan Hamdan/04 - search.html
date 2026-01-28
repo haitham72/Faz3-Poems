@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>بحث القصائد - بحث محلي</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .search-box {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+        position: relative;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      .search-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      input {
+        flex: 1;
+        padding: 15px;
+        font-size: 18px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+      }
+      input:focus {
+        border-color: #667eea;
+      }
+
+      /* Dropdown */
+      .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 30px;
+        right: 30px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-top: 5px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+      }
+      .dropdown.show {
+        display: block;
+      }
+      .dropdown-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+      }
+      .dropdown-item:hover {
+        background: #f8f8f8;
+      }
+      .item-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 14px;
+      }
+      .item-line {
+        color: #666;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Results */
+      .results {
+        display: none;
+      }
+      .results.show {
+        display: grid;
+        gap: 15px;
+      }
+
+      .result-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .result-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #667eea;
+      }
+      .result-score {
+        background: #667eea;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 14px;
+      }
+      .result-line {
+        color: #333;
+        font-size: 16px;
+        line-height: 1.8;
+        margin-bottom: 10px;
+        white-space: pre-wrap;
+      }
+      .result-meta {
+        font-size: 12px;
+        color: #999;
+      }
+
+      /* Highlight */
+      mark {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: white;
+        font-size: 16px;
+        display: none;
+      }
+      .loading.show {
+        display: block;
+      }
+
+      .stats {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      .stats.show {
+        display: flex;
+        justify-content: space-around;
+      }
+      .stat-item {
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+      }
+      .stat-value.fast {
+        color: #4caf50;
+      }
+      .stat-value.slow {
+        color: #f44336;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="search-box">
+        <h1>🔍 بحث في ديوان حمدان</h1>
+        <div class="search-group">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="ابحث عن قصيدة... (بحث محلي فوري)"
+            autocomplete="off"
+          />
+        </div>
+        <div class="dropdown" id="dropdown"></div>
+      </div>
+
+      <div class="stats" id="stats">
+        <div class="stat-item">
+          <div class="stat-value" id="statCount">0</div>
+          <div class="stat-label">نتيجة</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="statTime">0ms</div>
+          <div class="stat-label">الوقت</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="statMethod">-</div>
+          <div class="stat-label">الطريقة</div>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">⏳ جاري تحميل البيانات...</div>
+      <div class="results" id="results"></div>
+    </div>
+
+    <script>
+      const CONFIG = {
+        // ========================================
+        // PASTE YOUR SUPABASE URL AND KEY HERE
+        // ========================================
+        SUPABASE_URL:
+          "https://uffjlburuvsnstvgyito.supabase.co/functions/v1/reset-edge",
+        SUPABASE_KEY:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZmpsYnVydXZzbnN0dmd5aXRvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjUxNzMxNywiZXhwIjoyMDgyMDkzMzE3fQ.AzOlsa19D7vVXvXilIf9CLSsujb8Aczve5P5dawOGZM",
+      };
+
+      let POEMS = []; // Will hold all poems locally
+      let searchTimeout;
+      const input = document.getElementById("searchInput");
+      const dropdown = document.getElementById("dropdown");
+      const loading = document.getElementById("loading");
+      const results = document.getElementById("results");
+      const stats = document.getElementById("stats");
+
+      // ========================================
+      // STEP 1: LOAD ALL POEMS ON PAGE LOAD
+      // ========================================
+      async function loadAllPoems() {
+        loading.classList.add("show");
+        loading.textContent = "⏳ جاري تحميل القصائد...";
+
+        try {
+          const response = await fetch(
+            `${CONFIG.SUPABASE_URL}/rest/v1/Diwan_Hamdan?select=poem_id,Row_ID,Title_raw,Poem_line_raw,Title_cleaned,Poem_line_cleaned`,
+            {
+              headers: {
+                apikey: CONFIG.SUPABASE_KEY,
+                Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
+              },
+            },
+          );
+
+          if (!response.ok) throw new Error("Failed to load poems");
+
+          POEMS = await response.json();
+          loading.classList.remove("show");
+          console.log(`✅ Loaded ${POEMS.length} poems locally`);
+        } catch (error) {
+          console.error("Error loading poems:", error);
+          loading.textContent = "❌ فشل تحميل البيانات";
+        }
+      }
+
+      // Load poems when page opens
+      loadAllPoems();
+
+      // ========================================
+      // STEP 2: LOCAL FUZZY SEARCH (INSTANT!)
+      // ========================================
+      function normalize(text) {
+        if (!text) return "";
+        return text
+          .replace(/[ًٌٍَُِّْ]/g, "") // Remove diacritics
+          .replace(/[أإآ]/g, "ا") // Normalize alef
+          .replace(/ى/g, "ي") // Normalize yaa
+          .replace(/ة/g, "ه") // Normalize taa
+          .toLowerCase();
+      }
+
+      function localFuzzySearch(query) {
+        if (!query || query.length < 2) return [];
+
+        const startTime = performance.now();
+        const q = normalize(query);
+        const queryWords = q.split(/\s+/).filter((w) => w.length > 0);
+
+        const results = POEMS.map((poem) => {
+          const lineNorm = normalize(
+            poem.Poem_line_cleaned || poem.Poem_line_raw,
+          );
+          const titleNorm = normalize(poem.Title_cleaned || poem.Title_raw);
+
+          // Calculate score
+          let score = 0;
+
+          // Check title
+          if (titleNorm.includes(q)) {
+            score += 50; // Exact match in title = high score
+          }
+
+          // Check line
+          if (lineNorm.includes(q)) {
+            score += 40; // Exact phrase match
+          } else {
+            // Check individual words
+            const matchedWords = queryWords.filter((word) =>
+              lineNorm.includes(word),
+            );
+            score += matchedWords.length * 10;
+          }
+
+          return { ...poem, score };
+        })
+          .filter((p) => p.score > 0)
+          .sort((a, b) => b.score - a.score);
+
+        const endTime = performance.now();
+        const searchTime = Math.round(endTime - startTime);
+
+        return { results, searchTime };
+      }
+
+      // ========================================
+      // STEP 3: DROPDOWN (as user types)
+      // ========================================
+      input.addEventListener("input", function (e) {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+          dropdown.classList.remove("show");
+          return;
+        }
+
+        // No debounce needed - local search is instant!
+        // But add small delay to avoid blocking UI
+        searchTimeout = setTimeout(() => {
+          showDropdown(query);
+        }, 50); // 50ms delay just to keep UI smooth
+      });
+
+      function showDropdown(query) {
+        const { results: data, searchTime } = localFuzzySearch(query);
+        const limitedResults = data.slice(0, 5);
+
+        if (limitedResults.length === 0) {
+          dropdown.innerHTML =
+            '<div style="padding:15px;text-align:center;color:#999;">لا توجد نتائج</div>';
+        } else {
+          dropdown.innerHTML = limitedResults
+            .map(
+              (r) => `
+                    <div class="dropdown-item" onclick="selectResult(${r.Row_ID})">
+                        <div class="item-title">${escapeHtml(r.Title_raw)}</div>
+                        <div class="item-line">${highlightText(r.Poem_line_raw, query)}</div>
+                    </div>
+                `,
+            )
+            .join("");
+        }
+
+        dropdown.classList.add("show");
+
+        // Show search time in console
+        console.log(`🔍 Local search: ${searchTime}ms`);
+      }
+
+      // ========================================
+      // STEP 4: FULL RESULTS (Enter key)
+      // ========================================
+      input.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          showFullResults();
+        }
+      });
+
+      function showFullResults() {
+        const query = input.value.trim();
+        if (query.length < 2) return;
+
+        dropdown.classList.remove("show");
+
+        const { results: data, searchTime } = localFuzzySearch(query);
+
+        if (data.length === 0) {
+          results.innerHTML =
+            '<div style="text-align:center;padding:40px;background:white;border-radius:12px;">😔 لا توجد نتائج</div>';
+          results.classList.add("show");
+          return;
+        }
+
+        displayResults(data.slice(0, 20), query, searchTime);
+      }
+
+      function displayResults(data, query, searchTime) {
+        // Update stats
+        document.getElementById("statCount").textContent = data.length;
+
+        const timeElem = document.getElementById("statTime");
+        timeElem.textContent = searchTime + "ms";
+        timeElem.className =
+          searchTime < 30
+            ? "stat-value fast"
+            : searchTime < 100
+              ? "stat-value"
+              : "stat-value slow";
+
+        document.getElementById("statMethod").textContent = "محلي";
+        stats.classList.add("show");
+
+        // Display results
+        results.innerHTML = data
+          .map(
+            (r) => `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">${escapeHtml(r.Title_raw)}</div>
+                        <div class="result-score">${Math.round(r.score)}</div>
+                    </div>
+                    <div class="result-line">${highlightText(r.Poem_line_raw, query)}</div>
+                    <div class="result-meta">
+                        القصيدة: ${r.poem_id} | السطر: ${r.Row_ID}
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+
+        results.classList.add("show");
+      }
+
+      // ========================================
+      // HELPER FUNCTIONS
+      // ========================================
+      function highlightText(text, query) {
+        if (!text || !query) return escapeHtml(text);
+
+        const escaped = escapeHtml(text);
+        const queryWords = query.trim().split(/\s+/);
+
+        let highlighted = escaped;
+        queryWords.forEach((word) => {
+          if (word.length < 2) return;
+          const normalized = normalize(word);
+          const regex = new RegExp(`(${normalized})`, "gi");
+          highlighted = highlighted.replace(regex, "<mark>$1</mark>");
+        });
+
+        return highlighted;
+      }
+
+      function selectResult(rowId) {
+        console.log("Selected row:", rowId);
+        dropdown.classList.remove("show");
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".search-box")) {
+          dropdown.classList.remove("show");
+        }
+      });
+    </script>
+  </body>
+</html>

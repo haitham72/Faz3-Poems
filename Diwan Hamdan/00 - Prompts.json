@@ -1,0 +1,60 @@
+//notice the pattern of ai extracting the actual query words, then checks internal entity relations and fix the extraction to proper metadata keys
+
+// querstion_01: is it better to extract it once from huge system prompt with multiple entities, first layer ai extract the exact question and then give it to other ai/DB to query the proper entity relations before sending to supabase for split second metadata filtering
+
+[
+  {
+    "exact_query": "أبيات فخر تقال في يوم الامارات يذكر فيها بو خالد",
+    "extracted_query": {
+      "entities": ["بو خالد"],
+      "events": ["يوم الامارات"], // good extract, but it doesnt exist in the data key
+      "objects": ["أبيات"]
+    },
+    "expanded_query": {
+      "entities": ["محمد بن زايد آل نهيان"],
+      "events": ["اليوم الوطني"], // final query after checking entity relation table, it properly named the key
+      "sentiments": ["فخر"],
+      "subjects": ["الإمارات ودبي", "القيادة والزعماء"]
+    },
+    "semantic_query": "أبيات فخر وطنية يذكر فيها اسم محمد بن زايد في اليوم الوطني" // semantic was introduced after fully grasping the entities
+  },
+  {
+    "exact_query": "ابحث عن قصائد لليوم العماني",
+    "extracted_query": {
+      "events": ["اليوم العماني"],
+      "places": ["عمان"] // places is not mentioned in expanded query as it was properly extracted
+    },
+    "expanded_query": {
+      "events": ["اليوم الوطني العماني"],
+      "subjects": ["مدن_وأماكن_عربية"]
+    },
+    "semantic_query": [] // no need to use semantic, the query was already enough
+  },
+  {
+    "exact_query": "قصائد عن الوالد المؤسس مع السعودية في مواقف تاريخية",
+    "extracted_query": {
+      "entities": ["الوالد المؤسس"], // good extract, but it doesnt exist in the data key
+      "places": ["السعودية"], // no need to expand again in expanded query, it was already expanded in the first step
+      "subjects": ["التاريخ"]
+    },
+    "expanded_query": {
+      "entities": ["زايد بن سلطان آل نهيان"], // final query after checking entity relation table, it properly named the key
+      "subjects": ["العلاقات الخليجية", "التاريخ"]
+    },
+    "semantic_query": [] // no need to use semantic, the query was already enough
+  },
+  {
+    "exact_query": "أبيات شعر عن الأب تليق بيوم الأب",
+    "extracted_query": {
+      "subjects": ["الأب"],
+      "events": ["يوم الأب"],
+      "sentiments": ["ملائمة"] // made up sentiment
+    },
+    "expanded_query": {
+      "subjects": ["القيادة والزعماء"],
+      "events": [], // no need to use semantic, the query was already enough
+      "sentiments": ["فخر"]
+    },
+    "semantic_query": "أبيات شعر مؤثرة عن الأب ليوم الأب"
+  }
+]

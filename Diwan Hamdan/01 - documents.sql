@@ -176,3 +176,20 @@ ALTER DATABASE "postgres" SET pg_trgm.similarity_threshold = 0.2;
 -- =====================================================
 ANALYZE "Diwan_Hamdan";
 
+ALTER TABLE "Diwan_Hamdan" ENABLE ROW LEVEL SECURITY;
+
+-- Create a policy that allows anon to SELECT everything
+CREATE POLICY "anon_select_all" ON "Diwan_Hamdan"
+    FOR SELECT
+    TO anon
+    USING (true);
+
+-- Reload schema
+NOTIFY pgrst, 'reload schema';
+ALTER DATABASE postgres SET pgrst.db_max_rows = '5000';
+
+-- Reload configuration (requires superuser)
+SELECT pg_reload_conf();
+
+-- Option 2: Check current setting
+SHOW pgrst.db_max_rows;

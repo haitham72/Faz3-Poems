@@ -27,15 +27,15 @@ BEGIN
                             regexp_replace(
                                 regexp_replace(
                                     regexp_replace(text_input,
-                                        '[ًٌٍَُِّْ]', '', 'g'),  -- diacritics
-                                    '[أإآٱ]', 'ا', 'g'),          -- alef variants (added ٱ)
-                                '[ى]', 'ي', 'g'),                  -- alef maksura
-                            '[ة]', 'ه', 'g'),                      -- taa marbouta
-                        '[ؤ]', 'و', 'g'),                          -- hamza on waw
-                    '[ئ]', 'ي', 'g'),                              -- hamza on ya
-                '[\u0640]', '', 'g'),                              -- tatweel
-            '[\u200B\u200C\u200D\uFEFF]', '', 'g'),               -- zero-width chars
-        '\s+', ' ', 'g'));                                         -- normalize spaces (fixed: added trim)
+                                        '[ًٌٍَُِّْ]', '', 'g'),           -- diacritics (tashkeel)
+                                    '[أإآٱ]', 'ا', 'g'),                 -- alef variants to plain alef
+                                '[ى]', 'ي', 'g'),                        -- alef maksura to ya
+                            '[ة]', 'ه', 'g'),                            -- taa marbouta to haa
+                        '[ؤ]', 'و', 'g'),                                -- hamza on waw to waw
+                    '[ئ]', 'ي', 'g'),                                    -- hamza on ya to ya
+                '[\u0640]', '', 'g'),                                    -- tatweel (kashida)
+            '[\u200B\u200C\u200D\uFEFF]', '', 'g'),                     -- zero-width chars
+        '\s+', ' ', 'g'));                                               -- normalize multiple spaces
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 

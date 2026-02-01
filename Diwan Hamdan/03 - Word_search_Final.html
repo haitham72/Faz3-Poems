@@ -341,6 +341,35 @@
         border-radius: 3px;
         font-weight: 600;
       }
+      
+      /* Multi-layer highlighting based on metadata type */
+      mark.query {
+        background: #ffcc00;  /* Gold - primary query match */
+        color: #1d1d1f;
+      }
+      
+      mark.entity {
+        background: rgba(102, 126, 234, 0.3);  /* Purple transparent - entities */
+        color: #1d1d1f;
+      }
+      
+      mark.place {
+        background: rgba(250, 112, 154, 0.3);  /* Pink transparent - places */
+        color: #1d1d1f;
+      }
+      
+      mark.animal {
+        background: rgba(48, 207, 208, 0.3);  /* Teal transparent - animals */
+        color: #1d1d1f;
+      }
+      
+      /* Overlapping highlights - query takes precedence */
+      mark.query.entity,
+      mark.query.place,
+      mark.query.animal {
+        background: #ffcc00;  /* Gold always wins */
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);  /* But add colored shadow */
+      }
 
       .empty-state {
         text-align: center;
@@ -425,7 +454,7 @@
               },
               body: JSON.stringify({
                 search_query: query,
-                result_limit: 5000,
+                result_limit: 200,
               }),
             },
           );
@@ -470,7 +499,7 @@
         // Separate poem-only matches (title matched, no line matched)
         const poemOnlyMatches = [];
         const lineMatches = [];
-
+        
         // Group by poem_id to identify poem-only vs line matches
         const poemGroups = new Map();
         allResults.forEach((r) => {
@@ -479,12 +508,10 @@
           }
           poemGroups.get(r.poem_id).push(r);
         });
-
+        
         poemGroups.forEach((results, poemId) => {
-          const hasLineMatch = results.some(
-            (r) => r.match_type === "line" || r.match_type === "exact",
-          );
-          if (!hasLineMatch && results.some((r) => r.match_type === "title")) {
+          const hasLineMatch = results.some(r => r.match_type === 'line' || r.match_type === 'exact');
+          if (!hasLineMatch && results.some(r => r.match_type === 'title')) {
             // Poem-only: title matched but no lines matched
             poemOnlyMatches.push(results[0]);
           } else {
@@ -509,36 +536,32 @@
         const uniqueSentiments = new Set();
         const uniqueReligion = new Set();
         const uniqueAnimals = new Set();
-
-        allResults.forEach((r) => {
+        
+        allResults.forEach(r => {
           // Only count if this metadata type was actually matched by the query
-          if (r.matched_tabs.includes("entities") && r.data.entities) {
-            r.data.entities.forEach((e) => uniqueEntities.add(e.name));
+          if (r.matched_tabs.includes('entities') && r.data.entities) {
+            r.data.entities.forEach(e => uniqueEntities.add(e.name));
           }
-          if (r.matched_tabs.includes("places") && r.data.places) {
-            r.data.places.forEach((p) => uniquePlaces.add(p.name));
+          if (r.matched_tabs.includes('places') && r.data.places) {
+            r.data.places.forEach(p => uniquePlaces.add(p.name));
           }
-          if (r.matched_tabs.includes("events") && r.data.events) {
-            r.data.events.forEach((e) => uniqueEvents.add(e));
+          if (r.matched_tabs.includes('events') && r.data.events) {
+            r.data.events.forEach(e => uniqueEvents.add(e));
           }
-          if (r.matched_tabs.includes("subjects") && r.data.subjects) {
-            r.data.subjects.forEach((s) => uniqueSubjects.add(s));
+          if (r.matched_tabs.includes('subjects') && r.data.subjects) {
+            r.data.subjects.forEach(s => uniqueSubjects.add(s));
           }
-          if (
-            r.matched_tabs.includes("sentiments") &&
-            r.data.sentiments &&
-            r.data.sentiments.trim()
-          ) {
+          if (r.matched_tabs.includes('sentiments') && r.data.sentiments && r.data.sentiments.trim()) {
             uniqueSentiments.add(r.data.sentiments);
           }
-          if (r.matched_tabs.includes("religion") && r.data.religion) {
-            r.data.religion.forEach((rel) => uniqueReligion.add(rel));
+          if (r.matched_tabs.includes('religion') && r.data.religion) {
+            r.data.religion.forEach(rel => uniqueReligion.add(rel));
           }
-          if (r.matched_tabs.includes("animals") && r.data.animals) {
-            r.data.animals.forEach((a) => uniqueAnimals.add(a.name));
+          if (r.matched_tabs.includes('animals') && r.data.animals) {
+            r.data.animals.forEach(a => uniqueAnimals.add(a.name));
           }
         });
-
+        
         const tabCounts = {
           all: allResults.length,
           entities: uniqueEntities.size,
@@ -619,7 +642,7 @@
 
         // Filter results with two levels
         // Separate poem-only from line results FIRST, then filter
-        const filteredPoemOnly = poemOnlyMatches.filter((p) => {
+        const filteredPoemOnly = poemOnlyMatches.filter(p => {
           // Level 1: Tab filter
           if (activeTab !== "all" && !p.matched_tabs.includes(activeTab)) {
             return false;
@@ -627,26 +650,17 @@
           // Level 2: Entity/place/animal filter
           if (activeFilter) {
             if (activeFilter.type === "entity") {
-              return (
-                p.data.entities &&
-                p.data.entities.some((e) => e.name === activeFilter.name)
-              );
+              return p.data.entities && p.data.entities.some((e) => e.name === activeFilter.name);
             } else if (activeFilter.type === "place") {
-              return (
-                p.data.places &&
-                p.data.places.some((p) => p.name === activeFilter.name)
-              );
+              return p.data.places && p.data.places.some((p) => p.name === activeFilter.name);
             } else if (activeFilter.type === "animal") {
-              return (
-                p.data.animals &&
-                p.data.animals.some((a) => a.name === activeFilter.name)
-              );
+              return p.data.animals && p.data.animals.some((a) => a.name === activeFilter.name);
             }
           }
           return true;
         });
-
-        const filteredLineResults = lineMatches.filter((r) => {
+        
+        const filteredLineResults = lineMatches.filter(r => {
           // Level 1: Tab filter
           if (activeTab !== "all" && !r.matched_tabs.includes(activeTab)) {
             return false;
@@ -654,20 +668,11 @@
           // Level 2: Entity/place/animal filter
           if (activeFilter) {
             if (activeFilter.type === "entity") {
-              return (
-                r.data.entities &&
-                r.data.entities.some((e) => e.name === activeFilter.name)
-              );
+              return r.data.entities && r.data.entities.some((e) => e.name === activeFilter.name);
             } else if (activeFilter.type === "place") {
-              return (
-                r.data.places &&
-                r.data.places.some((p) => p.name === activeFilter.name)
-              );
+              return r.data.places && r.data.places.some((p) => p.name === activeFilter.name);
             } else if (activeFilter.type === "animal") {
-              return (
-                r.data.animals &&
-                r.data.animals.some((a) => a.name === activeFilter.name)
-              );
+              return r.data.animals && r.data.animals.some((a) => a.name === activeFilter.name);
             }
           }
           return true;
@@ -678,7 +683,7 @@
 
       function renderFilteredResults(poemOnly, lineResults) {
         resultsContainer.innerHTML = "";
-
+        
         // Show poem-only carousel if exists
         if (poemOnly.length > 0) {
           const poemCarousel = document.createElement("div");
@@ -746,10 +751,7 @@
               const isActive = activeFilter && activeFilter.name === e.name;
               // Show ALL resolved_from terms with highlights
               const resolvedTerms = e.resolved_from
-                .map(
-                  (rf) =>
-                    `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`,
-                )
+                .map((rf) => `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`)
                 .join(" • ");
               return `
               <div class="thumbnail entity ${isActive ? "active" : ""}" 
@@ -769,7 +771,7 @@
             })
             .join("");
         }
-
+        
         // Similar for places
         if (activeTab === "places" && lineResults.length > 0) {
           const placesSection = document.createElement("div");
@@ -824,7 +826,7 @@
             })
             .join("");
         }
-
+        
         // Similar for animals
         if (activeTab === "animals" && lineResults.length > 0) {
           const animalsSection = document.createElement("div");
@@ -863,10 +865,7 @@
               const isActive = activeFilter && activeFilter.name === a.name;
               const resolvedTerms = Array.isArray(a.resolved_from)
                 ? a.resolved_from
-                    .map(
-                      (rf) =>
-                        `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`,
-                    )
+                    .map((rf) => `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`)
                     .join(" • ")
                 : "";
               return `
@@ -887,7 +886,7 @@
             })
             .join("");
         }
-
+        
         // Events tab carousel
         if (activeTab === "events" && lineResults.length > 0) {
           const eventsSection = document.createElement("div");
@@ -915,8 +914,7 @@
 
           carousel.innerHTML = Array.from(uniqueEvents.values())
             .slice(0, 20)
-            .map(
-              (e) => `
+            .map((e) => `
               <div class="thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <div style="text-align: center;">
                   <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
@@ -927,11 +925,10 @@
                   </div>
                 </div>
               </div>
-            `,
-            )
+            `)
             .join("");
         }
-
+        
         // Subjects tab carousel
         if (activeTab === "subjects" && lineResults.length > 0) {
           const subjectsSection = document.createElement("div");
@@ -959,8 +956,7 @@
 
           carousel.innerHTML = Array.from(uniqueSubjects.values())
             .slice(0, 20)
-            .map(
-              (s) => `
+            .map((s) => `
               <div class="thumbnail" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <div style="text-align: center;">
                   <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
@@ -971,11 +967,10 @@
                   </div>
                 </div>
               </div>
-            `,
-            )
+            `)
             .join("");
         }
-
+        
         // Sentiments tab carousel
         if (activeTab === "sentiments" && lineResults.length > 0) {
           const sentimentsSection = document.createElement("div");
@@ -986,9 +981,7 @@
           `;
           resultsContainer.appendChild(sentimentsSection);
 
-          const carousel = sentimentsSection.querySelector(
-            "#sentimentsCarousel",
-          );
+          const carousel = sentimentsSection.querySelector("#sentimentsCarousel");
           const uniqueSentiments = new Map();
 
           lineResults.forEach((r) => {
@@ -1004,8 +997,7 @@
 
           carousel.innerHTML = Array.from(uniqueSentiments.values())
             .slice(0, 20)
-            .map(
-              (s) => `
+            .map((s) => `
               <div class="thumbnail" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
                 <div style="text-align: center;">
                   <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #333;">
@@ -1016,11 +1008,10 @@
                   </div>
                 </div>
               </div>
-            `,
-            )
+            `)
             .join("");
         }
-
+        
         // Religion tab carousel
         if (activeTab === "religion" && lineResults.length > 0) {
           const religionSection = document.createElement("div");
@@ -1048,8 +1039,7 @@
 
           carousel.innerHTML = Array.from(uniqueReligion.values())
             .slice(0, 20)
-            .map(
-              (r) => `
+            .map((r) => `
               <div class="thumbnail" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
                 <div style="text-align: center;">
                   <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #333;">
@@ -1060,8 +1050,7 @@
                   </div>
                 </div>
               </div>
-            `,
-            )
+            `)
             .join("");
         }
 
@@ -1078,13 +1067,13 @@
           const poemsGrid = poemsSection.querySelector("#poemsGrid");
           const resultsToShow = lineResults.slice(0, displayLimit);
           const hasMore = lineResults.length > displayLimit;
-
+          
           poemsGrid.innerHTML = resultsToShow
             .map((r) => {
               const isGrouped = r.data.grouped || false;
               const lineCount = r.data.line_count || 1;
               const qafiya = r.data.qafiya || "";
-
+              
               return `
             <div class="poem-card">
               <div class="poem-header">
@@ -1121,41 +1110,29 @@
                       let items = [];
                       if (tab === "entities" && r.data.entities) {
                         items = r.data.entities.map(
-                          (e) =>
-                            `<span class="meta-value-item" onclick='filterByMetadata("entity", "${e.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${e.name}</span>`,
+                          (e) => `<span class="meta-value-item" onclick='filterByMetadata("entity", "${e.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${e.name}</span>`,
                         );
                       } else if (tab === "subjects" && r.data.subjects) {
-                        items = (
-                          Array.isArray(r.data.subjects) ? r.data.subjects : []
-                        ).map(
+                        items = (Array.isArray(r.data.subjects) ? r.data.subjects : []).map(
                           (s) => `<span class="meta-value-item">${s}</span>`,
                         );
                       } else if (tab === "places" && r.data.places) {
                         items = r.data.places.map(
-                          (p) =>
-                            `<span class="meta-value-item" onclick='filterByMetadata("place", "${p.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${p.name}</span>`,
+                          (p) => `<span class="meta-value-item" onclick='filterByMetadata("place", "${p.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${p.name}</span>`,
                         );
                       } else if (tab === "animals" && r.data.animals) {
                         items = r.data.animals.map(
-                          (a) =>
-                            `<span class="meta-value-item" onclick='filterByMetadata("animal", "${a.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${a.name}</span>`,
+                          (a) => `<span class="meta-value-item" onclick='filterByMetadata("animal", "${a.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${a.name}</span>`,
                         );
                       } else if (tab === "sentiments" && r.data.sentiments) {
-                        items = [
-                          `<span class="meta-value-item">${r.data.sentiments}</span>`,
-                        ];
+                        items = [`<span class="meta-value-item">${r.data.sentiments}</span>`];
                       } else if (tab === "events" && r.data.events) {
-                        items = (
-                          Array.isArray(r.data.events) ? r.data.events : []
-                        ).map(
+                        items = (Array.isArray(r.data.events) ? r.data.events : []).map(
                           (e) => `<span class="meta-value-item">${e}</span>`,
                         );
                       } else if (tab === "religion" && r.data.religion) {
-                        items = (
-                          Array.isArray(r.data.religion) ? r.data.religion : []
-                        ).map(
-                          (rel) =>
-                            `<span class="meta-value-item">${rel}</span>`,
+                        items = (Array.isArray(r.data.religion) ? r.data.religion : []).map(
+                          (rel) => `<span class="meta-value-item">${rel}</span>`,
                         );
                       }
                       if (items.length === 0) return "";
@@ -1197,29 +1174,21 @@
               </button>
             `;
             poemsSection.appendChild(loadMoreBtn);
-
-            document
-              .getElementById("loadMoreBtn")
-              .addEventListener("click", () => {
-                displayLimit += 100;
-                const lastTime = parseInt(
-                  stats.textContent.match(/\d+ms/)?.[0] || "0",
-                );
-                displayResults(lastTime);
-              });
+            
+            document.getElementById("loadMoreBtn").addEventListener("click", () => {
+              displayLimit += 100;
+              const lastTime = parseInt(stats.textContent.match(/\d+ms/)?.[0] || "0");
+              displayResults(lastTime);
+            });
           }
         }
 
         resultsContainer.classList.add("show");
       }
-
+      
       // Second-level filtering function
       function filterByMetadata(type, name) {
-        if (
-          activeFilter &&
-          activeFilter.type === type &&
-          activeFilter.name === name
-        ) {
+        if (activeFilter && activeFilter.type === type && activeFilter.name === name) {
           // Clicking same filter again = remove filter
           activeFilter = null;
         } else {
@@ -1236,53 +1205,78 @@
         const regex = new RegExp(`(${escaped})`, "gi");
         return text.replace(regex, "<mark>$1</mark>");
       }
-
+      
       function highlightWithMetadata(text, query, result) {
         if (!text) return text || "";
-
-        // Build list of terms to highlight (query + all resolved_from terms)
-        const termsToHighlight = new Set();
-        termsToHighlight.add(query);
-
-        // Extract all resolved_from terms from entities, places, animals
+        
+        // Build categorized terms
+        const queryTerms = [query];
+        const entityTerms = [];
+        const placeTerms = [];
+        const animalTerms = [];
+        
+        // Extract all resolved_from terms from entities
         if (result.data.entities) {
-          result.data.entities.forEach((e) => {
+          result.data.entities.forEach(e => {
+            if (e.name) entityTerms.push(e.name);
             if (e.resolved_from && Array.isArray(e.resolved_from)) {
-              e.resolved_from.forEach((rf) => termsToHighlight.add(rf));
+              e.resolved_from.forEach(rf => entityTerms.push(rf));
             }
           });
         }
-
+        
+        // Extract all resolved_from terms from places
         if (result.data.places) {
-          result.data.places.forEach((p) => {
-            if (p.resolved_from) {
-              termsToHighlight.add(p.resolved_from);
-            }
+          result.data.places.forEach(p => {
+            if (p.name) placeTerms.push(p.name);
+            if (p.resolved_from) placeTerms.push(p.resolved_from);
           });
         }
-
+        
+        // Extract all resolved_from terms from animals
         if (result.data.animals) {
-          result.data.animals.forEach((a) => {
+          result.data.animals.forEach(a => {
+            if (a.name) animalTerms.push(a.name);
             if (a.resolved_from && Array.isArray(a.resolved_from)) {
-              a.resolved_from.forEach((rf) => termsToHighlight.add(rf));
+              a.resolved_from.forEach(rf => animalTerms.push(rf));
             }
           });
         }
-
-        // Sort by length DESC to match longer phrases first
-        const terms = Array.from(termsToHighlight).sort(
-          (a, b) => b.length - a.length,
-        );
-
-        // Escape and create regex
+        
         let highlightedText = text;
-        terms.forEach((term) => {
-          if (!term || term.trim() === "") return;
-          const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const regex = new RegExp(`(${escaped})`, "gi");
-          highlightedText = highlightedText.replace(regex, "<mark>$1</mark>");
+        
+        // Helper to escape regex special chars
+        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        
+        // Highlight in order: longest first to avoid partial matches
+        // 1. Query terms (gold)
+        queryTerms.forEach(term => {
+          if (!term || term.trim() === '') return;
+          const regex = new RegExp(`(?![^<]*>)(${escapeRegex(term)})`, "gi");
+          highlightedText = highlightedText.replace(regex, '<mark class="query">$1</mark>');
         });
-
+        
+        // 2. Entity terms (purple transparent) - sort by length DESC
+        entityTerms.sort((a, b) => b.length - a.length).forEach(term => {
+          if (!term || term.trim() === '' || queryTerms.includes(term)) return;
+          const regex = new RegExp(`(?![^<]*>)(${escapeRegex(term)})`, "gi");
+          highlightedText = highlightedText.replace(regex, '<mark class="entity">$1</mark>');
+        });
+        
+        // 3. Place terms (pink transparent) - sort by length DESC
+        placeTerms.sort((a, b) => b.length - a.length).forEach(term => {
+          if (!term || term.trim() === '' || queryTerms.includes(term)) return;
+          const regex = new RegExp(`(?![^<]*>)(${escapeRegex(term)})`, "gi");
+          highlightedText = highlightedText.replace(regex, '<mark class="place">$1</mark>');
+        });
+        
+        // 4. Animal terms (teal transparent) - sort by length DESC
+        animalTerms.sort((a, b) => b.length - a.length).forEach(term => {
+          if (!term || term.trim() === '' || queryTerms.includes(term)) return;
+          const regex = new RegExp(`(?![^<]*>)(${escapeRegex(term)})`, "gi");
+          highlightedText = highlightedText.replace(regex, '<mark class="animal">$1</mark>');
+        });
+        
         return highlightedText;
       }
 

@@ -388,7 +388,6 @@
       let currentQuery = "";
       let activeTab = "all";
       let activeFilter = null; // For second-level filtering (specific entity/place/animal)
-      let displayLimit = 100; // How many results to show initially
 
       const input = document.getElementById("search");
       const searchBtn = document.getElementById("searchBtn");
@@ -439,7 +438,6 @@
 
           allResults = data; // Store globally
           activeTab = "all";
-          displayLimit = 100; // Reset display limit for new search
           displayResults(elapsed);
         } catch (error) {
           console.error("Search error:", error);
@@ -500,54 +498,27 @@
         ).size;
         const totalLineMatches = lineMatches.length;
 
-        // Build tab counts - UNIQUE items, not result counts
-        // CRITICAL: Only count from results where query matched that metadata
-        const uniqueEntities = new Set();
-        const uniquePlaces = new Set();
-        const uniqueEvents = new Set();
-        const uniqueSubjects = new Set();
-        const uniqueSentiments = new Set();
-        const uniqueReligion = new Set();
-        const uniqueAnimals = new Set();
-
-        allResults.forEach((r) => {
-          // Only count if this metadata type was actually matched by the query
-          if (r.matched_tabs.includes("entities") && r.data.entities) {
-            r.data.entities.forEach((e) => uniqueEntities.add(e.name));
-          }
-          if (r.matched_tabs.includes("places") && r.data.places) {
-            r.data.places.forEach((p) => uniquePlaces.add(p.name));
-          }
-          if (r.matched_tabs.includes("events") && r.data.events) {
-            r.data.events.forEach((e) => uniqueEvents.add(e));
-          }
-          if (r.matched_tabs.includes("subjects") && r.data.subjects) {
-            r.data.subjects.forEach((s) => uniqueSubjects.add(s));
-          }
-          if (
-            r.matched_tabs.includes("sentiments") &&
-            r.data.sentiments &&
-            r.data.sentiments.trim()
-          ) {
-            uniqueSentiments.add(r.data.sentiments);
-          }
-          if (r.matched_tabs.includes("religion") && r.data.religion) {
-            r.data.religion.forEach((rel) => uniqueReligion.add(rel));
-          }
-          if (r.matched_tabs.includes("animals") && r.data.animals) {
-            r.data.animals.forEach((a) => uniqueAnimals.add(a.name));
-          }
-        });
-
+        // Build tab counts
         const tabCounts = {
           all: allResults.length,
-          entities: uniqueEntities.size,
-          places: uniquePlaces.size,
-          events: uniqueEvents.size,
-          subjects: uniqueSubjects.size,
-          sentiments: uniqueSentiments.size,
-          religion: uniqueReligion.size,
-          animals: uniqueAnimals.size,
+          entities: allResults.filter((r) =>
+            r.matched_tabs.includes("entities"),
+          ).length,
+          places: allResults.filter((r) => r.matched_tabs.includes("places"))
+            .length,
+          events: allResults.filter((r) => r.matched_tabs.includes("events"))
+            .length,
+          religion: allResults.filter((r) =>
+            r.matched_tabs.includes("religion"),
+          ).length,
+          subjects: allResults.filter((r) =>
+            r.matched_tabs.includes("subjects"),
+          ).length,
+          sentiments: allResults.filter((r) =>
+            r.matched_tabs.includes("sentiments"),
+          ).length,
+          animals: allResults.filter((r) => r.matched_tabs.includes("animals"))
+            .length,
         };
 
         // Display stats
@@ -618,41 +589,18 @@
         });
 
         // Filter results with two levels
-        // Separate poem-only from line results FIRST, then filter
-        const filteredPoemOnly = poemOnlyMatches.filter((p) => {
-          // Level 1: Tab filter
-          if (activeTab !== "all" && !p.matched_tabs.includes(activeTab)) {
-            return false;
-          }
-          // Level 2: Entity/place/animal filter
-          if (activeFilter) {
-            if (activeFilter.type === "entity") {
-              return (
-                p.data.entities &&
-                p.data.entities.some((e) => e.name === activeFilter.name)
-              );
-            } else if (activeFilter.type === "place") {
-              return (
-                p.data.places &&
-                p.data.places.some((p) => p.name === activeFilter.name)
-              );
-            } else if (activeFilter.type === "animal") {
-              return (
-                p.data.animals &&
-                p.data.animals.some((a) => a.name === activeFilter.name)
-              );
-            }
-          }
-          return true;
-        });
+        let filteredResults = allResults;
 
-        const filteredLineResults = lineMatches.filter((r) => {
-          // Level 1: Tab filter
-          if (activeTab !== "all" && !r.matched_tabs.includes(activeTab)) {
-            return false;
-          }
-          // Level 2: Entity/place/animal filter
-          if (activeFilter) {
+        // Level 1: Tab filtering
+        if (activeTab !== "all") {
+          filteredResults = filteredResults.filter((r) =>
+            r.matched_tabs.includes(activeTab),
+          );
+        }
+
+        // Level 2: Specific entity/place/animal filtering
+        if (activeFilter) {
+          filteredResults = filteredResults.filter((r) => {
             if (activeFilter.type === "entity") {
               return (
                 r.data.entities &&
@@ -669,9 +617,17 @@
                 r.data.animals.some((a) => a.name === activeFilter.name)
               );
             }
-          }
-          return true;
-        });
+            return true;
+          });
+        }
+
+        // Separate poem-only from line results
+        const filteredPoemOnly = poemOnlyMatches.filter(
+          (p) => activeTab === "all" || p.matched_tabs.includes(activeTab),
+        );
+        const filteredLineResults = filteredResults.filter(
+          (r) => r.match_type === "line" || r.match_type === "exact",
+        );
 
         renderFilteredResults(filteredPoemOnly, filteredLineResults);
       }
@@ -888,183 +844,6 @@
             .join("");
         }
 
-        // Events tab carousel
-        if (activeTab === "events" && lineResults.length > 0) {
-          const eventsSection = document.createElement("div");
-          eventsSection.className = "carousel-section";
-          eventsSection.innerHTML = `
-            <div class="section-title">📅 الأحداث</div>
-            <div class="carousel" id="eventsCarousel"></div>
-          `;
-          resultsContainer.appendChild(eventsSection);
-
-          const carousel = eventsSection.querySelector("#eventsCarousel");
-          const uniqueEvents = new Map();
-
-          lineResults.forEach((r) => {
-            if (r.data.events && Array.isArray(r.data.events)) {
-              r.data.events.forEach((e) => {
-                if (e && !uniqueEvents.has(e)) {
-                  uniqueEvents.set(e, { name: e, count: 1 });
-                } else if (e) {
-                  uniqueEvents.get(e).count++;
-                }
-              });
-            }
-          });
-
-          carousel.innerHTML = Array.from(uniqueEvents.values())
-            .slice(0, 20)
-            .map(
-              (e) => `
-              <div class="thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div style="text-align: center;">
-                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
-                    ${e.name.substring(0, 15)}
-                  </div>
-                  <div style="margin-top: 4px; font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px;">
-                    ${e.count}
-                  </div>
-                </div>
-              </div>
-            `,
-            )
-            .join("");
-        }
-
-        // Subjects tab carousel
-        if (activeTab === "subjects" && lineResults.length > 0) {
-          const subjectsSection = document.createElement("div");
-          subjectsSection.className = "carousel-section";
-          subjectsSection.innerHTML = `
-            <div class="section-title">🏷️ المواضيع</div>
-            <div class="carousel" id="subjectsCarousel"></div>
-          `;
-          resultsContainer.appendChild(subjectsSection);
-
-          const carousel = subjectsSection.querySelector("#subjectsCarousel");
-          const uniqueSubjects = new Map();
-
-          lineResults.forEach((r) => {
-            if (r.data.subjects && Array.isArray(r.data.subjects)) {
-              r.data.subjects.forEach((s) => {
-                if (s && !uniqueSubjects.has(s)) {
-                  uniqueSubjects.set(s, { name: s, count: 1 });
-                } else if (s) {
-                  uniqueSubjects.get(s).count++;
-                }
-              });
-            }
-          });
-
-          carousel.innerHTML = Array.from(uniqueSubjects.values())
-            .slice(0, 20)
-            .map(
-              (s) => `
-              <div class="thumbnail" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div style="text-align: center;">
-                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
-                    ${s.name.substring(0, 15)}
-                  </div>
-                  <div style="margin-top: 4px; font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px;">
-                    ${s.count}
-                  </div>
-                </div>
-              </div>
-            `,
-            )
-            .join("");
-        }
-
-        // Sentiments tab carousel
-        if (activeTab === "sentiments" && lineResults.length > 0) {
-          const sentimentsSection = document.createElement("div");
-          sentimentsSection.className = "carousel-section";
-          sentimentsSection.innerHTML = `
-            <div class="section-title">💭 المشاعر</div>
-            <div class="carousel" id="sentimentsCarousel"></div>
-          `;
-          resultsContainer.appendChild(sentimentsSection);
-
-          const carousel = sentimentsSection.querySelector(
-            "#sentimentsCarousel",
-          );
-          const uniqueSentiments = new Map();
-
-          lineResults.forEach((r) => {
-            if (r.data.sentiments && r.data.sentiments.trim()) {
-              const sentiment = r.data.sentiments;
-              if (!uniqueSentiments.has(sentiment)) {
-                uniqueSentiments.set(sentiment, { name: sentiment, count: 1 });
-              } else {
-                uniqueSentiments.get(sentiment).count++;
-              }
-            }
-          });
-
-          carousel.innerHTML = Array.from(uniqueSentiments.values())
-            .slice(0, 20)
-            .map(
-              (s) => `
-              <div class="thumbnail" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-                <div style="text-align: center;">
-                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #333;">
-                    ${s.name.substring(0, 15)}
-                  </div>
-                  <div style="margin-top: 4px; font-size: 10px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 8px; color: #333;">
-                    ${s.count}
-                  </div>
-                </div>
-              </div>
-            `,
-            )
-            .join("");
-        }
-
-        // Religion tab carousel
-        if (activeTab === "religion" && lineResults.length > 0) {
-          const religionSection = document.createElement("div");
-          religionSection.className = "carousel-section";
-          religionSection.innerHTML = `
-            <div class="section-title">☪️ الدين</div>
-            <div class="carousel" id="religionCarousel"></div>
-          `;
-          resultsContainer.appendChild(religionSection);
-
-          const carousel = religionSection.querySelector("#religionCarousel");
-          const uniqueReligion = new Map();
-
-          lineResults.forEach((r) => {
-            if (r.data.religion && Array.isArray(r.data.religion)) {
-              r.data.religion.forEach((rel) => {
-                if (rel && !uniqueReligion.has(rel)) {
-                  uniqueReligion.set(rel, { name: rel, count: 1 });
-                } else if (rel) {
-                  uniqueReligion.get(rel).count++;
-                }
-              });
-            }
-          });
-
-          carousel.innerHTML = Array.from(uniqueReligion.values())
-            .slice(0, 20)
-            .map(
-              (r) => `
-              <div class="thumbnail" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-                <div style="text-align: center;">
-                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #333;">
-                    ${r.name.substring(0, 15)}
-                  </div>
-                  <div style="margin-top: 4px; font-size: 10px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 8px; color: #333;">
-                    ${r.count}
-                  </div>
-                </div>
-              </div>
-            `,
-            )
-            .join("");
-        }
-
         // Poem cards with grouped lines support
         if (lineResults.length > 0) {
           const poemsSection = document.createElement("div");
@@ -1076,10 +855,8 @@
           resultsContainer.appendChild(poemsSection);
 
           const poemsGrid = poemsSection.querySelector("#poemsGrid");
-          const resultsToShow = lineResults.slice(0, displayLimit);
-          const hasMore = lineResults.length > displayLimit;
-
-          poemsGrid.innerHTML = resultsToShow
+          poemsGrid.innerHTML = lineResults
+            .slice(0, 50)
             .map((r) => {
               const isGrouped = r.data.grouped || false;
               const lineCount = r.data.line_count || 1;
@@ -1088,7 +865,7 @@
               return `
             <div class="poem-card">
               <div class="poem-header">
-                <div class="poem-title">${highlightWithMetadata(r.display_title, currentQuery, r)}</div>
+                <div class="poem-title">${highlight(r.display_title, currentQuery)}</div>
                 <div>
                   ${isGrouped ? `<span class="grouping-badge">+10 مجموعة (${lineCount})</span>` : ""}
                   ${qafiya ? `<span class="qafiya-badge">قافية: ${qafiya}</span>` : ""}
@@ -1104,13 +881,13 @@
                           (line, idx) => `
                         <div class="line-item">
                           <div style="color: #86868b; font-size: 11px; margin-bottom: 4px;">بيت ${idx + 1}</div>
-                          ${highlightWithMetadata(line, currentQuery, r)}
+                          ${highlight(line, currentQuery)}
                         </div>
                       `,
                         )
                         .join("")}
                     </div>`
-                  : `<div class="poem-line">${highlightWithMetadata(r.display_line, currentQuery, r)}</div>`
+                  : `<div class="poem-line">${highlight(r.display_line, currentQuery)}</div>`
               }
               
               ${
@@ -1177,37 +954,6 @@
           `;
             })
             .join("");
-
-          // Add "Load More" button if there are more results
-          if (hasMore) {
-            const loadMoreBtn = document.createElement("div");
-            loadMoreBtn.style.cssText = "text-align: center; margin: 20px 0;";
-            loadMoreBtn.innerHTML = `
-              <button id="loadMoreBtn" style="
-                padding: 12px 32px;
-                background: #007aff;
-                color: white;
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 16px;
-              ">
-                تحميل المزيد (${lineResults.length - displayLimit} متبقي)
-              </button>
-            `;
-            poemsSection.appendChild(loadMoreBtn);
-
-            document
-              .getElementById("loadMoreBtn")
-              .addEventListener("click", () => {
-                displayLimit += 100;
-                const lastTime = parseInt(
-                  stats.textContent.match(/\d+ms/)?.[0] || "0",
-                );
-                displayResults(lastTime);
-              });
-          }
         }
 
         resultsContainer.classList.add("show");
@@ -1235,55 +981,6 @@
         const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const regex = new RegExp(`(${escaped})`, "gi");
         return text.replace(regex, "<mark>$1</mark>");
-      }
-
-      function highlightWithMetadata(text, query, result) {
-        if (!text) return text || "";
-
-        // Build list of terms to highlight (query + all resolved_from terms)
-        const termsToHighlight = new Set();
-        termsToHighlight.add(query);
-
-        // Extract all resolved_from terms from entities, places, animals
-        if (result.data.entities) {
-          result.data.entities.forEach((e) => {
-            if (e.resolved_from && Array.isArray(e.resolved_from)) {
-              e.resolved_from.forEach((rf) => termsToHighlight.add(rf));
-            }
-          });
-        }
-
-        if (result.data.places) {
-          result.data.places.forEach((p) => {
-            if (p.resolved_from) {
-              termsToHighlight.add(p.resolved_from);
-            }
-          });
-        }
-
-        if (result.data.animals) {
-          result.data.animals.forEach((a) => {
-            if (a.resolved_from && Array.isArray(a.resolved_from)) {
-              a.resolved_from.forEach((rf) => termsToHighlight.add(rf));
-            }
-          });
-        }
-
-        // Sort by length DESC to match longer phrases first
-        const terms = Array.from(termsToHighlight).sort(
-          (a, b) => b.length - a.length,
-        );
-
-        // Escape and create regex
-        let highlightedText = text;
-        terms.forEach((term) => {
-          if (!term || term.trim() === "") return;
-          const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const regex = new RegExp(`(${escaped})`, "gi");
-          highlightedText = highlightedText.replace(regex, "<mark>$1</mark>");
-        });
-
-        return highlightedText;
       }
 
       input.focus();

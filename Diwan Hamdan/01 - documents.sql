@@ -184,12 +184,10 @@ CREATE POLICY "anon_select_all" ON "Diwan_Hamdan"
     TO anon
     USING (true);
 
--- Reload schema
-NOTIFY pgrst, 'reload schema';
-ALTER DATABASE postgres SET pgrst.db_max_rows = '5000';
 
--- Reload configuration (requires superuser)
+ALTER ROLE authenticator SET pgrst.db_max_rows = 5000;
 SELECT pg_reload_conf();
+NOTIFY pgrst, 'reload schema';
 
--- Option 2: Check current setting
-SHOW pgrst.db_max_rows;
+-- Confirm it's set
+SELECT rolconfig FROM pg_roles WHERE rolname = 'authenticator';

@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔍 Relevance Ranked Search</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, Arial, sans-serif;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #1d1d1f;
+        font-size: 32px;
+      }
+
+      /* Search Box */
+      .search-box {
+        background: white;
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+      }
+      input {
+        width: 100%;
+        padding: 16px;
+        font-size: 18px;
+        background: #f5f5f7;
+        border: 2px solid transparent;
+        color: #1d1d1f;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        transition: all 0.2s;
+      }
+      input:focus {
+        border-color: #007aff;
+        outline: none;
+        background: white;
+      }
+
+      button {
+        width: 100%;
+        padding: 14px;
+        background: #007aff;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #0051d5;
+      }
+
+      /* Stats */
+      .stats {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        display: none;
+      }
+      .stats.show {
+        display: block;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+      }
+      .stat-item {
+        text-align: center;
+        padding: 12px;
+        background: #f5f5f7;
+        border-radius: 10px;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #86868b;
+        margin-bottom: 4px;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #007aff;
+      }
+
+      /* Tabs */
+      .tabs-container {
+        background: white;
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        display: none;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tabs-container.show {
+        display: block;
+      }
+      .tabs {
+        display: flex;
+        gap: 12px;
+        min-width: min-content;
+      }
+      .tab {
+        padding: 10px 20px;
+        background: #f5f5f7;
+        border-radius: 20px;
+        cursor: pointer;
+        white-space: nowrap;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        user-select: none;
+      }
+      .tab:hover {
+        background: #e8e8ed;
+      }
+      .tab.active {
+        background: #007aff;
+        color: white;
+        border-color: #007aff;
+      }
+      .tab .count {
+        display: inline-block;
+        margin-right: 6px;
+        background: rgba(0, 0, 0, 0.1);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+      }
+      .tab.active .count {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Results Container */
+      .results-container {
+        display: none;
+      }
+      .results-container.show {
+        display: block;
+      }
+
+      /* Carousel - Thumbnails */
+      .carousel-section {
+        margin-bottom: 24px;
+      }
+      .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #1d1d1f;
+      }
+      .carousel {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 8px 0;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+      }
+      .carousel::-webkit-scrollbar {
+        height: 6px;
+      }
+      .carousel::-webkit-scrollbar-track {
+        background: #f5f5f7;
+        border-radius: 3px;
+      }
+      .carousel::-webkit-scrollbar-thumb {
+        background: #c7c7cc;
+        border-radius: 3px;
+      }
+
+      .thumbnail {
+        min-width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        scroll-snap-align: start;
+        cursor: pointer;
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        text-align: center;
+        padding: 8px;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .thumbnail.entity {
+        border-radius: 50%;
+      }
+      .thumbnail:hover {
+        transform: scale(1.05);
+      }
+
+      /* Poem Cards */
+      .poems-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      .poem-card {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid #007aff;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+      .poem-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      }
+      .poem-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .poem-title {
+        font-weight: 700;
+        color: #007aff;
+        font-size: 18px;
+        flex: 1;
+      }
+      .score-badge {
+        background: #007aff;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        margin-right: 8px;
+      }
+      .poem-line {
+        color: #1d1d1f;
+        font-size: 15px;
+        line-height: 1.8;
+        margin: 12px 0;
+      }
+      .grouped-lines {
+        background: #f9f9fb;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .grouped-lines .line-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #e8e8ed;
+      }
+      .grouped-lines .line-item:last-child {
+        border-bottom: none;
+      }
+      .grouping-badge {
+        background: #34c759;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-right: 6px;
+      }
+      .qafiya-badge {
+        background: #ff9500;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 6px;
+      }
+      .poem-meta {
+        color: #86868b;
+        font-size: 12px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f5f5f7;
+      }
+      .meta-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .meta-tag {
+        background: #f5f5f7;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        color: #1d1d1f;
+      }
+      .meta-value-item {
+        display: inline-block;
+        background: #e8f4fd;
+        padding: 4px 10px;
+        border-radius: 8px;
+        margin: 2px 4px 2px 0;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+      .meta-value-item:hover {
+        background: #007aff;
+        color: white;
+        border-color: #007aff;
+      }
+      .meta-value-item.active {
+        background: #007aff;
+        color: white;
+        font-weight: 700;
+      }
+
+      mark {
+        background: #ffcc00;
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #86868b;
+      }
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 بحث ذكي</h1>
+
+      <div class="search-box">
+        <input
+          type="text"
+          id="search"
+          placeholder="ابحث في الديوان... (مثال: محمد بن زايد)"
+          autocomplete="off"
+        />
+        <button id="searchBtn">🔍 بحث (Enter)</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="tabs-container" id="tabsContainer">
+        <div class="tabs" id="tabs"></div>
+      </div>
+
+      <div class="results-container" id="resultsContainer"></div>
+    </div>
+
+    <script>
+      const CONFIG = {
+        SUPABASE_URL: "http://localhost:8000",
+        SUPABASE_KEY:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE",
+      };
+
+      // Global state
+      let allResults = [];
+      let currentQuery = "";
+      let activeTab = "all";
+      let activeFilter = null; // For second-level filtering (specific entity/place/animal)
+
+      const input = document.getElementById("search");
+      const searchBtn = document.getElementById("searchBtn");
+      const stats = document.getElementById("stats");
+      const tabsContainer = document.getElementById("tabsContainer");
+      const tabs = document.getElementById("tabs");
+      const resultsContainer = document.getElementById("resultsContainer");
+
+      // Event listeners
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") search();
+      });
+      searchBtn.addEventListener("click", search);
+
+      async function search() {
+        const query = input.value.trim();
+        if (query.length < 2) {
+          resetDisplay();
+          return;
+        }
+
+        currentQuery = query;
+        const start = performance.now();
+
+        try {
+          const response = await fetch(
+            `${CONFIG.SUPABASE_URL}/rest/v1/rpc/relevance_search`,
+            {
+              method: "POST",
+              headers: {
+                apikey: CONFIG.SUPABASE_KEY,
+                Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                search_query: query,
+                result_limit: 200,
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const elapsed = Math.round(performance.now() - start);
+
+          allResults = data; // Store globally
+          activeTab = "all";
+          displayResults(elapsed);
+        } catch (error) {
+          console.error("Search error:", error);
+          alert(`خطأ في البحث: ${error.message}`);
+        }
+      }
+
+      function resetDisplay() {
+        stats.classList.remove("show");
+        tabsContainer.classList.remove("show");
+        resultsContainer.classList.remove("show");
+        allResults = [];
+        currentQuery = "";
+      }
+
+      function displayResults(time) {
+        if (allResults.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div>لا توجد نتائج</div>
+            </div>
+          `;
+          resultsContainer.classList.add("show");
+          return;
+        }
+
+        // Separate poem-only matches (title matched, no line matched)
+        const poemOnlyMatches = [];
+        const lineMatches = [];
+
+        // Group by poem_id to identify poem-only vs line matches
+        const poemGroups = new Map();
+        allResults.forEach((r) => {
+          if (!poemGroups.has(r.poem_id)) {
+            poemGroups.set(r.poem_id, []);
+          }
+          poemGroups.get(r.poem_id).push(r);
+        });
+
+        poemGroups.forEach((results, poemId) => {
+          const hasLineMatch = results.some(
+            (r) => r.match_type === "line" || r.match_type === "exact",
+          );
+          if (!hasLineMatch && results.some((r) => r.match_type === "title")) {
+            // Poem-only: title matched but no lines matched
+            poemOnlyMatches.push(results[0]);
+          } else {
+            // Has line matches
+            lineMatches.push(...results);
+          }
+        });
+
+        const uniquePoemsWithTitleMatch = new Set(
+          allResults
+            .filter((r) => r.match_type === "exact" || r.match_type === "title")
+            .map((r) => r.poem_id),
+        ).size;
+        const totalLineMatches = lineMatches.length;
+
+        // Build tab counts
+        const tabCounts = {
+          all: allResults.length,
+          entities: allResults.filter((r) =>
+            r.matched_tabs.includes("entities"),
+          ).length,
+          places: allResults.filter((r) => r.matched_tabs.includes("places"))
+            .length,
+          events: allResults.filter((r) => r.matched_tabs.includes("events"))
+            .length,
+          religion: allResults.filter((r) =>
+            r.matched_tabs.includes("religion"),
+          ).length,
+          subjects: allResults.filter((r) =>
+            r.matched_tabs.includes("subjects"),
+          ).length,
+          sentiments: allResults.filter((r) =>
+            r.matched_tabs.includes("sentiments"),
+          ).length,
+          animals: allResults.filter((r) => r.matched_tabs.includes("animals"))
+            .length,
+        };
+
+        // Display stats
+        stats.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">⚡ وقت البحث</div>
+              <div class="stat-value">${time}ms</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📝 الاستعلام</div>
+              <div class="stat-value" style="font-size: 16px;">"${currentQuery}"</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📚 إجمالي النتائج</div>
+              <div class="stat-value">${allResults.length}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📄 قصائد (عنوان فقط)</div>
+              <div class="stat-value">${poemOnlyMatches.length}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📝 أبيات</div>
+              <div class="stat-value">${totalLineMatches}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">🏆 أعلى نقاط</div>
+              <div class="stat-value">${Math.max(...allResults.map((r) => r.rank_score))}</div>
+            </div>
+          </div>
+        `;
+        stats.classList.add("show");
+
+        // Display tabs (only show tabs with results)
+        const tabDefs = [
+          { id: "all", label: "الكل", icon: "📚" },
+          { id: "entities", label: "شيوخ", icon: "👤" },
+          { id: "places", label: "أماكن", icon: "📍" },
+          { id: "events", label: "أحداث", icon: "📅" },
+          { id: "subjects", label: "مواضيع", icon: "🏷️" },
+          { id: "sentiments", label: "مشاعر", icon: "💭" },
+          { id: "religion", label: "دين", icon: "☪️" },
+          { id: "animals", label: "حيوانات", icon: "🐪" },
+        ];
+
+        tabs.innerHTML = tabDefs
+          .filter((t) => tabCounts[t.id] > 0)
+          .map(
+            (t) => `
+            <div class="tab ${activeTab === t.id ? "active" : ""}" 
+                 data-tab="${t.id}">
+              <span class="count">${tabCounts[t.id]}</span>
+              ${t.icon} ${t.label}
+            </div>
+          `,
+          )
+          .join("");
+
+        tabsContainer.classList.add("show");
+
+        // Attach tab click handlers
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            activeTab = tab.dataset.tab;
+            activeFilter = null; // Reset second-level filter
+            displayResults(time); // Re-render with new filter
+          });
+        });
+
+        // Filter results with two levels
+        let filteredResults = allResults;
+
+        // Level 1: Tab filtering
+        if (activeTab !== "all") {
+          filteredResults = filteredResults.filter((r) =>
+            r.matched_tabs.includes(activeTab),
+          );
+        }
+
+        // Level 2: Specific entity/place/animal filtering
+        if (activeFilter) {
+          filteredResults = filteredResults.filter((r) => {
+            if (activeFilter.type === "entity") {
+              return (
+                r.data.entities &&
+                r.data.entities.some((e) => e.name === activeFilter.name)
+              );
+            } else if (activeFilter.type === "place") {
+              return (
+                r.data.places &&
+                r.data.places.some((p) => p.name === activeFilter.name)
+              );
+            } else if (activeFilter.type === "animal") {
+              return (
+                r.data.animals &&
+                r.data.animals.some((a) => a.name === activeFilter.name)
+              );
+            }
+            return true;
+          });
+        }
+
+        // Separate poem-only from line results
+        const filteredPoemOnly = poemOnlyMatches.filter(
+          (p) => activeTab === "all" || p.matched_tabs.includes(activeTab),
+        );
+        const filteredLineResults = filteredResults.filter(
+          (r) => r.match_type === "line" || r.match_type === "exact",
+        );
+
+        renderFilteredResults(filteredPoemOnly, filteredLineResults);
+      }
+
+      function renderFilteredResults(poemOnly, lineResults) {
+        resultsContainer.innerHTML = "";
+
+        // Show poem-only carousel if exists
+        if (poemOnly.length > 0) {
+          const poemCarousel = document.createElement("div");
+          poemCarousel.className = "carousel-section";
+          poemCarousel.innerHTML = `
+            <div class="section-title">🎯 قصائد: العنوان فقط يطابق البحث (${poemOnly.length})</div>
+            <div class="carousel" id="poemCarousel"></div>
+          `;
+          resultsContainer.appendChild(poemCarousel);
+
+          const carousel = poemCarousel.querySelector("#poemCarousel");
+          carousel.innerHTML = poemOnly
+            .slice(0, 20)
+            .map((p) => {
+              const qafiya = p.data.qafiya || "";
+              return `
+              <div class="thumbnail" onclick="alert('poem_id: ${p.poem_id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div>
+                  <div style="font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+                    ${highlight(p.display_title, currentQuery)}
+                  </div>
+                  ${qafiya ? `<div style="font-size: 11px; opacity: 0.9;">قافية: ${qafiya}</div>` : ""}
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        }
+
+        // Special rendering for entity tab (circular thumbnails with click filtering)
+        if (activeTab === "entities" && lineResults.length > 0) {
+          const entitiesSection = document.createElement("div");
+          entitiesSection.className = "carousel-section";
+          entitiesSection.innerHTML = `
+            <div class="section-title">
+              👥 الشيوخ والشخصيات
+              ${activeFilter ? `<span style="font-size: 14px; color: #007aff;"> | تصفية: ${activeFilter.name}</span>` : ""}
+            </div>
+            <div class="carousel" id="entitiesCarousel"></div>
+          `;
+          resultsContainer.appendChild(entitiesSection);
+
+          const carousel = entitiesSection.querySelector("#entitiesCarousel");
+          const uniqueEntities = new Map();
+
+          lineResults.forEach((r) => {
+            if (r.data.entities && Array.isArray(r.data.entities)) {
+              r.data.entities.forEach((e) => {
+                if (e.name && !uniqueEntities.has(e.name)) {
+                  uniqueEntities.set(e.name, {
+                    name: e.name,
+                    resolved_from: e.resolved_from || [],
+                    count: 1,
+                  });
+                } else if (e.name) {
+                  uniqueEntities.get(e.name).count++;
+                }
+              });
+            }
+          });
+
+          carousel.innerHTML = Array.from(uniqueEntities.values())
+            .slice(0, 20)
+            .map((e) => {
+              const isActive = activeFilter && activeFilter.name === e.name;
+              // Show ALL resolved_from terms with highlights
+              const resolvedTerms = e.resolved_from
+                .map(
+                  (rf) =>
+                    `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`,
+                )
+                .join(" • ");
+              return `
+              <div class="thumbnail entity ${isActive ? "active" : ""}" 
+                   style="background: ${isActive ? "#007aff" : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"}; border: ${isActive ? "3px solid #ffcc00" : "none"};"
+                   onclick='filterByMetadata("entity", "${e.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>
+                <div style="text-align: center;">
+                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
+                    ${e.name.substring(0, 12)}
+                  </div>
+                  ${resolvedTerms ? `<div style="margin-top: 4px;">${resolvedTerms}</div>` : ""}
+                  <div style="margin-top: 4px; font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px;">
+                    ${e.count}
+                  </div>
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        }
+
+        // Similar for places
+        if (activeTab === "places" && lineResults.length > 0) {
+          const placesSection = document.createElement("div");
+          placesSection.className = "carousel-section";
+          placesSection.innerHTML = `
+            <div class="section-title">
+              📍 الأماكن
+              ${activeFilter ? `<span style="font-size: 14px; color: #007aff;"> | تصفية: ${activeFilter.name}</span>` : ""}
+            </div>
+            <div class="carousel" id="placesCarousel"></div>
+          `;
+          resultsContainer.appendChild(placesSection);
+
+          const carousel = placesSection.querySelector("#placesCarousel");
+          const uniquePlaces = new Map();
+
+          lineResults.forEach((r) => {
+            if (r.data.places && Array.isArray(r.data.places)) {
+              r.data.places.forEach((p) => {
+                if (p.name && !uniquePlaces.has(p.name)) {
+                  uniquePlaces.set(p.name, {
+                    name: p.name,
+                    resolved_from: p.resolved_from || "",
+                    count: 1,
+                  });
+                } else if (p.name) {
+                  uniquePlaces.get(p.name).count++;
+                }
+              });
+            }
+          });
+
+          carousel.innerHTML = Array.from(uniquePlaces.values())
+            .slice(0, 20)
+            .map((p) => {
+              const isActive = activeFilter && activeFilter.name === p.name;
+              return `
+              <div class="thumbnail" 
+                   style="background: ${isActive ? "#007aff" : "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"}; border: ${isActive ? "3px solid #ffcc00" : "none"};"
+                   onclick='filterByMetadata("place", "${p.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>
+                <div style="text-align: center;">
+                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
+                    ${p.name.substring(0, 12)}
+                  </div>
+                  ${p.resolved_from ? `<div style="font-size: 10px; opacity: 0.9;">${p.resolved_from}</div>` : ""}
+                  <div style="margin-top: 4px; font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px;">
+                    ${p.count}
+                  </div>
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        }
+
+        // Similar for animals
+        if (activeTab === "animals" && lineResults.length > 0) {
+          const animalsSection = document.createElement("div");
+          animalsSection.className = "carousel-section";
+          animalsSection.innerHTML = `
+            <div class="section-title">
+              🐪 الحيوانات
+              ${activeFilter ? `<span style="font-size: 14px; color: #007aff;"> | تصفية: ${activeFilter.name}</span>` : ""}
+            </div>
+            <div class="carousel" id="animalsCarousel"></div>
+          `;
+          resultsContainer.appendChild(animalsSection);
+
+          const carousel = animalsSection.querySelector("#animalsCarousel");
+          const uniqueAnimals = new Map();
+
+          lineResults.forEach((r) => {
+            if (r.data.animals && Array.isArray(r.data.animals)) {
+              r.data.animals.forEach((a) => {
+                if (a.name && !uniqueAnimals.has(a.name)) {
+                  uniqueAnimals.set(a.name, {
+                    name: a.name,
+                    resolved_from: a.resolved_from || [],
+                    count: 1,
+                  });
+                } else if (a.name) {
+                  uniqueAnimals.get(a.name).count++;
+                }
+              });
+            }
+          });
+
+          carousel.innerHTML = Array.from(uniqueAnimals.values())
+            .slice(0, 20)
+            .map((a) => {
+              const isActive = activeFilter && activeFilter.name === a.name;
+              const resolvedTerms = Array.isArray(a.resolved_from)
+                ? a.resolved_from
+                    .map(
+                      (rf) =>
+                        `<span style="font-size: 10px; opacity: 0.9;">${rf}</span>`,
+                    )
+                    .join(" • ")
+                : "";
+              return `
+              <div class="thumbnail" 
+                   style="background: ${isActive ? "#007aff" : "linear-gradient(135deg, #30cfd0 0%, #330867 100%)"}; border: ${isActive ? "3px solid #ffcc00" : "none"};"
+                   onclick='filterByMetadata("animal", "${a.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>
+                <div style="text-align: center;">
+                  <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">
+                    ${a.name.substring(0, 12)}
+                  </div>
+                  ${resolvedTerms ? `<div style="margin-top: 4px;">${resolvedTerms}</div>` : ""}
+                  <div style="margin-top: 4px; font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px;">
+                    ${a.count}
+                  </div>
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        }
+
+        // Poem cards with grouped lines support
+        if (lineResults.length > 0) {
+          const poemsSection = document.createElement("div");
+          poemsSection.className = "carousel-section";
+          poemsSection.innerHTML = `
+            <div class="section-title">📝 الأبيات (${lineResults.length})</div>
+            <div class="poems-grid" id="poemsGrid"></div>
+          `;
+          resultsContainer.appendChild(poemsSection);
+
+          const poemsGrid = poemsSection.querySelector("#poemsGrid");
+          poemsGrid.innerHTML = lineResults
+            .slice(0, 50)
+            .map((r) => {
+              const isGrouped = r.data.grouped || false;
+              const lineCount = r.data.line_count || 1;
+              const qafiya = r.data.qafiya || "";
+
+              return `
+            <div class="poem-card">
+              <div class="poem-header">
+                <div class="poem-title">${highlight(r.display_title, currentQuery)}</div>
+                <div>
+                  ${isGrouped ? `<span class="grouping-badge">+10 مجموعة (${lineCount})</span>` : ""}
+                  ${qafiya ? `<span class="qafiya-badge">قافية: ${qafiya}</span>` : ""}
+                  <span class="score-badge">${r.rank_score}</span>
+                </div>
+              </div>
+              
+              ${
+                isGrouped && r.data.lines && r.data.lines.length > 1
+                  ? `<div class="grouped-lines">
+                      ${r.data.lines
+                        .map(
+                          (line, idx) => `
+                        <div class="line-item">
+                          <div style="color: #86868b; font-size: 11px; margin-bottom: 4px;">بيت ${idx + 1}</div>
+                          ${highlight(line, currentQuery)}
+                        </div>
+                      `,
+                        )
+                        .join("")}
+                    </div>`
+                  : `<div class="poem-line">${highlight(r.display_line, currentQuery)}</div>`
+              }
+              
+              ${
+                r.matched_tabs.length > 0
+                  ? `<div class="meta-values" style="margin: 12px 0; padding: 10px; background: #f5f5f7; border-radius: 8px; font-size: 12px;">
+                  ${r.matched_tabs
+                    .map((tab) => {
+                      let items = [];
+                      if (tab === "entities" && r.data.entities) {
+                        items = r.data.entities.map(
+                          (e) =>
+                            `<span class="meta-value-item" onclick='filterByMetadata("entity", "${e.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${e.name}</span>`,
+                        );
+                      } else if (tab === "subjects" && r.data.subjects) {
+                        items = (
+                          Array.isArray(r.data.subjects) ? r.data.subjects : []
+                        ).map(
+                          (s) => `<span class="meta-value-item">${s}</span>`,
+                        );
+                      } else if (tab === "places" && r.data.places) {
+                        items = r.data.places.map(
+                          (p) =>
+                            `<span class="meta-value-item" onclick='filterByMetadata("place", "${p.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${p.name}</span>`,
+                        );
+                      } else if (tab === "animals" && r.data.animals) {
+                        items = r.data.animals.map(
+                          (a) =>
+                            `<span class="meta-value-item" onclick='filterByMetadata("animal", "${a.name.replace(/'/g, "\\'")}"); event.stopPropagation();'>${a.name}</span>`,
+                        );
+                      } else if (tab === "sentiments" && r.data.sentiments) {
+                        items = [
+                          `<span class="meta-value-item">${r.data.sentiments}</span>`,
+                        ];
+                      } else if (tab === "events" && r.data.events) {
+                        items = (
+                          Array.isArray(r.data.events) ? r.data.events : []
+                        ).map(
+                          (e) => `<span class="meta-value-item">${e}</span>`,
+                        );
+                      } else if (tab === "religion" && r.data.religion) {
+                        items = (
+                          Array.isArray(r.data.religion) ? r.data.religion : []
+                        ).map(
+                          (rel) =>
+                            `<span class="meta-value-item">${rel}</span>`,
+                        );
+                      }
+                      if (items.length === 0) return "";
+                      return `<div style="margin: 8px 0;"><strong>${tab}:</strong> ${items.join("")}</div>`;
+                    })
+                    .filter((v) => v)
+                    .join("")}
+                </div>`
+                  : ""
+              }
+              
+              <div class="poem-meta">
+                poem: ${r.poem_id} | row: ${isGrouped ? r.data.row_ids.join(", ") : r.row_id} | type: ${r.match_type}
+                <div class="meta-tags">
+                  ${r.matched_tabs.map((t) => `<span class="meta-tag">${t}</span>`).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+            })
+            .join("");
+        }
+
+        resultsContainer.classList.add("show");
+      }
+
+      // Second-level filtering function
+      function filterByMetadata(type, name) {
+        if (
+          activeFilter &&
+          activeFilter.type === type &&
+          activeFilter.name === name
+        ) {
+          // Clicking same filter again = remove filter
+          activeFilter = null;
+        } else {
+          activeFilter = { type, name };
+        }
+        // Re-render without calling server
+        const lastTime = parseInt(stats.textContent.match(/\d+ms/)?.[0] || "0");
+        displayResults(lastTime);
+      }
+
+      function highlight(text, query) {
+        if (!text || !query) return text || "";
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escaped})`, "gi");
+        return text.replace(regex, "<mark>$1</mark>");
+      }
+
+      input.focus();
+    </script>
+  </body>
+</html>

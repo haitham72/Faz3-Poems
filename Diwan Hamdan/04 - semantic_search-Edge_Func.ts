@@ -11,6 +11,55 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Arabic stop words - filter from FTS queries only, NOT from embeddings
+const ARABIC_STOP_WORDS = new Set([
+  // Prepositions
+  "في",
+  "على",
+  "من",
+  "إلى",
+  "عن",
+  "مع",
+  "ل",
+  "ب",
+  "ك",
+  // Conjunctions
+  "و",
+  "أو",
+  "ف",
+  "ثم",
+  "لكن",
+  "بل",
+  // Particles
+  "ما",
+  "لا",
+  "إن",
+  "أن",
+  "قد",
+  "لم",
+  "لن",
+  "كان",
+  // Pronouns
+  "هو",
+  "هي",
+  "هم",
+  "هن",
+  "أنت",
+  "أنا",
+  "نحن",
+  // Common words
+  "كل",
+  "بعض",
+  "هذا",
+  "ذلك",
+  "التي",
+  "الذي",
+]);
+
+// Semantic similarity threshold for gatekeeping
+const SEMANTIC_THRESHOLD = 0.35;
+const LOW_CONFIDENCE_PENALTY = -500;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -71,13 +120,25 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const embedding = embeddingData.data[0].embedding;
 
+    // Filter stop words from query for FTS (but NOT from embedding)
+    const filterStopWords = (text: string): string => {
+      const words = text.split(/\s+/);
+      const filtered = words.filter(
+        (word) => !ARABIC_STOP_WORDS.has(word.trim()),
+      );
+      return filtered.join(" ").trim();
+    };
+
+    const ftsQuery = filterStopWords(searchQuery);
+    console.log("🔍 FTS Query (stop-words filtered):", ftsQuery);
+
     // Call hybrid_search
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     const { data: searchResults, error: searchError } = await supabase.rpc(
       "hybrid_search",
       {
-        query_text: searchQuery,
+        query_text: ftsQuery || searchQuery, // Fallback to original if all words filtered
         query_embedding: embedding,
         match_count: match_count * 2,
         fts_weight: weights.fts,
@@ -148,8 +209,11 @@ serve(async (req) => {
       // Exact phrase match
       if (normText.includes(normQuery)) return true;
 
-      // Word-based matching
-      const queryWords = normQuery.split(/\s+/).filter((w) => w.length > 1);
+      // Word-based matching - filter stop words first
+      const queryWords = normQuery
+        .split(/\s+/)
+        .filter((w) => w.length > 1 && !ARABIC_STOP_WORDS.has(w));
+
       if (queryWords.length === 0) return false;
 
       // For single word queries, just check if it appears
@@ -157,8 +221,8 @@ serve(async (req) => {
         return normText.includes(queryWords[0]);
       }
 
-      // For multi-word queries, at least 60% of words must match
-      const threshold = Math.ceil(queryWords.length * 0.6);
+      // For multi-word queries, at least 75% of meaningful words must match
+      const threshold = Math.ceil(queryWords.length * 0.75);
       const matchCount = queryWords.filter((w) => normText.includes(w)).length;
 
       return matchCount >= threshold;
@@ -360,14 +424,28 @@ serve(async (req) => {
           // Exact match bonus: 10 points
           const exactBonus = result.exact_match ? 10 : 0;
 
-          // Semantic boost: 250x for impact
-          const semanticBoost = (result.semantic_sim || 0) * 250;
+          // Semantic boost: 1000x for dominance
+          const semanticSim = result.semantic_sim || 0;
+          const semanticBoost = semanticSim * 1000;
+
+          // Semantic Gatekeeping: Penalize low-confidence results
+          let finalMetadataBoost = metadataBoost;
+          let confidencePenalty = 0;
+          let isLowConfidence = false;
+
+          if (semanticSim < SEMANTIC_THRESHOLD) {
+            // Zero out metadata boosts and apply heavy penalty
+            finalMetadataBoost = 0;
+            confidencePenalty = LOW_CONFIDENCE_PENALTY;
+            isLowConfidence = true;
+          }
 
           const finalScore =
             (result.final_score || 0) +
-            metadataBoost +
+            finalMetadataBoost +
             exactBonus +
-            semanticBoost;
+            semanticBoost +
+            confidencePenalty;
 
           return {
             id: result.id,
@@ -420,9 +498,12 @@ serve(async (req) => {
             // Scoring
             final_score: finalScore,
             sql_base_score: result.final_score || 0,
-            metadata_boost: metadataBoost,
+            metadata_boost: finalMetadataBoost,
+            original_metadata_boost: metadataBoost,
             exact_bonus: exactBonus,
             semantic_boost: semanticBoost,
+            confidence_penalty: confidencePenalty,
+            is_low_confidence: isLowConfidence,
             relative_score: 0, // Will calculate after sorting
 
             scores: {

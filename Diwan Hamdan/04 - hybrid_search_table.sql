@@ -1,17 +1,10 @@
--- =====================================================
--- DOCUMENTS TABLE - CHUNKED POETRY WITH HYBRID SEARCH
--- Supabase pattern + Your proven architecture
--- =====================================================
-
 DROP TABLE IF EXISTS documents CASCADE;
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- =====================================================
--- NORMALIZE FUNCTION (from your implementation)
--- =====================================================
+-- NORMALIZE FUNCTION 
 CREATE OR REPLACE FUNCTION normalize_arabic(text_input TEXT)
 RETURNS TEXT AS $$
 BEGIN
@@ -37,9 +30,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- =====================================================
--- COMMON PARTICLES FILTER (from your implementation)
--- =====================================================
+-- COMMON PARTICLES FILTER 
 CREATE OR REPLACE FUNCTION is_common_particle(word TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -51,9 +42,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- =====================================================
--- DOCUMENTS TABLE (Supabase Pattern)
--- =====================================================
+-- DOCUMENTS TABLE 
 CREATE TABLE documents (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     
@@ -72,10 +61,7 @@ CREATE TABLE documents (
     metadata JSONB
 );
 
--- =====================================================
 -- INDEXES
--- =====================================================
-
 -- FTS index (Supabase pattern)
 CREATE INDEX ON documents USING GIN (fts);
 
@@ -97,9 +83,8 @@ USING GIN (normalize_arabic(content) gin_trgm_ops);
 CREATE INDEX idx_docs_metadata_trgm ON documents 
 USING GIN (normalize_arabic(metadata::text) gin_trgm_ops);
 
-ANALYZE documents;
+-- ANALYZE documents;
 
---
 -- Fix nested JSON strings in metadata
 UPDATE documents
 SET metadata = jsonb_set(

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🔍 بحث دلالي - ديوان فزاع</title>
+    <title>🔍 البحث الذكي - ديوان فزاع</title>
     <style>
       * {
         margin: 0;
@@ -297,14 +297,58 @@
         border-right: 3px solid #e0e0e8;
       }
 
-      /* Smart highlighting - only matched words */
-      mark {
-        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      /* Multi-layer highlighting system */
+      mark.query {
+        background: #ffcc00;
         color: #1d1d1f;
-        padding: 2px 5px;
-        border-radius: 4px;
+        padding: 2px 4px;
+        border-radius: 3px;
         font-weight: 600;
-        box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+      }
+      mark.entity {
+        background: rgba(102, 126, 234, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      mark.place {
+        background: rgba(250, 112, 154, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      mark.animal {
+        background: rgba(48, 207, 208, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      mark.event {
+        background: rgba(255, 152, 0, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      mark.subject {
+        background: rgba(156, 39, 176, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      mark.religion {
+        background: rgba(76, 175, 80, 0.35);
+        color: #1d1d1f;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      /* Query terms take precedence over context terms */
+      mark.query mark.entity,
+      mark.query mark.place,
+      mark.query mark.animal,
+      mark.query mark.event,
+      mark.query mark.subject,
+      mark.query mark.religion {
+        background: #ffcc00;
       }
 
       /* Poetry Info */
@@ -646,12 +690,42 @@
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           let data = await response.json();
+
+          // Handle array-wrapped response
           if (Array.isArray(data)) data = data[0];
 
           const elapsed = Math.round(performance.now() - start);
 
           if (data && data.success && data.results) {
-            allResults = data.results; // Store globally
+            // Store results and calculate relative scores
+            allResults = data.results;
+
+            // Calculate relative scores with robust type conversion
+            if (allResults.length > 0) {
+              // Step 1: Convert all final_score values to numbers
+              allResults = allResults.map((r) => ({
+                ...r,
+                final_score: Number(r.final_score) || 0,
+              }));
+
+              // Step 2: Calculate maxScore from valid numbers only
+              const validScores = allResults
+                .map((r) => r.final_score)
+                .filter((score) => !isNaN(score) && score > 0);
+
+              const maxScore =
+                validScores.length > 0 ? Math.max(...validScores) : 1;
+
+              // Step 3: Unconditionally assign relative_score to every result
+              allResults = allResults.map((r) => ({
+                ...r,
+                relative_score:
+                  maxScore > 0
+                    ? Math.round((r.final_score / maxScore) * 100)
+                    : 0,
+              }));
+            }
+
             displayResults(elapsed);
           } else {
             throw new Error("No results");
@@ -728,6 +802,12 @@
         const maxScore = Math.max(
           ...filtered.map((r) => r.final_score || 0),
         ).toFixed(1);
+        const maxRelative = Math.max(
+          ...filtered.map((r) => r.relative_score || 0),
+        );
+        const minRelative = Math.min(
+          ...filtered.map((r) => r.relative_score || 0),
+        );
         const exactMatches = filtered.filter(
           (r) => r.scores?.exact === "YES",
         ).length;
@@ -741,6 +821,7 @@
             <div class="stat-item"><div class="stat-label">📊 النتائج</div><div class="stat-value">${filtered.length}</div></div>
             <div class="stat-item"><div class="stat-label">🎯 متوسط</div><div class="stat-value">${avgScore}</div></div>
             <div class="stat-item"><div class="stat-label">🏆 أعلى</div><div class="stat-value">${maxScore}</div></div>
+            <div class="stat-item" style="background: #e8f5e9;"><div class="stat-label" style="color: #34c759;">📊 نطاق</div><div class="stat-value" style="color: #34c759; font-size: 16px;">${minRelative}-${maxRelative}%</div></div>
             <div class="stat-item"><div class="stat-label">✅ مطابقة</div><div class="stat-value">${exactMatches}</div></div>
             <div class="stat-item"><div class="stat-label">📝 ملخصات</div><div class="stat-value">${summaryMatches}</div></div>
           </div>
@@ -799,8 +880,11 @@
         return `
           <div class="poem-card">
             <div class="poem-header">
-              <div class="poem-title">${smartHighlight(m.Title_raw || "بدون عنوان", query)}</div>
-              <span class="score-badge">🏆 ${(result.final_score || 0).toFixed(0)}</span>
+              <div class="poem-title">${smartHighlight(m.Title_raw || "بدون عنوان", query, result)}</div>
+              <div style="display: flex; gap: 6px;">
+                <span class="score-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">${result.relative_score || 0}%</span>
+                <span class="score-badge">🏆 ${(result.final_score || 0).toFixed(0)}</span>
+              </div>
             </div>
 
             ${
@@ -808,13 +892,13 @@
                 ? `
               <div class="summary-section">
                 <div class="summary-label">📝 ملخص القصيدة</div>
-                <div class="summary-text">${smartHighlight(m.Summary, query)}</div>
+                <div class="summary-text">${smartHighlight(m.Summary, query, result)}</div>
               </div>
             `
                 : ""
             }
 
-            <div class="poem-lines">${smartHighlight(m.Poem_line_raw || "", query)}</div>
+            <div class="poem-lines">${smartHighlight(m.Poem_line_raw || "", query, result)}</div>
 
             ${
               m.قافية || m.البحر
@@ -903,24 +987,180 @@
       }
 
       // Smart highlighting - only highlight individual query words
-      function smartHighlight(text, query) {
-        if (!text || !query) return text || "";
+      function smartHighlight(text, query, result) {
+        if (!text || typeof text !== "string") return "";
 
-        // Split query into meaningful words (filter out short words)
-        const words = query.split(/\s+/).filter((w) => w.length > 2);
-        if (words.length === 0) return text;
+        let highlighted = text;
 
-        let result = text;
+        // Collect all terms to highlight
+        const queryTerms = [];
+        const contextTerms = {
+          entities: [],
+          places: [],
+          animals: [],
+          events: [],
+          subjects: [],
+          religion: [],
+        };
 
-        // Highlight each word separately
-        words.forEach((word) => {
-          const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          // Use word boundary-aware regex
-          const regex = new RegExp(`(${escaped})`, "gi");
-          result = result.replace(regex, "<mark>$1</mark>");
+        // Layer 1: Query terms (gold highlight)
+        const words = query.split(/\s+/).filter((w) => w.length > 1);
+        words.forEach((w) => queryTerms.push(w));
+
+        // Layer 2: Context-based terms from highlight_data (using resolved_from)
+        const highlightData = result.highlight_data || {};
+
+        // Extract entities
+        if (Array.isArray(highlightData.entities)) {
+          highlightData.entities.forEach((entity) => {
+            const terms = Array.isArray(entity.resolved_from)
+              ? entity.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.entities.push(term);
+              }
+            });
+          });
+        }
+
+        // Extract places
+        if (Array.isArray(highlightData.places)) {
+          highlightData.places.forEach((place) => {
+            const terms = Array.isArray(place.resolved_from)
+              ? place.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.places.push(term);
+              }
+            });
+          });
+        }
+
+        // Extract animals
+        if (Array.isArray(highlightData.animals)) {
+          highlightData.animals.forEach((animal) => {
+            const terms = Array.isArray(animal.resolved_from)
+              ? animal.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.animals.push(term);
+              }
+            });
+          });
+        }
+
+        // Extract events
+        if (Array.isArray(highlightData.events)) {
+          highlightData.events.forEach((event) => {
+            const terms = Array.isArray(event.resolved_from)
+              ? event.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.events.push(term);
+              }
+            });
+          });
+        }
+
+        // Extract subjects
+        if (Array.isArray(highlightData.subjects)) {
+          highlightData.subjects.forEach((subject) => {
+            const terms = Array.isArray(subject.resolved_from)
+              ? subject.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.subjects.push(term);
+              }
+            });
+          });
+        }
+
+        // Extract religion
+        if (Array.isArray(highlightData.religion)) {
+          highlightData.religion.forEach((rel) => {
+            const terms = Array.isArray(rel.resolved_from)
+              ? rel.resolved_from
+              : [];
+            terms.forEach((term) => {
+              if (
+                term &&
+                typeof term === "string" &&
+                !queryTerms.includes(term)
+              ) {
+                contextTerms.religion.push(term);
+              }
+            });
+          });
+        }
+
+        // Sort all terms by length (longest first to avoid partial matches)
+        const allTerms = [
+          ...queryTerms.map((t) => ({ text: t, type: "query" })),
+          ...contextTerms.entities.map((t) => ({ text: t, type: "entity" })),
+          ...contextTerms.places.map((t) => ({ text: t, type: "place" })),
+          ...contextTerms.animals.map((t) => ({ text: t, type: "animal" })),
+          ...contextTerms.events.map((t) => ({ text: t, type: "event" })),
+          ...contextTerms.subjects.map((t) => ({ text: t, type: "subject" })),
+          ...contextTerms.religion.map((t) => ({ text: t, type: "religion" })),
+        ].sort((a, b) => b.text.length - a.text.length);
+
+        // Apply highlights
+        allTerms.forEach((term) => {
+          // Try with word boundaries first
+          let regex = new RegExp(
+            `(^|\\s)(${escapeRegex(term.text)})(\\s|$)`,
+            "gi",
+          );
+          let found = false;
+
+          highlighted = highlighted.replace(
+            regex,
+            (match, before, word, after) => {
+              found = true;
+              return `${before}<mark class="${term.type}">${word}</mark>${after}`;
+            },
+          );
+
+          // If not found with boundaries, try without (for partial matches)
+          if (!found) {
+            regex = new RegExp(`(${escapeRegex(term.text)})`, "gi");
+            highlighted = highlighted.replace(
+              regex,
+              `<mark class="${term.type}">$1</mark>`,
+            );
+          }
         });
 
-        return result;
+        return highlighted;
+      }
+
+      function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       }
 
       input.focus();

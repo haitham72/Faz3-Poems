@@ -14,6 +14,7 @@ RETURNS TABLE(
     row_id INT,
     title_cleaned TEXT,
     poem_line_cleaned TEXT,
+    ai_image_thumb TEXT,
     match_type TEXT
 )
 LANGUAGE plpgsql
@@ -34,6 +35,7 @@ BEGIN
         d.poem_id,
         d."Row_ID",
         d."Title_cleaned",
+        d."ai_image_thumb",
         d."Poem_line_cleaned",
         CASE 
             WHEN d."Title_cleaned" ILIKE '%' || q || '%' 

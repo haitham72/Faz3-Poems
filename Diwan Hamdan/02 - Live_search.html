@@ -61,8 +61,22 @@
       .results {
         margin-top: 10px;
       }
+      .result-content {
+        flex: 1; /* Text takes remaining space */
+      }
 
+      .result-thumb {
+        width: 80px; /* Fixed width */
+        height: 80px; /* Fixed height */
+        object-fit: cover; /* Crop image nicely */
+        border-radius: 4px;
+        background: #eee;
+        border: 1px solid #ddd;
+      }
       .result {
+        display: flex;
+        gap: 15px;
+        align-items: start;
         background: white;
         padding: 15px;
         margin: 8px 0;
@@ -180,17 +194,25 @@
         }
 
         results.innerHTML = data
-          .map(
-            (r) => `
-                <div class="result">
-                    <div class="result-title">${highlight(r.title_cleaned, query)}</div>
-                    <div class="result-line">${highlight(r.poem_line_cleaned, query)}</div>
-                    <div class="result-meta">
-                        poem: ${r.poem_id} | row: ${r.row_id} | type: ${r.match_type}
-                    </div>
-                </div>
-            `,
-          )
+          .map((r) => {
+            // Check if image exists, otherwise use empty string or placeholder
+            const imgHtml = r.ai_images_thumb
+              ? `<img src="${r.ai_images_thumb}" class="result-thumb" alt="Poem thumbnail" loading="lazy">`
+              : "";
+
+            return `
+      <div class="result">
+          ${imgHtml}
+          <div class="result-content">
+              <div class="result-title">${highlight(r.title_cleaned, query)}</div>
+              <div class="result-line">${highlight(r.poem_line_cleaned, query)}</div>
+              <div class="result-meta">
+                  poem: ${r.poem_id} | row: ${r.row_id} | type: ${r.match_type}
+              </div>
+          </div>
+      </div>
+    `;
+          })
           .join("");
       }
 

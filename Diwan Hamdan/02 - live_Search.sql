@@ -69,3 +69,32 @@ BEGIN
     LIMIT result_limit;
 END;
 $$;
+
+
+-- ## query examples
+
+--  Basic live search (uses default limit = 5)
+-- SELECT *
+-- FROM live_search('حب');
+
+-- --  Live search with a custom result limit
+-- SELECT *
+-- FROM live_search('وطن', 10);
+
+-- -- Schema-qualified call (for our own system in production)
+-- SELECT *
+-- FROM public.live_search('سلام', 7);
+
+-- -- Search and filter by match type (e.g., title-only matches)
+-- SELECT *
+-- FROM live_search('غزل', 5)
+-- WHERE match_type = 'title';
+
+-- --   Live search with ordering applied outside the function
+-- SELECT *
+-- FROM live_search('قلب', 8)
+-- ORDER BY poem_id ASC;
+
+-- -- Full Query Example:
+-- SELECT poem_id, title_cleaned, poem_line_cleaned
+-- FROM live_search('عشق', 5);

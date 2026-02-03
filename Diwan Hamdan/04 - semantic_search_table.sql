@@ -53,7 +53,13 @@ CREATE TABLE documents (
     fts tsvector GENERATED ALWAYS AS (
         to_tsvector('arabic', content)
     ) STORED,
+
+
     
+    -- TODO convert from 1536 to 3076
+
+
+
     -- Vector embedding (1536 for OpenAI text-embedding-3-small)
     embedding vector(1536),
     

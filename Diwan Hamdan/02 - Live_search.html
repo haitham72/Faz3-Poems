@@ -142,7 +142,7 @@
 
       async function search(query) {
         const start = performance.now();
-
+        //  api call
         try {
           const response = await fetch(
             `${CONFIG.SUPABASE_URL}/rest/v1/rpc/live_search`,
@@ -155,7 +155,7 @@
               },
               body: JSON.stringify({
                 search_query: query,
-                result_limit: 10,
+                result_limit: 100,
               }),
             },
           );

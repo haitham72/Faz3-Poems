@@ -18,6 +18,8 @@ RETURNS TABLE(
 )
 LANGUAGE plpgsql
 AS $$
+
+-- Search query
 DECLARE
     q TEXT;
 BEGIN

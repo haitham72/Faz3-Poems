@@ -1,6 +1,3 @@
--- =====================================================
--- COMPLETE TABLE CREATION - FINAL CORRECTED VERSION
--- =====================================================
 
 DROP TABLE IF EXISTS "Diwan_Hamdan" CASCADE;
 
@@ -12,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- For Supabase: Run this separately in the SQL editor
 -- ALTER DATABASE current_database() SET pg_trgm.similarity_threshold = 0.2;
 -- =====================================================
--- 1. NORMALIZE ARABIC FUNCTION (improved)
+-- 1. NORMALIZE ARABIC FUNCTION
 -- =====================================================
 CREATE OR REPLACE FUNCTION normalize_arabic(text_input TEXT)
 RETURNS TEXT AS $$
@@ -27,15 +24,15 @@ BEGIN
                             regexp_replace(
                                 regexp_replace(
                                     regexp_replace(text_input,
-                                        '[ًٌٍَُِّْ]', '', 'g'),           -- diacritics (tashkeel)
-                                    '[أإآٱ]', 'ا', 'g'),                 -- alef variants to plain alef
-                                '[ى]', 'ي', 'g'),                        -- alef maksura to ya
-                            '[ة]', 'ه', 'g'),                            -- taa marbouta to haa
-                        '[ؤ]', 'و', 'g'),                                -- hamza on waw to waw
-                    '[ئ]', 'ي', 'g'),                                    -- hamza on ya to ya
-                '[\u0640]', '', 'g'),                                    -- tatweel (kashida)
-            '[\u200B\u200C\u200D\uFEFF]', '', 'g'),                     -- zero-width chars
-        '\s+', ' ', 'g'));                                               -- normalize multiple spaces
+                                        '[ًٌٍَُِّْ]', '', 'g'),           
+                                    '[أإآٱ]', 'ا', 'g'),                 
+                                '[ى]', 'ي', 'g'),                        
+                            '[ة]', 'ه', 'g'),                            
+                        '[ؤ]', 'و', 'g'),                                
+                    '[ئ]', 'ي', 'g'),                                    
+                '[\u0640]', '', 'g'),                                    
+            '[\u200B\u200C\u200D\uFEFF]', '', 'g'),                     
+        '\s+', ' ', 'g'));                                               
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -185,7 +182,7 @@ CREATE POLICY "anon_select_all" ON "Diwan_Hamdan"
     USING (true);
 
 
-ALTER ROLE authenticator SET pgrst.db_max_rows = 5000;
+ALTER ROLE authenticator SET pgrst.db_max_rows = 1500;
 SELECT pg_reload_conf();
 NOTIFY pgrst, 'reload schema';
 

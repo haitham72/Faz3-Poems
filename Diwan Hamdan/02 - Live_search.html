@@ -61,34 +61,55 @@
       .results {
         margin-top: 10px;
       }
-      .result-content {
-        flex: 1; /* Text takes remaining space */
-      }
 
-      .result-thumb {
-        width: 80px; /* Fixed width */
-        height: 80px; /* Fixed height */
-        object-fit: cover; /* Crop image nicely */
-        border-radius: 4px;
-        background: #eee;
-        border: 1px solid #ddd;
-      }
       .result {
         display: flex;
         gap: 15px;
-        align-items: start;
+        align-items: flex-start;
         background: white;
         padding: 15px;
         margin: 8px 0;
         border-radius: 6px;
-        border-left: 4px solid #4caf50;
+        border-right: 4px solid #4caf50; /* Right border for RTL */
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .result-content {
+        flex: 1;
+        min-width: 0; /* Allow text to shrink */
+      }
+
+      .result-thumb {
+        width: 60px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: #eee;
+        border: 1px solid #ddd;
+        flex-shrink: 0; /* Don't shrink the image */
+        order: -1; /* Image appears first in RTL (which means right side) */
+      }
+
+      /* Placeholder for missing images */
+      .result-thumb-placeholder {
+        width: 60px;
+        height: 80px;
+        border-radius: 4px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 1px solid #ddd;
+        flex-shrink: 0;
+        order: -1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
       }
 
       .result-title {
         font-weight: bold;
         color: #333;
         margin-bottom: 6px;
+        font-size: 16px;
       }
 
       .result-line {
@@ -108,6 +129,26 @@
         padding: 2px 4px;
         border-radius: 2px;
         font-weight: bold;
+      }
+
+      .error {
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 10px 0;
+      }
+
+      .debug-info {
+        background: #e3f2fd;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #1565c0;
+        margin-top: 5px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
       }
     </style>
   </head>
@@ -134,6 +175,8 @@
         SUPABASE_URL: "http://localhost:8000",
         SUPABASE_KEY:
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE",
+        IMAGE_BASE_URL: "https://diwanpoetryapi01.devinprocess.com",
+        DEBUG: false, // Set to true to show debug info
       };
 
       const input = document.getElementById("search");
@@ -156,7 +199,7 @@
 
       async function search(query) {
         const start = performance.now();
-        //  api call
+
         try {
           const response = await fetch(
             `${CONFIG.SUPABASE_URL}/rest/v1/rpc/live_search`,
@@ -166,6 +209,7 @@
                 apikey: CONFIG.SUPABASE_KEY,
                 Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
                 "Content-Type": "application/json",
+                Prefer: "return=representation",
               },
               body: JSON.stringify({
                 search_query: query,
@@ -174,18 +218,55 @@
             },
           );
 
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("API Error:", errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+
           const data = await response.json();
           const elapsed = Math.round(performance.now() - start);
 
+          if (CONFIG.DEBUG) {
+            console.log("=== SEARCH RESULTS ===");
+            console.log("Total results:", data.length);
+            if (data.length > 0) {
+              console.log("First result:", data[0]);
+              console.log("Image field:", data[0].ai_image_thumb);
+            }
+          }
+
           display(data, query, elapsed);
         } catch (error) {
-          console.error(error);
-          results.innerHTML = '<div class="result">❌ خطأ في البحث</div>';
+          console.error("Search error:", error);
+          results.innerHTML = `<div class="result error">❌ خطأ في البحث: ${error.message}</div>`;
         }
       }
 
+      function buildImageUrl(imagePath) {
+        if (!imagePath || imagePath.trim() === "") {
+          return null;
+        }
+
+        // If it's already a full URL, return as is
+        if (
+          imagePath.startsWith("http://") ||
+          imagePath.startsWith("https://")
+        ) {
+          return imagePath;
+        }
+
+        // Remove leading slash if present to avoid double slashes
+        const cleanPath = imagePath.startsWith("/")
+          ? imagePath.substring(1)
+          : imagePath;
+
+        // Concatenate base URL with image path
+        return `${CONFIG.IMAGE_BASE_URL}/${cleanPath}`;
+      }
+
       function display(data, query, time) {
-        stats.innerHTML = `📊 ${data.length} نتيجة | ⚡ ${time}ms | 🔍 "${query}"`;
+        stats.innerHTML = `📊 ${data.length} نتيجة | ⚡ ${time}ms | 🔎 "${query}"`;
         stats.classList.add("show");
 
         if (data.length === 0) {
@@ -194,21 +275,54 @@
         }
 
         results.innerHTML = data
-          .map((r) => {
-            // Check if image exists, otherwise use empty string or placeholder
-            const imgHtml = r.ai_images_thumb
-              ? `<img src="${r.ai_images_thumb}" class="result-thumb" alt="Poem thumbnail" loading="lazy">`
+          .map((r, index) => {
+            // Extract values with fallbacks
+            const title = r.title_cleaned || "بدون عنوان";
+            const poemLine = r.poem_line_cleaned || "لا يوجد نص";
+            const poemId = r.poem_id || "N/A";
+            const rowId = r.row_id || "N/A";
+            const matchType = r.match_type || "unknown";
+            const imageUrl = buildImageUrl(r.ai_image_thumb);
+
+            // Debug logging for first few results
+            if (CONFIG.DEBUG && index < 3) {
+              console.log(`Result ${index}:`, {
+                title,
+                poemLine,
+                originalImagePath: r.ai_image_thumb,
+                fullImageUrl: imageUrl,
+                hasImage: !!imageUrl,
+              });
+            }
+
+            // Create image HTML or placeholder
+            let imageHtml;
+            if (imageUrl) {
+              imageHtml = `<img 
+                src="${escapeHtml(imageUrl)}" 
+                class="result-thumb" 
+                alt="صورة القصيدة" 
+                loading="lazy"
+                onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2280%22><rect width=%2260%22 height=%2280%22 fill=%22%23ddd%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2224%22 fill=%22%23999%22>📖</text></svg>';"
+              >`;
+            } else {
+              imageHtml = `<div class="result-thumb-placeholder">📖</div>`;
+            }
+
+            const debugHtml = CONFIG.DEBUG
+              ? `<div class="debug-info">Original: ${r.ai_image_thumb || "NULL"}<br>Full URL: ${imageUrl || "NULL"}</div>`
               : "";
 
             return `
       <div class="result">
-          ${imgHtml}
+          ${imageHtml}
           <div class="result-content">
-              <div class="result-title">${highlight(r.title_cleaned, query)}</div>
-              <div class="result-line">${highlight(r.poem_line_cleaned, query)}</div>
+              <div class="result-title">${highlight(title, query)}</div>
+              <div class="result-line">${highlight(poemLine, query)}</div>
               <div class="result-meta">
-                  poem: ${r.poem_id} | row: ${r.row_id} | type: ${r.match_type}
+                  poem: ${poemId} | row: ${rowId} | type: ${matchType}
               </div>
+              ${debugHtml}
           </div>
       </div>
     `;
@@ -217,16 +331,23 @@
       }
 
       function highlight(text, query) {
-        if (!text || !query) return text || "";
+        if (!text || !query) return escapeHtml(text || "");
 
-        // Escape special regex characters
-        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(`(${escaped})`, "gi");
+        const escapedText = escapeHtml(text);
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escapedQuery})`, "gi");
 
-        return text.replace(regex, "<mark>$1</mark>");
+        return escapedText.replace(regex, "<mark>$1</mark>");
       }
 
-      // Focus input
+      function escapeHtml(text) {
+        if (!text) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Focus input on page load
       input.focus();
     </script>
   </body>

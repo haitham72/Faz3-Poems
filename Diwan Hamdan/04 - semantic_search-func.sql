@@ -1,9 +1,64 @@
 -- =====================================================
--- HYBRID SEARCH - COMPLETE IMPLEMENTATION
--- Combines: FTS + Trigram + Exact + Semantic + Metadata
--- Based on: Your proven architecture + Supabase RRF pattern
+-- STEP 1: Create safe JSON extraction helper function
 -- =====================================================
+CREATE OR REPLACE FUNCTION safe_extract_json_array(
+    metadata_field JSONB,
+    field_name TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+    -- If it's already an array, return it
+    IF jsonb_typeof(metadata_field) = 'array' THEN
+        RETURN metadata_field;
+    END IF;
+    
+    -- If it's null, return empty array
+    IF metadata_field IS NULL THEN
+        RETURN '[]'::jsonb;
+    END IF;
+    
+    -- If it's a string, try to parse it
+    IF jsonb_typeof(metadata_field) = 'string' THEN
+        BEGIN
+            DECLARE
+                parsed JSONB;
+            BEGIN
+                -- Parse the string to JSON
+                parsed := (metadata_field #>> '{}')::jsonb;
+                
+                -- If the result has a field with the same name, extract it
+                IF jsonb_typeof(parsed) = 'object' AND parsed ? field_name THEN
+                    IF jsonb_typeof(parsed -> field_name) = 'array' THEN
+                        RETURN parsed -> field_name;
+                    END IF;
+                END IF;
+                
+                -- If it's directly an array
+                IF jsonb_typeof(parsed) = 'array' THEN
+                    RETURN parsed;
+                END IF;
+                
+                RETURN '[]'::jsonb;
+            EXCEPTION WHEN OTHERS THEN
+                -- Any parsing error, return empty array
+                RETURN '[]'::jsonb;
+            END;
+        END;
+    END IF;
+    
+    -- For any other type, return empty array
+    RETURN '[]'::jsonb;
+EXCEPTION WHEN OTHERS THEN
+    RETURN '[]'::jsonb;
+END;
+$$;
 
+-- =====================================================
+-- STEP 2: Update hybrid_search to use the safe function
+-- =====================================================
 DROP FUNCTION IF EXISTS hybrid_search CASCADE;
 
 CREATE OR REPLACE FUNCTION hybrid_search(
@@ -20,6 +75,7 @@ RETURNS TABLE(
     id BIGINT,
     content TEXT,
     metadata JSONB,
+    summary_text TEXT,
     
     -- Scoring breakdown
     final_score FLOAT,
@@ -44,7 +100,7 @@ BEGIN
     q_norm := TRIM(normalize_arabic(query_text));
     query_words := string_to_array(TRIM(query_text), ' ');
     
-    -- Filter out common particles (your approach)
+    -- Filter out common particles
     meaningful_words := ARRAY[]::TEXT[];
     FOREACH current_word IN ARRAY query_words
     LOOP
@@ -60,95 +116,112 @@ BEGIN
     RETURN QUERY
     WITH 
     -- =====================================================
+    -- HELPER: Safely parse nested JSON metadata
+    -- =====================================================
+    parsed_metadata AS (
+        SELECT
+            d.id,
+            d.content,
+            d.metadata,
+            d.embedding,
+            d.fts,
+            
+            safe_extract_json_array(d.metadata->'entities', 'entities') AS entities_parsed,
+            safe_extract_json_array(d.metadata->'places', 'places') AS places_parsed,
+            safe_extract_json_array(d.metadata->'subjects', 'subjects') AS subjects_parsed,
+            safe_extract_json_array(d.metadata->'events', 'events') AS events_parsed,
+            safe_extract_json_array(d.metadata->'religion', 'religion') AS religion_parsed,
+            safe_extract_json_array(d.metadata->'animals', 'animals') AS animals_parsed,
+            safe_extract_json_array(d.metadata->'sentiments', 'sentiments') AS sentiments_parsed
+            
+        FROM documents d
+    ),
+    
+    -- =====================================================
     -- SIGNAL 1: FULL-TEXT SEARCH (FTS)
     -- =====================================================
     fts_results AS (
         SELECT
-            d.id,
-            ROW_NUMBER() OVER(ORDER BY ts_rank_cd(d.fts, websearch_to_tsquery('arabic', query_text)) DESC) AS rank_ix,
-            ts_rank_cd(d.fts, websearch_to_tsquery('arabic', query_text))::FLOAT AS score
-        FROM documents d
-        WHERE d.fts @@ websearch_to_tsquery('arabic', query_text)
+            pm.id,
+            ROW_NUMBER() OVER(ORDER BY ts_rank_cd(pm.fts, websearch_to_tsquery('arabic', query_text)) DESC) AS rank_ix,
+            ts_rank_cd(pm.fts, websearch_to_tsquery('arabic', query_text))::FLOAT AS score
+        FROM parsed_metadata pm
+        WHERE pm.fts @@ websearch_to_tsquery('arabic', query_text)
         ORDER BY rank_ix
         LIMIT LEAST(match_count, 30) * 3
     ),
     
     -- =====================================================
-    -- SIGNAL 2: TRIGRAM SIMILARITY (Fuzzy)
+    -- SIGNAL 2: TRIGRAM SIMILARITY
     -- =====================================================
     trigram_results AS (
         SELECT
-            d.id,
+            pm.id,
             ROW_NUMBER() OVER(ORDER BY 
                 GREATEST(
-                    similarity(normalize_arabic(split_part(d.content, '---', 2)), q_norm),
-                    similarity(normalize_arabic(d.metadata->>'title_cleaned'), q_norm)
+                    similarity(normalize_arabic(split_part(pm.content, '---', 2)), q_norm),
+                    similarity(normalize_arabic(pm.metadata->>'title_cleaned'), q_norm)
                 ) DESC
             ) AS rank_ix,
             GREATEST(
-                similarity(normalize_arabic(split_part(d.content, '---', 2)), q_norm),
-                similarity(normalize_arabic(d.metadata->>'title_cleaned'), q_norm)
+                similarity(normalize_arabic(split_part(pm.content, '---', 2)), q_norm),
+                similarity(normalize_arabic(pm.metadata->>'title_cleaned'), q_norm)
             )::FLOAT AS score
-        FROM documents d
+        FROM parsed_metadata pm
         WHERE 
-            similarity(normalize_arabic(split_part(d.content, '---', 2)), q_norm) > 0.1
-            OR similarity(normalize_arabic(d.metadata->>'title_cleaned'), q_norm) > 0.1
+            similarity(normalize_arabic(split_part(pm.content, '---', 2)), q_norm) > 0.1
+            OR similarity(normalize_arabic(pm.metadata->>'title_cleaned'), q_norm) > 0.1
         ORDER BY rank_ix
         LIMIT LEAST(match_count, 30) * 3
     ),
     
     -- =====================================================
-    -- SIGNAL 3: EXACT PHRASE MATCHING (Your approach)
+    -- SIGNAL 3: EXACT PHRASE MATCHING
     -- =====================================================
     exact_results AS (
         SELECT
-            d.id,
+            pm.id,
             ROW_NUMBER() OVER(ORDER BY 
                 CASE 
-                    -- Entity name exact match = highest priority
                     WHEN EXISTS (
-                        SELECT 1 FROM jsonb_array_elements(d.metadata->'entities') e 
+                        SELECT 1 FROM jsonb_array_elements(pm.entities_parsed) e 
                         WHERE normalize_arabic(e->>'name') LIKE '%' || q_norm || '%'
                     ) THEN 1
-                    -- Title exact phrase
-                    WHEN normalize_arabic(d.metadata->>'title_cleaned') LIKE '%' || q_norm || '%' THEN 2
-                    -- Poem lines exact phrase (after '---')
-                    WHEN normalize_arabic(split_part(d.content, '---', 2)) LIKE '%' || q_norm || '%' THEN 3
-                    -- Title contains all meaningful words
+                    WHEN normalize_arabic(pm.metadata->>'title_cleaned') LIKE '%' || q_norm || '%' THEN 2
+                    WHEN normalize_arabic(split_part(pm.content, '---', 2)) LIKE '%' || q_norm || '%' THEN 3
                     WHEN (
                         SELECT COUNT(*) = array_length(meaningful_words, 1)
                         FROM unnest(meaningful_words) mw
-                        WHERE position(normalize_arabic(mw) IN normalize_arabic(d.metadata->>'title_cleaned')) > 0
+                        WHERE position(normalize_arabic(mw) IN normalize_arabic(pm.metadata->>'title_cleaned')) > 0
                     ) THEN 4
-                    -- Poem lines contain all meaningful words
                     WHEN (
                         SELECT COUNT(*) = array_length(meaningful_words, 1)
                         FROM unnest(meaningful_words) mw
-                        WHERE position(normalize_arabic(mw) IN normalize_arabic(split_part(d.content, '---', 2))) > 0
+                        WHERE position(normalize_arabic(mw) IN normalize_arabic(split_part(pm.content, '---', 2))) > 0
                     ) THEN 5
                     ELSE 6
                 END
             ) AS rank_ix,
             CASE 
                 WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements(d.metadata->'entities') e 
+                    SELECT 1 FROM jsonb_array_elements(pm.entities_parsed) e 
                     WHERE normalize_arabic(e->>'name') LIKE '%' || q_norm || '%'
                 ) THEN TRUE
-                WHEN normalize_arabic(d.metadata->>'title_cleaned') LIKE '%' || q_norm || '%' THEN TRUE
-                WHEN normalize_arabic(split_part(d.content, '---', 2)) LIKE '%' || q_norm || '%' THEN TRUE
+                WHEN normalize_arabic(pm.metadata->>'title_cleaned') LIKE '%' || q_norm || '%' THEN TRUE
+                WHEN normalize_arabic(split_part(pm.content, '---', 2)) LIKE '%' || q_norm || '%' THEN TRUE
                 ELSE FALSE
             END AS has_exact_match
-        FROM documents d
+        FROM parsed_metadata pm
         WHERE 
             EXISTS (
-                SELECT 1 FROM jsonb_array_elements(d.metadata->'entities') e 
+                SELECT 1 FROM jsonb_array_elements(pm.entities_parsed) e 
                 WHERE normalize_arabic(e->>'name') LIKE '%' || q_norm || '%'
             )
-            OR normalize_arabic(d.metadata->>'title_cleaned') LIKE '%' || q_norm || '%'
-            OR normalize_arabic(split_part(d.content, '---', 2)) LIKE '%' || q_norm || '%'
+            OR normalize_arabic(pm.metadata->>'title_cleaned') LIKE '%' || q_norm || '%'
+            OR normalize_arabic(split_part(pm.content, '---', 2)) LIKE '%' || q_norm || '%'
             OR EXISTS (
                 SELECT 1 FROM unnest(meaningful_words) mw
-                WHERE position(normalize_arabic(mw) IN normalize_arabic(split_part(d.content, '---', 2))) > 0
+                WHERE position(normalize_arabic(mw) IN normalize_arabic(split_part(pm.content, '---', 2))) > 0
             )
         ORDER BY rank_ix
         LIMIT LEAST(match_count, 30) * 3
@@ -159,41 +232,39 @@ BEGIN
     -- =====================================================
     semantic_results AS (
         SELECT
-            d.id,
-            ROW_NUMBER() OVER(ORDER BY d.embedding <#> query_embedding) AS rank_ix,
-            (1 - (d.embedding <=> query_embedding))::FLOAT AS score
-        FROM documents d
-        WHERE d.embedding IS NOT NULL
+            pm.id,
+            ROW_NUMBER() OVER(ORDER BY pm.embedding <#> query_embedding) AS rank_ix,
+            (1 - (pm.embedding <=> query_embedding))::FLOAT AS score
+        FROM parsed_metadata pm
+        WHERE pm.embedding IS NOT NULL
         ORDER BY rank_ix
         LIMIT LEAST(match_count, 30) * 3
     ),
     
     -- =====================================================
-    -- SIGNAL 5: METADATA MATCHING (Your proven approach)
-    -- Score: 60 per metadata field match
+    -- SIGNAL 5: METADATA MATCHING
     -- =====================================================
     metadata_matches AS (
         SELECT
-            d.id,
+            pm.id,
             ARRAY_AGG(DISTINCT match_type) AS matched_fields
-        FROM documents d
+        FROM parsed_metadata pm
         CROSS JOIN LATERAL (
             SELECT unnest(ARRAY[
-                -- Entities (highest priority)
+                -- Entities
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements(d.metadata->'entities') entity
+                    SELECT 1 FROM jsonb_array_elements(pm.entities_parsed) entity
                     WHERE 
-                        -- Exact name match
                         normalize_arabic(entity->>'name') LIKE '%' || q_norm || '%'
-                        -- OR all meaningful words from query appear in entity name
                         OR (
                             SELECT COUNT(*) = array_length(meaningful_words, 1)
                             FROM unnest(meaningful_words) mw
                             WHERE normalize_arabic(entity->>'name') LIKE '%' || normalize_arabic(mw) || '%'
                         )
-                        -- OR resolved_from contains any query word
                         OR EXISTS (
-                            SELECT 1 FROM jsonb_array_elements_text(entity->'resolved_from') rf
+                            SELECT 1 FROM jsonb_array_elements_text(
+                                COALESCE(entity->'resolved_from', '[]'::jsonb)
+                            ) rf
                             WHERE normalize_arabic(rf) LIKE '%' || q_norm || '%'
                                OR EXISTS (
                                    SELECT 1 FROM unnest(meaningful_words) mw
@@ -204,97 +275,86 @@ BEGIN
                 
                 -- Places
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements(d.metadata->'places') place
+                    SELECT 1 FROM jsonb_array_elements(pm.places_parsed) place
                     WHERE position(q_norm IN normalize_arabic(place->>'name')) > 0
-                       OR position(q_norm IN normalize_arabic(place->>'resolved_from')) > 0
                        OR EXISTS (
                            SELECT 1 FROM unnest(meaningful_words) mw
                            WHERE position(normalize_arabic(mw) IN normalize_arabic(place->>'name')) > 0
-                              OR position(normalize_arabic(mw) IN normalize_arabic(place->>'resolved_from')) > 0
                        )
                 ) THEN 'places' END,
                 
                 -- Subjects
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements_text(d.metadata->'subjects') subject
-                    WHERE position(q_norm IN normalize_arabic(subject)) > 0
+                    SELECT 1 FROM jsonb_array_elements(pm.subjects_parsed) subject
+                    WHERE position(q_norm IN normalize_arabic(subject->>'subject')) > 0
                        OR EXISTS (
                            SELECT 1 FROM unnest(meaningful_words) mw
-                           WHERE position(normalize_arabic(mw) IN normalize_arabic(subject)) > 0
+                           WHERE position(normalize_arabic(mw) IN normalize_arabic(subject->>'subject')) > 0
                        )
                 ) THEN 'subjects' END,
                 
                 -- Events
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements_text(d.metadata->'events') event
-                    WHERE position(q_norm IN normalize_arabic(event)) > 0
+                    SELECT 1 FROM jsonb_array_elements(pm.events_parsed) event
+                    WHERE position(q_norm IN normalize_arabic(event->>'event')) > 0
                        OR EXISTS (
                            SELECT 1 FROM unnest(meaningful_words) mw
-                           WHERE position(normalize_arabic(mw) IN normalize_arabic(event)) > 0
+                           WHERE position(normalize_arabic(mw) IN normalize_arabic(event->>'event')) > 0
                        )
                 ) THEN 'events' END,
                 
                 -- Religion
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements_text(d.metadata->'religion') rel
-                    WHERE position(q_norm IN normalize_arabic(rel)) > 0
+                    SELECT 1 FROM jsonb_array_elements(pm.religion_parsed) rel
+                    WHERE position(q_norm IN normalize_arabic(rel->>'religion')) > 0
                        OR EXISTS (
                            SELECT 1 FROM unnest(meaningful_words) mw
-                           WHERE position(normalize_arabic(mw) IN normalize_arabic(rel)) > 0
+                           WHERE position(normalize_arabic(mw) IN normalize_arabic(rel->>'religion')) > 0
                        )
                 ) THEN 'religion' END,
                 
                 -- Animals
                 CASE WHEN EXISTS (
-                    SELECT 1 FROM jsonb_array_elements(d.metadata->'animals') animal
+                    SELECT 1 FROM jsonb_array_elements(pm.animals_parsed) animal
                     WHERE position(q_norm IN normalize_arabic(animal->>'name')) > 0
-                       OR EXISTS (
-                           SELECT 1 FROM jsonb_array_elements_text(animal->'resolved_from') rf
-                           WHERE position(q_norm IN normalize_arabic(rf)) > 0
-                       )
                        OR EXISTS (
                            SELECT 1 FROM unnest(meaningful_words) mw
                            WHERE position(normalize_arabic(mw) IN normalize_arabic(animal->>'name')) > 0
-                              OR EXISTS (
-                                  SELECT 1 FROM jsonb_array_elements_text(animal->'resolved_from') rf
-                                  WHERE position(normalize_arabic(mw) IN normalize_arabic(rf)) > 0
-                              )
                        )
                 ) THEN 'animals' END,
                 
                 -- Sentiments
-                CASE WHEN position(q_norm IN normalize_arabic(COALESCE(d.metadata->>'sentiments', ''))) > 0
-                    OR EXISTS (
-                        SELECT 1 FROM unnest(meaningful_words) mw
-                        WHERE position(normalize_arabic(mw) IN normalize_arabic(COALESCE(d.metadata->>'sentiments', ''))) > 0
-                    )
-                THEN 'sentiments' END
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(pm.sentiments_parsed) sent
+                    WHERE position(q_norm IN normalize_arabic(sent->>'sentiment')) > 0
+                       OR EXISTS (
+                           SELECT 1 FROM unnest(meaningful_words) mw
+                           WHERE position(normalize_arabic(mw) IN normalize_arabic(sent->>'sentiment')) > 0
+                       )
+                ) THEN 'sentiments' END
             ]) AS match_type
         ) metadata
         WHERE metadata.match_type IS NOT NULL
-        GROUP BY d.id
+        GROUP BY pm.id
     ),
     
     -- =====================================================
-    -- RRF COMBINATION (Supabase pattern)
+    -- RRF COMBINATION
     -- =====================================================
     combined AS (
         SELECT
             COALESCE(fts.id, trgm.id, exact.id, sem.id, meta.id) AS id,
             
-            -- RRF scores
             COALESCE(1.0 / (rrf_k + fts.rank_ix), 0.0) * fts_weight AS fts_rrf,
             COALESCE(1.0 / (rrf_k + trgm.rank_ix), 0.0) * trigram_weight AS trigram_rrf,
             COALESCE(1.0 / (rrf_k + exact.rank_ix), 0.0) * exact_weight AS exact_rrf,
             COALESCE(1.0 / (rrf_k + sem.rank_ix), 0.0) * semantic_weight AS semantic_rrf,
             
-            -- Raw scores
             COALESCE(fts.score, 0.0) AS fts_raw,
             COALESCE(trgm.score, 0.0) AS trigram_raw,
             COALESCE(exact.has_exact_match, FALSE) AS exact_matched,
             COALESCE(sem.score, 0.0) AS semantic_raw,
             
-            -- Metadata
             COALESCE(meta.matched_fields, ARRAY[]::TEXT[]) AS metadata_fields
             
         FROM fts_results fts
@@ -308,16 +368,13 @@ BEGIN
     -- FINAL SCORING & RETURN
     -- =====================================================
     SELECT
-        d.id,
-        d.content,
-        d.metadata,
+        pm.id,
+        pm.content,
+        pm.metadata,
+        split_part(pm.content, '---', 2) AS summary_text,
         
-        -- Final score: RRF * 100 + metadata boost (60 per field)
-        -- ((c.fts_rrf + c.trigram_rrf + c.exact_rrf + c.semantic_rrf) * 100 + 
-        --  COALESCE(array_length(c.metadata_fields, 1), 0) * 60)::FLOAT AS final_score,
         ((c.fts_rrf + c.trigram_rrf + c.exact_rrf + c.semantic_rrf) * 100)::FLOAT AS final_score,
         
-        -- Score breakdown
         (c.fts_rrf + c.trigram_rrf + c.exact_rrf + c.semantic_rrf)::FLOAT AS rrf_score,
         c.fts_raw::FLOAT AS fts_rank,
         c.trigram_raw::FLOAT AS trigram_sim,
@@ -326,22 +383,8 @@ BEGIN
         c.metadata_fields::TEXT[] AS matched_in
         
     FROM combined c
-    JOIN documents d ON d.id = c.id
+    JOIN parsed_metadata pm ON pm.id = c.id
     ORDER BY final_score DESC
     LIMIT LEAST(match_count, 30);
 END;
 $$;
-
--- =====================================================
--- USAGE EXAMPLE
--- =====================================================
--- SELECT * FROM hybrid_search(
---     'محمد بن زايد',                          -- query text
---     '[0.1, 0.2, ..., 0.3]'::vector(1536),  -- query embedding
---     20,                                      -- match_count
---     0.4,                                     -- fts_weight
---     0.3,                                     -- trigram_weight
---     0.6,                                     -- exact_weight
---     1.0,                                     -- semantic_weight
---     50                                       -- rrf_k
--- );

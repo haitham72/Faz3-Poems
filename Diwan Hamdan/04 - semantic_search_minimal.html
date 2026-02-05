@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔍 البحث الدلالي - ديوان فزاع</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
+      }
+
+      h1 {
+        font-size: 48px;
+        font-weight: 800;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .search-box {
+        background: white;
+        padding: 32px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        margin-bottom: 24px;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 18px 24px;
+        font-size: 18px;
+        background: #f5f5f7;
+        border: 3px solid transparent;
+        color: #1d1d1f;
+        border-radius: 14px;
+        margin-bottom: 16px;
+        transition: all 0.3s;
+        font-family: inherit;
+      }
+
+      input[type="text"]:focus {
+        border-color: #667eea;
+        outline: none;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      }
+
+      button {
+        width: 100%;
+        padding: 18px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .stats {
+        background: white;
+        padding: 24px;
+        border-radius: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        display: none;
+      }
+
+      .stats.show {
+        display: block;
+        animation: slideDown 0.4s ease-out;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 16px;
+      }
+
+      .stat-item {
+        text-align: center;
+        padding: 16px;
+        background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+        border-radius: 12px;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #86868b;
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+
+      .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .results-container {
+        display: none;
+      }
+
+      .results-container.show {
+        display: block;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      .poems-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 24px;
+      }
+
+      .poem-card {
+        background: white;
+        padding: 28px;
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        transition: all 0.3s;
+        position: relative;
+        border-right: 6px solid #667eea;
+      }
+
+      .poem-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+      }
+
+      .poem-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f5f5f7;
+      }
+
+      .poem-id {
+        font-size: 14px;
+        color: #667eea;
+        font-weight: 700;
+      }
+
+      .score-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .poem-text {
+        background: linear-gradient(135deg, #f9f9fb 0%, #f0f0f5 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin: 16px 0;
+        font-size: 17px;
+        line-height: 2.2;
+        white-space: pre-wrap;
+        border-right: 3px solid #e0e0e8;
+      }
+
+      /* Highlighting - GOLD for resolved_from */
+      mark.resolved {
+        background: #ffd700;
+        color: #1d1d1f;
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+      }
+
+      .summary-section {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        padding: 16px;
+        border-radius: 12px;
+        margin: 16px 0;
+        border-right: 4px solid #2196f3;
+      }
+
+      .summary-label {
+        font-size: 11px;
+        color: #0d47a1;
+        font-weight: 700;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+      }
+
+      .summary-text {
+        font-size: 15px;
+        color: #1d1d1f;
+        line-height: 1.8;
+      }
+
+      .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 10px;
+        margin: 16px 0;
+      }
+
+      .metadata-item {
+        text-align: center;
+        padding: 10px;
+        background: #f5f5f7;
+        border-radius: 10px;
+      }
+
+      .metadata-label {
+        font-size: 9px;
+        color: #86868b;
+        margin-bottom: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .metadata-value {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1d1d1f;
+      }
+
+      .sentiment-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        background: #fce7f3;
+        color: #ec4899;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 4px;
+      }
+
+      .dev-info {
+        margin-top: 16px;
+        padding: 10px 14px;
+        background: #f5f5f7;
+        border-radius: 8px;
+        font-size: 11px;
+        color: #86868b;
+        font-family: "Courier New", monospace;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: white;
+      }
+
+      .loading-spinner {
+        font-size: 48px;
+        animation: spin 1s linear infinite;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: white;
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 32px;
+        }
+        .poems-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 البحث الدلالي</h1>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="text"
+          id="search"
+          placeholder="ابحث عن قصائد..."
+          autocomplete="off"
+        />
+        <button id="searchBtn">🔍 بحث (Enter)</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="results-container" id="resultsContainer"></div>
+    </div>
+
+    <script>
+      const CONFIG = {
+        API_URL: "https://n8n.devinprocess.com/webhook/Symantic_search",
+        // Or use your specific webhook path, e.g.:
+        // API_URL: "https://n8n.devinprocess.com/webhook-test/semantic_search",
+      };
+
+      const input = document.getElementById("search");
+      const searchBtn = document.getElementById("searchBtn");
+      const stats = document.getElementById("stats");
+      const resultsContainer = document.getElementById("resultsContainer");
+
+      let allResults = [];
+      let currentQuery = "";
+
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") search();
+      });
+
+      searchBtn.addEventListener("click", search);
+
+      async function search() {
+        const query = input.value.trim();
+        if (query.length < 2) {
+          resetDisplay();
+          return;
+        }
+
+        currentQuery = query;
+        const start = performance.now();
+
+        resultsContainer.innerHTML = `
+          <div class="loading">
+            <div class="loading-spinner">⏳</div>
+            <div style="margin-top: 16px; font-size: 18px;">جاري البحث...</div>
+          </div>
+        `;
+        resultsContainer.classList.add("show");
+
+        try {
+          const response = await fetch(CONFIG.API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query }),
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          let data = await response.json();
+          console.log("📥 API Response (raw):", data);
+
+          // N8N returns array, unwrap it
+          if (Array.isArray(data) && data.length > 0) {
+            data = data[0];
+            console.log("📥 Unwrapped:", data);
+          }
+
+          const elapsed = Math.round(performance.now() - start);
+
+          if (data && data.success && data.results) {
+            allResults = data.results;
+            displayResults(elapsed, data);
+          } else {
+            console.error("❌ Invalid response structure:", data);
+            throw new Error("No results");
+          }
+        } catch (error) {
+          console.error("Search error:", error);
+          resultsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">❌</div>
+              <div style="font-size: 20px;">خطأ: ${error.message}</div>
+            </div>
+          `;
+        }
+      }
+
+      function resetDisplay() {
+        stats.classList.remove("show");
+        resultsContainer.classList.remove("show");
+        allResults = [];
+      }
+
+      function displayResults(time, data) {
+        if (!allResults || allResults.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div style="font-size: 20px;">لا توجد نتائج</div>
+            </div>
+          `;
+          return;
+        }
+
+        // Calculate stats
+        const avgSemantic = (
+          allResults.reduce((sum, r) => sum + (r.semantic || 0), 0) /
+          allResults.length
+        ).toFixed(3);
+
+        const exactMatches = allResults.filter((r) => r.exact_match).length;
+
+        stats.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">⚡ وقت</div>
+              <div class="stat-value">${time}ms</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📚 نتائج</div>
+              <div class="stat-value">${data.count}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">🎯 دقيقة</div>
+              <div class="stat-value">${exactMatches}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">📊 دلالي</div>
+              <div class="stat-value">${avgSemantic}</div>
+            </div>
+          </div>
+        `;
+        stats.classList.add("show");
+
+        resultsContainer.innerHTML = `
+          <div style="text-align: center; margin-bottom: 20px; color: white; font-size: 18px; font-weight: 600;">
+            📊 النتائج (${allResults.length})
+          </div>
+          <div class="poems-grid">
+            ${allResults.map((r) => renderPoemCard(r)).join("")}
+          </div>
+        `;
+        resultsContainer.classList.add("show");
+      }
+
+      function renderPoemCard(result) {
+        // Parse IDs array
+        const rowIds = Array.isArray(result.id) ? result.id : [];
+        const poemId = result.poem_id || 0;
+
+        // Parse sentiment
+        const sentiment = result.sentiments?.sentiment || null;
+        const sentimentScore = result.sentiments?.score || 0;
+
+        // Highlight resolved_from in summary
+        let highlightedSummary = result.summary_text || "";
+        if (result.matched_metadata && Array.isArray(result.matched_metadata)) {
+          result.matched_metadata.forEach((span) => {
+            if (span && highlightedSummary.includes(span)) {
+              highlightedSummary = highlightedSummary.replace(
+                new RegExp(`(${escapeRegex(span)})`, "gi"),
+                '<mark class="resolved">$1</mark>',
+              );
+            }
+          });
+        }
+
+        return `
+          <div class="poem-card">
+            <div class="poem-header">
+              <div class="poem-id">قصيدة #${poemId}</div>
+              ${result.exact_match ? '<span class="score-badge">✓ مطابقة</span>' : ""}
+            </div>
+
+            ${
+              result.summary_text
+                ? `
+              <div class="summary-section">
+                <div class="summary-label">📝 النص</div>
+                <div class="summary-text">${highlightedSummary}</div>
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              sentiment
+                ? `
+              <div style="margin: 16px 0;">
+                <span class="sentiment-badge">💭 ${sentiment}</span>
+              </div>
+            `
+                : ""
+            }
+
+            <div class="metadata-grid">
+              <div class="metadata-item">
+                <div class="metadata-label">Semantic</div>
+                <div class="metadata-value">${(result.semantic || 0).toFixed(3)}</div>
+              </div>
+              <div class="metadata-item">
+                <div class="metadata-label">FTS</div>
+                <div class="metadata-value">${(result.fts || 0).toFixed(2)}</div>
+              </div>
+              <div class="metadata-item">
+                <div class="metadata-label">Trigram</div>
+                <div class="metadata-value">${(result.trigram || 0).toFixed(2)}</div>
+              </div>
+              ${
+                sentiment
+                  ? `
+                <div class="metadata-item">
+                  <div class="metadata-label">Sentiment</div>
+                  <div class="metadata-value">${sentimentScore.toFixed(2)}</div>
+                </div>
+              `
+                  : ""
+              }
+            </div>
+
+            ${
+              result.matched_metadata && result.matched_metadata.length > 0
+                ? `
+              <div class="dev-info">
+                🎯 Matched: ${result.matched_metadata.slice(0, 2).join(", ")}
+                ${result.matched_metadata.length > 2 ? ` (+${result.matched_metadata.length - 2} more)` : ""}
+              </div>
+            `
+                : ""
+            }
+
+            <div class="dev-info">
+              IDs: [${rowIds.slice(0, 4).join(", ")}${rowIds.length > 4 ? "..." : ""}] | 
+              Poem: ${poemId}
+            </div>
+          </div>
+        `;
+      }
+
+      function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      input.focus();
+    </script>
+  </body>
+</html>

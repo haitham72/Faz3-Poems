@@ -12,7 +12,7 @@ const corsHeaders = {
 };
 
 // =====================================================
-// ARABIC LINGUISTIC IMPROVEMENTS
+// ARABIC PROCESSING
 // =====================================================
 
 const ARABIC_STOP_WORDS = new Set([
@@ -59,120 +59,33 @@ const ARABIC_STOP_WORDS = new Set([
   "تحت",
   "أمام",
   "وراء",
-  "يوم", // ADDED: "day" is often noise
-  "قصيدة", // ADDED: "poem" is implied in poetry search
+  "يوم",
+  "قصيدة",
   "قصائد",
 ]);
 
-// Common Arabic synonyms/roots for query expansion
-const ARABIC_SYNONYMS: Record<string, string[]> = {
-  // Father
-  الاب: ["الاب", "ابي", "والد", "والدي", "ابا", "اب", "الوالد"],
-  اب: ["الاب", "ابي", "والد", "والدي", "ابا", "اب"],
-  ابي: ["الاب", "ابي", "والد", "والدي", "ابا"],
-  والد: ["الاب", "ابي", "والد", "والدي", "الوالد"],
-
-  // Mother
-  الام: ["الام", "امي", "والدة", "والدتي", "اما", "ام", "الوالدة"],
-  ام: ["الام", "امي", "والدة", "والدتي", "اما"],
-  امي: ["الام", "امي", "والدة", "والدتي"],
-
-  // Martyr
-  الشهيد: ["الشهيد", "شهيد", "شهداء", "الشهداء", "استشهاد"],
-  شهيد: ["الشهيد", "شهيد", "شهداء", "الشهداء"],
-  شهداء: ["الشهيد", "شهيد", "شهداء", "الشهداء"],
-
-  // Love
-  الحب: ["الحب", "حب", "حبيب", "محبة", "عشق", "غرام"],
-  حب: ["الحب", "حب", "حبيب", "محبة"],
-  عشق: ["عشق", "الحب", "حب", "غرام"],
-
-  // War
-  الحرب: ["الحرب", "حرب", "قتال", "معركة", "نزال"],
-  حرب: ["الحرب", "حرب", "قتال", "معركة"],
-};
-
-/**
- * Normalize Arabic text for better matching
- */
 const normalize = (text: any): string => {
   if (!text) return "";
   if (typeof text !== "string") text = String(text);
   return text
     .toLowerCase()
-    .replace(/[ًٌٍَُِّْ]/g, "") // Remove diacritics
-    .replace(/[أإآٱ]/g, "ا") // Normalize alef
-    .replace(/[ى]/g, "ي") // Normalize ya
-    .replace(/[ة]/g, "ه") // Ta marbuta -> ha
-    .replace(/[ؤ]/g, "و") // Hamza on waw -> waw
-    .replace(/[ئ]/g, "ي") // Hamza on ya -> ya
+    .replace(/[ًٌٍَُِّْ]/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/[ى]/g, "ي")
+    .replace(/[ة]/g, "ه")
+    .replace(/[ؤ]/g, "و")
+    .replace(/[ئ]/g, "ي")
     .replace(/\s+/g, " ")
     .trim();
 };
 
-/**
- * Extract meaningful keywords from query (remove stop words)
- */
 const extractKeywords = (query: string): string[] => {
   const normalized = normalize(query);
   const words = normalized.split(/\s+/);
-
   return words.filter((word) => {
     if (word.length <= 1) return false;
     return !ARABIC_STOP_WORDS.has(word);
   });
-};
-
-/**
- * Expand query with synonyms for better semantic matching
- */
-const expandQuery = (query: string): string => {
-  const keywords = extractKeywords(query);
-  const expanded = new Set<string>();
-
-  // Add original keywords
-  keywords.forEach((kw) => expanded.add(kw));
-
-  // Add synonyms
-  keywords.forEach((kw) => {
-    const synonyms = ARABIC_SYNONYMS[kw];
-    if (synonyms) {
-      synonyms.forEach((syn) => expanded.add(syn));
-    }
-  });
-
-  // Return as space-separated string
-  return Array.from(expanded).join(" ");
-};
-
-/**
- * Check if text matches query meaningfully (not just stop words)
- */
-const matchesQuery = (text: string, query: string): boolean => {
-  const normText = normalize(text);
-  const normQuery = normalize(query);
-
-  // Exact phrase match
-  if (normText.includes(normQuery)) return true;
-
-  // Extract meaningful words from query
-  const queryWords = extractKeywords(query);
-
-  if (queryWords.length === 0) {
-    // Query is ONLY stop words - be lenient
-    return normQuery.split(/\s+/).some((w) => normText.includes(w));
-  }
-
-  // For single keyword, check if it appears
-  if (queryWords.length === 1) {
-    return normText.includes(queryWords[0]);
-  }
-
-  // For multi-word queries, require 60% match (looser than before)
-  const threshold = Math.ceil(queryWords.length * 0.6);
-  const matchCount = queryWords.filter((w) => normText.includes(w)).length;
-
-  return matchCount >= threshold;
 };
 
 serve(async (req) => {
@@ -187,13 +100,8 @@ serve(async (req) => {
       query,
       context_query = payload.query,
       metadata = {},
-      match_count = 10,
-      weights = {
-        fts: 0.05,
-        trigram: 0.05,
-        exact: 0.15,
-        semantic: 3.0, // Keep high semantic weight
-      },
+      match_count = 20,
+      weights = {}, // Dynamic weights from N8N
     } = payload;
 
     if (!query || typeof query !== "string") {
@@ -202,23 +110,48 @@ serve(async (req) => {
 
     const searchQuery = context_query || query;
     console.log("🔍 Original query:", query);
+    console.log("📊 Requested match_count:", match_count);
 
-    // =====================================================
-    // ARABIC PREPROCESSING: Extract keywords & expand
-    // =====================================================
     const keywords = extractKeywords(searchQuery);
     console.log("🔑 Extracted keywords:", keywords);
 
-    const expandedQuery = expandQuery(searchQuery);
-    console.log("📝 Expanded query:", expandedQuery);
+    // =====================================================
+    // DYNAMIC WEIGHT CALCULATION
+    // Default weights (100% total)
+    // =====================================================
+    const DEFAULT_WEIGHTS = {
+      // Content (45%)
+      content_fts_weight: 0.15,
+      content_trigram_weight: 0.1,
+      content_semantic_weight: 0.2,
 
-    // Use expanded query for embedding (better semantic matching)
-    const embeddingInput = keywords.length > 0 ? expandedQuery : searchQuery;
+      // Summary (15%)
+      summary_fts_weight: 0.05,
+      summary_semantic_weight: 0.1,
 
-    // Generate embedding
-    const embeddingResponse = await fetch(
-      "https://api.openai.com/v1/embeddings",
-      {
+      // Metadata (30%)
+      entity_weight: 0.1,
+      subject_weight: 0.08,
+      place_weight: 0.05,
+      event_weight: 0.04,
+      religion_weight: 0.03,
+
+      // Exact (10%)
+      exact_weight: 0.1,
+    };
+
+    // Merge with N8N weights (N8N can override any weight)
+    const finalWeights = { ...DEFAULT_WEIGHTS, ...weights };
+
+    console.log("⚖️ Final weights:", finalWeights);
+
+    // =====================================================
+    // GENERATE EMBEDDINGS
+    // Two embeddings: one for content, one for summary
+    // =====================================================
+    const embeddingPromises = [
+      // Content embedding - use expanded query with keywords
+      fetch("https://api.openai.com/v1/embeddings", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${openaiKey}`,
@@ -226,41 +159,80 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "text-embedding-3-small",
-          input: embeddingInput.trim(),
+          input: searchQuery.trim(),
           encoding_format: "float",
         }),
-      },
-    );
+      }),
+      // Summary embedding - use cleaned context_query
+      fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: (context_query || searchQuery).trim(),
+          encoding_format: "float",
+        }),
+      }),
+    ];
 
-    if (!embeddingResponse.ok) {
-      const error = await embeddingResponse.text();
-      throw new Error(
-        `OpenAI API error: ${embeddingResponse.status} - ${error}`,
-      );
+    const [contentEmbeddingRes, summaryEmbeddingRes] =
+      await Promise.all(embeddingPromises);
+
+    if (!contentEmbeddingRes.ok || !summaryEmbeddingRes.ok) {
+      throw new Error("OpenAI API error");
     }
 
-    const embeddingData = await embeddingResponse.json();
-    const embedding = embeddingData.data[0].embedding;
+    const [contentEmbeddingData, summaryEmbeddingData] = await Promise.all([
+      contentEmbeddingRes.json(),
+      summaryEmbeddingRes.json(),
+    ]);
 
-    // Call hybrid_search with adjusted parameters
+    const contentEmbedding = contentEmbeddingData.data[0].embedding;
+    const summaryEmbedding = summaryEmbeddingData.data[0].embedding;
+
+    console.log("✅ Generated 2 embeddings (content + summary)");
+
+    // =====================================================
+    // CALL HYBRID SEARCH WITH DYNAMIC WEIGHTS
+    // =====================================================
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     const { data: searchResults, error: searchError } = await supabase.rpc(
       "hybrid_search",
       {
-        query_text: searchQuery, // Keep original for FTS/exact matching
-        query_embedding: embedding,
-        match_count: match_count * 4, // Get MORE candidates for filtering
-        fts_weight: weights.fts,
-        trigram_weight: weights.trigram,
-        exact_weight: weights.exact,
-        semantic_weight: weights.semantic,
+        query_text: searchQuery,
+        query_embedding: contentEmbedding,
+        summary_embedding: summaryEmbedding,
+        match_count: match_count * 4, // Fetch 4x for reranker
+
+        // Content weights
+        content_fts_weight: finalWeights.content_fts_weight,
+        content_trigram_weight: finalWeights.content_trigram_weight,
+        content_semantic_weight: finalWeights.content_semantic_weight,
+
+        // Summary weights
+        summary_fts_weight: finalWeights.summary_fts_weight,
+        summary_semantic_weight: finalWeights.summary_semantic_weight,
+
+        // Metadata weights
+        entity_weight: finalWeights.entity_weight,
+        subject_weight: finalWeights.subject_weight,
+        place_weight: finalWeights.place_weight,
+        event_weight: finalWeights.event_weight,
+        religion_weight: finalWeights.religion_weight,
+
+        // Exact match
+        exact_weight: finalWeights.exact_weight,
+
         rrf_k: 50,
       },
     );
 
     if (searchError) throw searchError;
-    console.log(`✅ Found ${searchResults?.length || 0} results from SQL`);
+    console.log(`✅ SQL returned ${searchResults?.length || 0} candidates`);
 
     if (!searchResults || searchResults.length === 0) {
       return new Response(
@@ -268,6 +240,8 @@ serve(async (req) => {
           success: true,
           count: 0,
           results: [],
+          match_count_requested: match_count,
+          match_count_returned: 0,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -276,7 +250,7 @@ serve(async (req) => {
     }
 
     // =====================================================
-    // HELPERS
+    // PROCESS RESULTS
     // =====================================================
     const safeArray = (value: any): any[] => {
       try {
@@ -296,266 +270,141 @@ serve(async (req) => {
       }
     };
 
-    // =====================================================
-    // IMPROVED SCORING WITH METADATA PRIORITY
-    // =====================================================
-    const SEMANTIC_FLOOR = 0.35; // Raised from 0.30 - stricter filter
-    const SEMANTIC_MULTIPLIER = 800; // Reduced from 1200 (less aggressive)
-    const METADATA_BOOST_BASE = 150; // NEW: High boost for metadata matches
+    const processedResults = searchResults.map((result: any) => {
+      const meta = result.metadata || {};
 
-    let finalResults = searchResults.map((result: any) => {
-      try {
-        const meta = result.metadata || {};
-        const summary = result.summary_text || "";
-        const semanticSim = result.semantic_sim || 0;
+      return {
+        id: result.id,
+        content: result.content,
+        summary: result.summary,
 
-        const entities = safeArray(meta.entities);
-        const places = safeArray(meta.places);
-        const events = safeArray(meta.events);
-        const religion = safeArray(meta.religion);
-        const subjects = safeArray(meta.subjects);
-        const animals = safeArray(meta.animals);
-        const sentiments = safeArray(meta.sentiments);
+        metadata: {
+          Summary: result.summary, // For backward compatibility
+          Title_raw: meta.Title_raw,
+          Poem_line_raw: meta.Poem_line_raw,
+          قافية: meta.قافية,
+          روي: meta.روي,
+          البحر: meta.البحر,
+          category: meta.category,
+          poem_id: meta.poem_id,
+          chunk_id: meta.chunk_id,
+          Row_IDs_in_chunk: meta.Row_IDs_in_chunk,
+          chunk_type: meta.chunk_type,
 
-        let metadataBoost = 0;
-        let rawMetadataMatches = 0;
-        const matchedMetadata: string[] = [];
+          // Arrays
+          sentiments: safeArray(meta.sentiments),
+          entities: safeArray(meta.entities),
+          events: safeArray(meta.events),
+          religion: safeArray(meta.religion),
+          subjects: safeArray(meta.subjects),
+          places: safeArray(meta.places),
+          animals: safeArray(meta.animals),
+        },
 
-        // =====================================================
-        // PRIORITY 1: METADATA MATCHING (HAPPENS FIRST)
-        // If metadata matches keywords, boost heavily regardless of semantic score
-        // =====================================================
+        // Scores from SQL
+        final_score: result.final_score || 0,
+        rrf_score: result.rrf_score || 0,
 
-        // Check if ANY keyword matches metadata (not just full query)
-        keywords.forEach((keyword) => {
-          // Entities - highest value
-          entities.forEach((e: any) => {
-            if (!e || typeof e !== "object") return;
-            if (e.name && matchesQuery(e.name, keyword)) {
-              rawMetadataMatches += 5; // High value
-              matchedMetadata.push(`entity:${e.name}`);
-            } else if (Array.isArray(e.resolved_from)) {
-              const hasMatch = e.resolved_from.some(
-                (rf: string) => rf && matchesQuery(rf, keyword),
-              );
-              if (hasMatch) {
-                rawMetadataMatches += 3;
-                matchedMetadata.push(`entity:${e.name}`);
-              }
-            }
-          });
+        // Content scores
+        content_fts_rank: result.content_fts_rank || 0,
+        content_trigram_sim: result.content_trigram_sim || 0,
+        content_semantic_sim: result.content_semantic_sim || 0,
 
-          // Subjects - very important for poetry
-          subjects.forEach((s: any) => {
-            if (!s || typeof s !== "object") return;
-            if (s.subject && matchesQuery(s.subject, keyword)) {
-              rawMetadataMatches += 4;
-              matchedMetadata.push(`subject:${s.subject}`);
-            } else if (Array.isArray(s.resolved_from)) {
-              const hasMatch = s.resolved_from.some(
-                (rf: string) => rf && matchesQuery(rf, keyword),
-              );
-              if (hasMatch) {
-                rawMetadataMatches += 2;
-                matchedMetadata.push(`subject:${s.subject}`);
-              }
-            }
-          });
+        // Summary scores
+        summary_fts_rank: result.summary_fts_rank || 0,
+        summary_semantic_sim: result.summary_semantic_sim || 0,
 
-          // Places
-          places.forEach((p: any) => {
-            if (!p || typeof p !== "object") return;
-            if (p.name && matchesQuery(p.name, keyword)) {
-              rawMetadataMatches += 3;
-              matchedMetadata.push(`place:${p.name}`);
-            }
-          });
+        // Metadata scores
+        entity_match: result.entity_match || 0,
+        subject_match: result.subject_match || 0,
+        place_match: result.place_match || 0,
+        event_match: result.event_match || 0,
+        religion_match: result.religion_match || 0,
 
-          // Events
-          events.forEach((e: any) => {
-            if (!e || typeof e !== "object") return;
-            if (e.event && matchesQuery(e.event, keyword)) {
-              rawMetadataMatches += 3;
-              matchedMetadata.push(`event:${e.event}`);
-            }
-          });
+        // Other
+        exact_match: result.exact_match || false,
+        matched_in: result.matched_in || [],
 
-          // Religion
-          religion.forEach((r: any) => {
-            if (!r || typeof r !== "object") return;
-            if (r.religion && matchesQuery(r.religion, keyword)) {
-              rawMetadataMatches += 3;
-              matchedMetadata.push(`religion:${r.religion}`);
-            }
-          });
-
-          // Animals
-          animals.forEach((a: any) => {
-            if (!a || typeof a !== "object") return;
-            if (a.name && matchesQuery(a.name, keyword)) {
-              rawMetadataMatches += 3;
-              matchedMetadata.push(`animal:${a.name}`);
-            }
-          });
-
-          // Sentiments
-          sentiments.forEach((s: any) => {
-            if (!s || typeof s !== "object") return;
-            if (s.sentiment && matchesQuery(s.sentiment, keyword)) {
-              rawMetadataMatches += 2;
-              matchedMetadata.push(`sentiment:${s.sentiment}`);
-            }
-          });
-        });
-
-        // Calculate metadata boost
-        metadataBoost = rawMetadataMatches * METADATA_BOOST_BASE;
-
-        // =====================================================
-        // PRIORITY 2: SEMANTIC SCORING
-        // =====================================================
-        let semanticBoost = 0;
-        let semanticPenalty = 0;
-
-        if (semanticSim >= SEMANTIC_FLOOR) {
-          // Good semantic match
-          semanticBoost = semanticSim * SEMANTIC_MULTIPLIER;
-        } else if (rawMetadataMatches === 0) {
-          // Poor semantic AND no metadata match = penalize heavily
-          semanticPenalty = -500;
-        }
-        // If semantic is poor BUT metadata matched, we still keep it (no penalty)
-
-        // =====================================================
-        // PRIORITY 3: EXACT MATCH BONUS
-        // =====================================================
-        const exactBonus = result.exact_match ? 20 : 0;
-
-        const finalScore =
-          (result.final_score || 0) +
-          metadataBoost +
-          semanticBoost +
-          semanticPenalty +
-          exactBonus;
-
-        return {
-          id: result.id,
-
-          highlight_data: {
-            query: query,
-            summary: summary,
-            title: meta.Title_raw || "",
-            entities: entities,
-            places: places,
-            animals: animals,
-            events: events,
-            religion: religion,
-            subjects: subjects,
-          },
-
-          metadata: {
-            Summary: summary,
-            Title_raw: meta.Title_raw,
-            Poem_line_raw: meta.Poem_line_raw,
-            قافية: meta.قافية,
-            روي: meta.روي,
-            البحر: meta.البحر,
-            وصل: meta.وصل,
-            حركة: meta.حركة,
-            category: meta.category,
-            sentiments: sentiments,
-            entities: entities,
-            events: events,
-            religion: religion,
-            subjects: subjects,
-            places: places,
-            animals: animals,
-            poem_id: meta.poem_id,
-            chunk_id: meta.chunk_id,
-            Row_IDs_in_chunk: meta.Row_IDs_in_chunk,
-            chunk_type: meta.chunk_type,
-          },
-
-          final_score: finalScore,
-          sql_base_score: result.final_score || 0,
-          metadata_boost: metadataBoost,
-          raw_metadata_matches: rawMetadataMatches,
-          exact_bonus: exactBonus,
-          semantic_boost: semanticBoost,
-          semantic_penalty: semanticPenalty,
-          matched_metadata: matchedMetadata,
-          extracted_keywords: keywords,
-
-          scores: {
-            rrf: result.rrf_score ? (result.rrf_score * 20).toFixed(2) : "0",
-            fts: result.fts_rank ? result.fts_rank.toFixed(2) : "0",
-            trigram: result.trigram_sim ? result.trigram_sim.toFixed(2) : "0",
-            semantic: result.semantic_sim
-              ? result.semantic_sim.toFixed(5)
-              : "0",
-            exact: result.exact_match ? "YES" : "NO",
-          },
-        };
-      } catch (mapError) {
-        console.error("Error processing result:", mapError);
-        return {
-          id: result.id || 0,
-          highlight_data: {
-            query: query,
-            summary: "",
-            title: "",
-            entities: [],
-            places: [],
-            animals: [],
-            events: [],
-            religion: [],
-            subjects: [],
-          },
-          metadata: result.metadata || {},
-          final_score: result.final_score || 0,
-          sql_base_score: result.final_score || 0,
-          metadata_boost: 0,
-          raw_metadata_matches: 0,
-          exact_bonus: 0,
-          semantic_boost: 0,
-          semantic_penalty: 0,
-          matched_metadata: [],
-          extracted_keywords: [],
-          scores: {
-            rrf: "0",
-            fts: "0",
-            trigram: "0",
-            semantic: "0",
-            exact: "NO",
-          },
-        };
-      }
+        // Metadata for reranker
+        extracted_keywords: keywords,
+      };
     });
 
     // Sort by final score
-    finalResults.sort((a: any, b: any) => b.final_score - a.final_score);
-    const topResults = finalResults.slice(0, match_count);
+    processedResults.sort((a: any, b: any) => b.final_score - a.final_score);
 
-    console.log(`✅ Returning ${topResults.length} results`);
+    // Calculate absolute and relative scores
+    if (processedResults.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          count: 0,
+          results: [],
+          match_count_requested: match_count,
+          match_count_returned: 0,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const maxAbsoluteScore = Math.max(
+      ...processedResults.map((r: any) => r.final_score),
+    );
+    const minAbsoluteScore = Math.min(
+      ...processedResults.map((r: any) => r.final_score),
+    );
+
     console.log(
-      `📊 Top 5 scoring breakdown:`,
-      topResults.slice(0, 5).map((r) => ({
+      `📊 Score range: ${minAbsoluteScore.toFixed(2)} - ${maxAbsoluteScore.toFixed(2)}`,
+    );
+
+    const resultsWithScores = processedResults.map((r: any) => {
+      const absoluteScore =
+        maxAbsoluteScore > 0
+          ? Math.round((r.final_score / maxAbsoluteScore) * 100)
+          : 0;
+
+      const relativeScore =
+        maxAbsoluteScore > minAbsoluteScore
+          ? Math.round(
+              ((r.final_score - minAbsoluteScore) /
+                (maxAbsoluteScore - minAbsoluteScore)) *
+                100,
+            )
+          : 100;
+
+      return {
+        ...r,
+        absolute_score: absoluteScore,
+        relative_score: relativeScore,
+      };
+    });
+
+    console.log(
+      `✅ Returning ${resultsWithScores.length} candidates for reranker`,
+    );
+    console.log(
+      `📊 Top 5 breakdown:`,
+      resultsWithScores.slice(0, 5).map((r: any) => ({
         poem: r.metadata.poem_id,
-        semantic: r.scores.semantic,
-        meta_matches: r.raw_metadata_matches,
-        meta_boost: r.metadata_boost,
-        sem_boost: r.semantic_boost.toFixed(0),
-        penalty: r.semantic_penalty,
+        absolute: r.absolute_score,
         final: r.final_score.toFixed(0),
-        matched: r.matched_metadata.slice(0, 3),
+        content_sem: r.content_semantic_sim.toFixed(3),
+        summary_sem: r.summary_semantic_sim.toFixed(3),
       })),
     );
 
     return new Response(
       JSON.stringify({
         success: true,
-        count: topResults.length,
-        results: topResults,
+        count: resultsWithScores.length,
+        results: resultsWithScores,
+        match_count_requested: match_count,
+        match_count_returned: resultsWithScores.length,
+        max_absolute_score: maxAbsoluteScore.toFixed(2),
+        query_metadata: metadata, // Pass to reranker
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

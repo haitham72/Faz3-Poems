@@ -10,25 +10,6 @@
         }
 }
 
-[
-  {
-    "success": true,
-    "count": 20,
-
-    "results": [
-      {
-        "id": 406,
-        "content": "( محمد ابن راشد ) كلما يطري نفز قيام      نفز قيام للي يكرم شعوبه و يحشمها\nلابو راشد ملوك الارض توقف منزله و مقام      لو ان الارض تتكلم … قسم بالله كلمها\nحفيد اهل العروبه ، ناصر الدين وسند الاسلام      عسي ربي يسلمه لعروبته و يسلمها\nسمي ( محمد ) اللي للنبوه كان مسك ختام      ابوي اللي يمينه بالسخا والجود خاتمها",
-        
-        },
-        "resolved_from": [
-          "( محمد ابن راشد ) كلما يطري نفز قيام      نفز قيام للي يكرم شعوبه و يحشمها\nلابو راشد ملوك الارض توقف منزله حفيد اهل العروبه ، ناصر الدين وسند الاسلام ","ربي يسلمه لعروبته و يسلمها", "..."
-        ],
-        "absolute_score": 52, // only 52% calculated actual score 
-        "relative_score": 2 // this is the second rank
-      },
-]
-
 // semantic output
 {
   "success": true,
@@ -59,7 +40,7 @@
         "سمي ( محمد ) اللي للنبوه كان مسك ختام",
         "ابوي اللي يمينه بالسخا والجود خاتمها"
         ],  
-      "semantic": 0.71,                         // - ONLY use this as the ACTUAL score 0.71 -> 71%
+      "semantic": 0.71,                         // ONLY use this as the ACTUAL score 0.71 -> 71%
       "fts": 13,                                // DO NOT USE for APP - only for log
       "trigram": 25,                            // DO NOT USE for APP - only for log
       "exact_match": true                       // DO NOT USE for APP - only for log

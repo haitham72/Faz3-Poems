@@ -65,3 +65,16 @@ WHERE
     jsonb_typeof(metadata->'religion') = 'string' OR
     jsonb_typeof(metadata->'subjects') = 'string' OR
     jsonb_typeof(metadata->'sentiments') = 'string';
+
+
+
+-- check rows for malformed json b
+
+SELECT 
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'subjects') = 'string') as "Subjects_Needs_Fix",
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'places') = 'string') as "Places_Needs_Fix",
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'sentiments') = 'string') as "Sentiments_Needs_Fix",
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'events') = 'string') as "Events_Needs_Fix",
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'religion') = 'string') as "Religion_Needs_Fix",
+    COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'animals') = 'string') as "Animals_Needs_Fix"
+FROM documents;

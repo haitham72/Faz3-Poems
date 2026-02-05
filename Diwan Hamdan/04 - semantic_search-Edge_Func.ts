@@ -100,7 +100,7 @@ serve(async (req) => {
       query,
       context_query = payload.query,
       metadata = {},
-      match_count = 20,
+      match_count = 5,
       weights = {}, // Dynamic weights from N8N
     } = payload;
 

@@ -55,10 +55,6 @@ CREATE TABLE documents (
     ) STORED,
 
 
-    
-    -- TODO convert from 1536 to 3076
-
-
 
     -- Vector embedding (1536 for OpenAI text-embedding-3-small)
     embedding vector(1536),

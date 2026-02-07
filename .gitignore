@@ -1,0 +1,24 @@
+# Byte-compiled / Optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Environment Variables (Keep secrets safe)
+.env
+
+# IDE / Editor metadata
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# TODO\SHBMPoetryMedia
+TODO/SHBMPoetryMedia

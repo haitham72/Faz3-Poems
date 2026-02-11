@@ -196,14 +196,22 @@ BEGIN
                 (1 - (d.embedding <=> hybrid_search_opus.query_embedding))::FLOAT,
                 (1 - (d.embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
             ) AS score,
-            ROW_NUMBER() OVER(ORDER BY score DESC) AS rank_ix
+            ROW_NUMBER() OVER(
+                ORDER BY GREATEST(
+                    (1 - (d.embedding <=> hybrid_search_opus.query_embedding))::FLOAT,
+                    (1 - (d.embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
+                ) DESC
+            ) AS rank_ix
         FROM documents d
         WHERE d.embedding IS NOT NULL
           AND GREATEST(
                   (1 - (d.embedding <=> hybrid_search_opus.query_embedding))::FLOAT,
                   (1 - (d.embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
               ) > 0.1
-        ORDER BY score DESC
+        ORDER BY GREATEST(
+            (1 - (d.embedding <=> hybrid_search_opus.query_embedding))::FLOAT,
+            (1 - (d.embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
+        ) DESC
         LIMIT LEAST(match_count * 4, 100)
     ),
     
@@ -270,14 +278,22 @@ BEGIN
                 (1 - (d.summary_embedding <=> hybrid_search_opus.summary_embedding))::FLOAT,
                 (1 - (d.summary_embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
             ) AS score,
-            ROW_NUMBER() OVER(ORDER BY score DESC) AS rank_ix
+            ROW_NUMBER() OVER(
+                ORDER BY GREATEST(
+                    (1 - (d.summary_embedding <=> hybrid_search_opus.summary_embedding))::FLOAT,
+                    (1 - (d.summary_embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
+                ) DESC
+            ) AS rank_ix
         FROM documents d
         WHERE d.summary_embedding IS NOT NULL
           AND GREATEST(
                   (1 - (d.summary_embedding <=> hybrid_search_opus.summary_embedding))::FLOAT,
                   (1 - (d.summary_embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
               ) > 0.1
-        ORDER BY score DESC
+        ORDER BY GREATEST(
+            (1 - (d.summary_embedding <=> hybrid_search_opus.summary_embedding))::FLOAT,
+            (1 - (d.summary_embedding <=> hybrid_search_opus.focused_embedding))::FLOAT
+        ) DESC
         LIMIT LEAST(match_count * 4, 100)
     ),
     

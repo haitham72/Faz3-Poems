@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Test - Semantic Search</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 30px 20px;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        font-size: 36px;
+        font-weight: 800;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+      }
+      .subtitle {
+        text-align: center;
+        color: #86868b;
+        margin-bottom: 30px;
+        font-size: 16px;
+      }
+
+      .control-panel {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 30px;
+        padding: 24px;
+        background: #f9f9fb;
+        border-radius: 14px;
+      }
+
+      input,
+      select {
+        padding: 14px 18px;
+        font-size: 16px;
+        border: 2px solid #d1d1d6;
+        border-radius: 10px;
+        font-family: inherit;
+        transition: all 0.3s;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      }
+
+      .btn-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 30px;
+      }
+
+      button {
+        padding: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin-bottom: 30px;
+      }
+
+      .summary-card {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+        border-radius: 14px;
+      }
+
+      .summary-value {
+        font-size: 36px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+
+      .summary-value.pass {
+        color: #34c759;
+      }
+      .summary-value.fail {
+        color: #ff3b30;
+      }
+      .summary-value.pending {
+        color: #ff9500;
+      }
+      .summary-value.error {
+        color: #8e44ad;
+      }
+      .summary-value.total {
+        color: #667eea;
+      }
+
+      .summary-label {
+        font-size: 12px;
+        color: #86868b;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .test-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 16px;
+      }
+
+      .test-card {
+        padding: 20px;
+        background: #f5f5f7;
+        border-radius: 12px;
+        border-right: 6px solid #d1d1d6;
+        transition: all 0.3s;
+      }
+
+      .test-card.pass {
+        border-right-color: #34c759;
+        background: #e8f8ec;
+      }
+      .test-card.fail {
+        border-right-color: #ff3b30;
+        background: #ffe8e6;
+      }
+      .test-card.pending {
+        border-right-color: #ff9500;
+        background: #fff5e6;
+      }
+      .test-card.running {
+        border-right-color: #007aff;
+        background: #e6f2ff;
+      }
+      .test-card.error {
+        border-right-color: #8e44ad;
+        background: #f3e6ff;
+      }
+
+      .test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .test-user {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1d1d1f;
+      }
+
+      .status-badge {
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .status-badge.pass {
+        background: #34c759;
+        color: white;
+      }
+      .status-badge.fail {
+        background: #ff3b30;
+        color: white;
+      }
+      .status-badge.pending {
+        background: #ff9500;
+        color: white;
+      }
+      .status-badge.running {
+        background: #007aff;
+        color: white;
+      }
+      .status-badge.error {
+        background: #8e44ad;
+        color: white;
+      }
+
+      .test-details {
+        font-size: 13px;
+        color: #86868b;
+        margin-top: 8px;
+        font-family: "Courier New", monospace;
+      }
+
+      .test-time {
+        font-size: 14px;
+        color: #1d1d1f;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .test-error {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(255, 59, 48, 0.1);
+        border-radius: 8px;
+        font-size: 12px;
+        color: #ff3b30;
+        font-family: "Courier New", monospace;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #007aff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 Load Testing - Semantic Search</h1>
+      <p class="subtitle">Test concurrent users hitting webhook endpoint</p>
+
+      <div class="control-panel">
+        <input
+          type="text"
+          id="queryInput"
+          placeholder="Enter test query (e.g., بو راشد)"
+        />
+        <select id="userCount">
+          <option value="1">1 User</option>
+          <option value="10">10 Users</option>
+          <option value="20">20 Users</option>
+          <option value="50">50 Users</option>
+        </select>
+        <button onclick="runLoadTest()" id="runBtn">▶ Run Test</button>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card">
+          <div class="summary-value total" id="totalCount">0</div>
+          <div class="summary-label">Total</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value pass" id="passCount">0</div>
+          <div class="summary-label">✓ Pass</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value fail" id="failCount">0</div>
+          <div class="summary-label">✗ Fail</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value pending" id="pendingCount">0</div>
+          <div class="summary-label">⏳ Running</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value error" id="errorCount">0</div>
+          <div class="summary-label">⚠ Error</div>
+        </div>
+      </div>
+
+      <div class="test-grid" id="testGrid"></div>
+    </div>
+
+    <script>
+      const WEBHOOK_URL = "https://n8n.devinprocess.com/webhook/minimal";
+
+      let testResults = [];
+      let activeTests = 0;
+
+      function updateSummary() {
+        const pass = testResults.filter((t) => t.status === "pass").length;
+        const fail = testResults.filter((t) => t.status === "fail").length;
+        const pending = testResults.filter(
+          (t) => t.status === "running",
+        ).length;
+        const error = testResults.filter((t) => t.status === "error").length;
+
+        document.getElementById("totalCount").textContent = testResults.length;
+        document.getElementById("passCount").textContent = pass;
+        document.getElementById("failCount").textContent = fail;
+        document.getElementById("pendingCount").textContent = pending;
+        document.getElementById("errorCount").textContent = error;
+      }
+
+      function validateResponse(data) {
+        // Validate webhook response structure
+        if (!data || typeof data !== "object") {
+          return { valid: false, reason: "Invalid JSON structure" };
+        }
+
+        // N8N returns array, unwrap it
+        let unwrapped = Array.isArray(data) && data.length > 0 ? data[0] : data;
+
+        if (!unwrapped.success) {
+          return { valid: false, reason: "success flag missing or false" };
+        }
+
+        if (!unwrapped.results || !Array.isArray(unwrapped.results)) {
+          return { valid: false, reason: "results array missing" };
+        }
+
+        if (!unwrapped.count || typeof unwrapped.count !== "number") {
+          return { valid: false, reason: "count field missing" };
+        }
+
+        // Validate at least one result has required fields
+        if (unwrapped.results.length > 0) {
+          const firstResult = unwrapped.results[0];
+          const requiredFields = ["poem_id", "semantic", "summary_text"];
+          const missingFields = requiredFields.filter(
+            (f) => !(f in firstResult),
+          );
+
+          if (missingFields.length > 0) {
+            return {
+              valid: false,
+              reason: `Missing fields: ${missingFields.join(", ")}`,
+            };
+          }
+        }
+
+        return {
+          valid: true,
+          count: unwrapped.count,
+          results: unwrapped.results.length,
+        };
+      }
+
+      function renderTests() {
+        const grid = document.getElementById("testGrid");
+        grid.innerHTML = testResults
+          .map((test) => {
+            let statusIcon = "";
+            if (test.status === "pass") statusIcon = "✓";
+            else if (test.status === "fail") statusIcon = "✗";
+            else if (test.status === "running")
+              statusIcon = '<span class="spinner"></span>';
+            else if (test.status === "error") statusIcon = "⚠";
+
+            return `
+          <div class="test-card ${test.status}">
+            <div class="test-header">
+              <div class="test-user">${test.user}</div>
+              <span class="status-badge ${test.status}">${statusIcon} ${test.status}</span>
+            </div>
+            <div class="test-details">Query: ${test.query}</div>
+            ${test.time ? `<div class="test-time">⏱ ${test.time}ms</div>` : ""}
+            ${test.validation ? `<div class="test-details">Results: ${test.validation.results || 0} / Count: ${test.validation.count || 0}</div>` : ""}
+            ${test.error ? `<div class="test-error">${test.error}</div>` : ""}
+          </div>
+        `;
+          })
+          .join("");
+      }
+
+      async function runSingleTest(userId, query) {
+        const testIndex = testResults.findIndex((t) => t.user === userId);
+
+        testResults[testIndex].status = "running";
+        renderTests();
+        updateSummary();
+
+        const startTime = performance.now();
+
+        try {
+          const response = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query }),
+          });
+
+          const elapsed = Math.round(performance.now() - startTime);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          const validation = validateResponse(data);
+
+          testResults[testIndex].time = elapsed;
+          testResults[testIndex].status = validation.valid ? "pass" : "fail";
+          testResults[testIndex].validation = validation;
+          testResults[testIndex].error = validation.valid
+            ? null
+            : validation.reason;
+        } catch (error) {
+          const elapsed = Math.round(performance.now() - startTime);
+          testResults[testIndex].time = elapsed;
+          testResults[testIndex].status = "error";
+          testResults[testIndex].error = error.message;
+        }
+
+        activeTests--;
+        renderTests();
+        updateSummary();
+      }
+
+      async function runLoadTest() {
+        const query = document.getElementById("queryInput").value.trim();
+        const userCount = parseInt(document.getElementById("userCount").value);
+
+        if (!query) {
+          alert("Please enter a query");
+          return;
+        }
+
+        // Disable button
+        const btn = document.getElementById("runBtn");
+        btn.disabled = true;
+        btn.textContent = "Running...";
+
+        // Clear previous results
+        testResults = [];
+
+        // Create test users
+        for (let i = 1; i <= userCount; i++) {
+          testResults.push({
+            user: `user_${String(i).padStart(2, "0")}`,
+            query: query,
+            status: "pending",
+            time: null,
+            error: null,
+            validation: null,
+          });
+        }
+
+        renderTests();
+        updateSummary();
+
+        // Run all tests concurrently
+        activeTests = userCount;
+        const promises = testResults.map((test) =>
+          runSingleTest(test.user, query),
+        );
+
+        await Promise.all(promises);
+
+        // Re-enable button
+        btn.disabled = false;
+        btn.textContent = "▶ Run Test";
+      }
+
+      // Initialize
+      renderTests();
+      updateSummary();
+    </script>
+  </body>
+</html>

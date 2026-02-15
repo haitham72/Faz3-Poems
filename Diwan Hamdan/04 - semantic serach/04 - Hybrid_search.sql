@@ -24,9 +24,9 @@ CREATE OR REPLACE FUNCTION public.hybrid_search_opus(
     -- SEMANTIC-FIRST default weights
     content_fts_weight FLOAT DEFAULT 0.08,
     content_trigram_weight FLOAT DEFAULT 0.05,
-    content_semantic_weight FLOAT DEFAULT 0.35,  -- BOOSTED from 0.25
+    content_semantic_weight FLOAT DEFAULT 0.45,  -- BOOSTED from 0.25
     summary_fts_weight FLOAT DEFAULT 0.03,
-    summary_semantic_weight FLOAT DEFAULT 0.25,  -- BOOSTED from 0.15
+    summary_semantic_weight FLOAT DEFAULT 0.15,  -- BOOSTED from 0.15
     entity_weight FLOAT DEFAULT 0.06,
     subject_weight FLOAT DEFAULT 0.04,
     place_weight FLOAT DEFAULT 0.03,

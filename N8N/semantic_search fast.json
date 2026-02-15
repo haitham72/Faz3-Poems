@@ -1,0 +1,138 @@
+{
+  "name": "supabase",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "semantic",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -176
+      ],
+      "id": "6d01d449-20a0-463f-9d75-053836ff7aa6",
+      "name": "Webhook",
+      "webhookId": "21792cc2-785a-461b-9edc-14511995ae68"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        464,
+        -176
+      ],
+      "id": "27077e42-2b2c-462c-b5ad-f1cda616f571",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://djapzzlbihlwustwdzgr.supabase.co/functions/v1/minimal-edge",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_5bPqmnE0ny76x1LQHv3-nQ_VzIJlfmb"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_5bPqmnE0ny76x1LQHv3-nQ_VzIJlfmb"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.body.query }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        16,
+        -176
+      ],
+      "id": "7e743509-b2b7-4297-9b92-f882e346c07d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// نقوم بالوصول إلى مصفوفة النتائج من المدخلات\nconst input = items[0].json; \nconst results = input.results || [];\n\nconst mappedResults = results.map(item => {\n  const meta = item.metadata || {};\n  \n  return {\n    // تحويل سلسلة المعرفات \"1,2,3\" إلى مصفوفة أرقام [1, 2, 3]\n    id: meta.Row_IDs_in_chunk ? meta.Row_IDs_in_chunk.split(',').map(Number) : [item.id],\n    \n    // البيانات الأساسية المطلوبة للـ HTML\n    poem_id: meta.poem_id,\n    content: item.content,\n    summary_text: item.content,\n    \n    // استخراج أول شعور (Sentiment) أو كائن فارغ\n    sentiments: (meta.sentiments && meta.sentiments.length > 0) ? meta.sentiments[0] : null,\n    \n    // استخراج المواضيع ككلمات مفتاحية للمطابقة\n    matched_metadata: meta.subjects ? meta.subjects.map(s => s.subject) : [],\n    \n    // تعيين قيم التشابه (Similarity) والمطابقة\n    semantic: item.similarity || 0,\n    exact_match: (item.similarity > 0.8),\n    trigram: 0,\n    fts: 0\n  };\n});\n\n// إرجاع النتيجة بالشكل النهائي المتوافق مع renderPoemCard\nreturn {\n  success: true,\n  count: mappedResults.length,\n  results: mappedResults\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -176
+      ],
+      "id": "82ce51cb-c9d5-4b6d-8264-b9059d070a40",
+      "name": "jsonify"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "jsonify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "jsonify": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "83ec7c97-c8ea-4c2b-a69a-88e319997046",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0ec69445ae14b4562c4a33f19033c99870021ba3387755ce6277fafaf2c0b2e"
+  },
+  "id": "ocotxfM7KBRsholGauB-L",
+  "tags": []
+}

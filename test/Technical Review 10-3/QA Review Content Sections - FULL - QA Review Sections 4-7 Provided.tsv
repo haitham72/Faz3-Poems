@@ -1,0 +1,143 @@
+Section	ID	Test Case	Steps to Test	Expected Result	Status	Known Issue / Root Cause	Design / Exist	Verdict
+Search Results	SR-01	Semantic Match Percentage bounds	Execute semantic search (تطابق دلالي) -> observe percentage badges on result cards	Percentage should logically be capped at 100%	❌ Fail	Screenshot shows scores of 135% and 115%. Likely missing normalization in the similarity scoring algorithm.	Exist	❌ Fail
+	SR-02	Keyword Highlighting (Text Match)	Search specific term (e.g. الفخر) -> check text match tab (تطابق نصي)	Searched string should be wrapped in highlighting span (gold background)	❌ Fail	Highlight functions Doesn`n show on search result word/Poem line	Exist	✅ Pass
+	SR-03	AI Analysis Box rendering	Trigger search that returns AI analysis -> inspect gradient box	Gradient border loads smoothly; text aligns strictly RTL; UAE flag emoji renders	Pass	Renders correctly based on screenshot.	Exist	✅ Pass
+	SR-04	Tab switching state management	Tap between تطابق نصي and تطابق دلالي	Active tab gets distinct style; list re-renders instantly without full page reload	Pass	smooth transition between word search and semantic search tabs	Exist	✅ Pass
+	SR-05	Keyword result displayed (query)	"query" + "score%"	the searched query is passed to the search result	❌ Fail	the expanded query is being passed instead of the original query	Exist	❌ Fail
+								
+Home Carousels	HC-01	Category count mapping to DB	Inspect sub-category chips (e.g. الدين < 7)	Pill number must exactly match the SELECT COUNT(*) for that category in the DB	⚠️ Partial	Multiple subcategories failed to Map due to missmatch in DB	Exist	⚠️ Partial
+	HC-02	Singer song count discrepancy	Check المؤدون carousel -> look at Hussein Al Jassmi (حسين الجسمي)	UI should show 32 songs (per provided DB facts)	⚠️ Partial	Properly display the correct number - although 45 songs are missing due to DB Missmatch	Exist	⚠️ Partial
+	HC-03	Image aspect ratio preservation	Scroll through vertical cards (الغضب, الحنين)	Images scale uniformly (aspect-fill) without horizontal/vertical stretching	Pass	Design Mismatch with Artwork - Successfully handeled 112 artwork Manually	Exist	✅ Pass
+	HC-04	RTL natural swipe	Swipe carousels left-to-right to view hidden items	Native iOS/Android RTL horizontal scrolling behavior	Pass	swipes are smooth in small thumbnails and snaps in top carousel flawlessly	Exist	✅ Pass
+	HC-05	Title/subtitle Names	Titles are correct and having "ال" when it fits and not use "ال" when it is wrong	titles and subtitles are loading and grammatically correct	Pass	useage of "ال" programatically	Exist	✅ Pass
+								
+Search Landing	SL-01	Quick filter chip mapping	Compare chips (العائلة, وطن) against master DB categories	Chips should map 1:1 to DB entities to guarantee results	Pass		Exist	✅ Pass
+	SL-02	Voice Search trigger	Tap mic icon on the bottom search bar	Requests OS mic permission (if first time) -> opens native voice-to-text overlay	Pass		Exist	✅ Pass
+	SL-03	Search prompt & keyboard	Tap search input field	Keyboard opens instantly (Arabic default); bottom nav hides or shifts above keyboard	Pass		Exist	✅ Pass
+								
+Side Menu	SM-01	History text truncation	Open side menu -> view long search history (e.g. محمد بن زايد يتكلم مع...)	Truncates with ellipsis; long-press should show full text tooltip	Pass	Truncates correctly with ... preventing UI breakage.	Exist	✅ Pass
+	SM-02	Clear History function	Tap مسح (Clear) next to عمليات البحث الأخيرة	Local cache/DB instantly drops history array; UI updates to empty state	Pass		Exist	✅ Pass
+	SM-03	Drawer overlay & dismissal	Open drawer -> tap the dimmed background area	Drawer closes smoothly returning user to previous view	Pass		Exist	✅ Pass
+	SM-04	Active tab tracking	Open drawer from a specific page	The corresponding menu item (e.g. الرئيسية) should be highlighted	Pass	Home (الرئيسية) shows active state background in screenshot.	Exist	✅ Pass
+	SM-05	UI Logic	Spelling/Logic/Grammer	correct font size/spacing/grammer	⚠️ Partial	there is a redundant "السجل" while in the same Menu there are "recent searches" serving the same purpose	Exist	❌ Fail
+	SM-06	Favorites	like and remove from favorites	interactive	Pass	Excellent	Exist	✅ Pass
+								
+Main Categories	CAT-01	Religion (الدين) Carousel	Religion  -> check spelling -> check images	Renders title 'الدين', subtitle 'إيمان وخشوع', and < 7 count	Pass	Renders correctly in screenshot "Home screen Top 01"	Exist	✅ Pass
+	CAT-02	Sentiments (المشاعر) Carousel	Sentiments  -> check spelling -> check images	Renders title 'المشاعر', subtitle 'أحاسيس وأشواق', and < 13 count	Pass	Renders correctly in screenshot "Home screen scrol 02"	Exist	✅ Pass
+	CAT-03	People (الشخصيات) Carousel	People  -> check spelling -> check images	Renders title 'الشخصيات', subtitle 'رموز وإرث', and < 8 count	Pass	Renders correctly in screenshot "Home screen scrol 03"	Exist	✅ Pass
+	CAT-04	Animals (المخلوقات) Carousel	Animals  -> check spelling -> check images	Renders title 'المخلوقات', subtitle 'رفقاء الصحراء', and < 8 count	Pass	Renders correctly in screenshot "Home screen scrol 03"	Exist	✅ Pass
+	CAT-05	Places (الأماكن) Carousel	Places  -> check spelling -> check images	Renders title 'الأماكن', subtitle 'أرض وتراث'	Pass	Renders correctly in screenshot "Home screen scrol 04"	Exist	✅ Pass
+	CAT-06	Events (الأحداث) Carousel	Events  -> check spelling -> check images	Renders title 'الأحداث', subtitle 'احتفالات وطنية'	Pass	Renders correctly in screenshot "Home screen scrol 05"	Exist	✅ Pass
+	CAT-07	Subjects (المواضيع) Carousel	Subjects  -> check spelling -> check images	Renders title 'المواضيع', subtitle 'حكمة وحياة'	Pass	Renders correctly in screenshot "Home screen scrol 06"	Exist	✅ Pass
+								
+Sub-Category: Religion	REL-01	Allah (الله)	Check cards inside Religion carousel	Renders thumbnail 'الله' and subtitle 'لفظ الجلالة'	Pass		Exist	✅ Pass
+	REL-02	religion mentions (الاقتباسات الدينية)	Check cards inside Religion carousel	Renders thumbnail 'الاقتباسات الدينية' and subtitle 'صدى الإيمان'	Pass		Exist	✅ Pass
+	REL-03	religious places (الأماكن المقدسة)	Scroll Religion carousel left	Renders thumbnail and subtitle 'أرض مقدسة'	⚠️ Partial	un mapped	Exist	❌ Fail
+	REL-04	Prohets (الأنبياء)	Scroll Religion carousel left	Renders thumbnail and subtitle 'المرسلين'	Pass		Exist	✅ Pass
+	REL-05	religious events (المناسبات الدينية)	Scroll Religion carousel left	Renders thumbnail and subtitle 'مناسبات روحانية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	REL-06	religious books (الكتب المقدسة)	Scroll Religion carousel left	Renders thumbnail and subtitle 'كلمات السماء'	⚠️ Partial	un mapped	Exist	❌ Fail
+	REL-07	religious belifs (المفاهيم الإيمانية)	Scroll Religion carousel left	Renders thumbnail and subtitle 'جوهر الإيمان'	⚠️ Partial	un mapped	Exist	❌ Fail
+								
+Sub-Category: Sentiments	SNT-01	anger (الغضب)	Check cards inside Sentiments carousel	Renders thumbnail 'الغضب' and subtitle 'نار الصدر'	Pass		Exist	✅ Pass
+	SNT-02	missing (الحنين)	Check cards inside Sentiments carousel	Renders thumbnail 'الحنين' and subtitle 'صدى الذكرى'	Pass		Exist	✅ Pass
+	SNT-03	wisdome (الحكمة)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'حكمة البادية'	Pass		Exist	✅ Pass
+	SNT-04	loath (الشوق)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'لهيب الشوق'	Pass		Exist	✅ Pass
+	SNT-05	pride (الفخر)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'شعلة الفخر'	Pass		Exist	✅ Pass
+	SNT-06	scared (الخوف)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'همس الظلال'	Pass		Exist	✅ Pass
+	SNT-07	joy (الفرح)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'نور القلب'	Pass		Exist	✅ Pass
+	SNT-08	love (الحب)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'شوق المتحابين'	Pass		Exist	✅ Pass
+	SNT-09	meditate (التأمل)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'صمت الروح'	Pass		Exist	✅ Pass
+	SNT-10	patience (الصبر)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'قلب ثابت'	Pass		Exist	✅ Pass
+	SNT-11	regret (الندم)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'دروس المرّ'	Pass		Exist	✅ Pass
+	SNT-12	hope (الأمل)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'وعد الفجر'	Pass		Exist	✅ Pass
+	SNT-13	sadness (الحزن)	Scroll Sentiments carousel left	Renders thumbnail and subtitle 'عمق الألم'	Pass		Exist	✅ Pass
+								
+Sub-Category: People	PPL-01	hamdan ibn Muhammad	Check cards inside People carousel	Renders portrait 'الشيخ حمدان بن محمد' and subtitle 'الأمير الشاعر'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-02	Mohammed bin Zayed	Check cards inside People carousel	Renders portrait 'الشيخ محمد بن زايد' and subtitle 'قائد الرؤية'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-03	Sultan Qaboos	Scroll People carousel left	Renders portrait 'السلطان قابوس' and subtitle 'رمز عربي'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-04	Khalifa bin Zayed	Scroll People carousel left	Renders portrait 'الشيخ خليفة بن زايد' and subtitle 'باني الإرث'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-05	Zayed bin Sultan	Scroll People carousel left	Renders portrait 'الشيخ زايد بن سلطان' and subtitle 'الأب المؤسس'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-06	King Salman	Scroll People carousel left	Renders portrait 'سلمان بن عبدالعزيز' and subtitle 'ملك السعودية'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-07	Mohammed bin Rashid	Scroll People carousel left	Renders portrait 'الشيخ محمد بن راشد' and subtitle 'باني دبي'	❌ Fail	un mapped	Exist	❌ Fail
+	PPL-08	Rashid bin Said	Scroll People carousel left	Renders portrait 'الشيخ راشد بن سعيد' and subtitle 'إرث العائلة'	❌ Fail	un mapped	Exist	❌ Fail
+								
+Sub-Category: Animals	ANM-01	Insects (الحشرات)	Check cards inside Animals carousel	Renders thumbnail 'الحشرات' and subtitle 'حكمة اصغر المخلوقات'	Pass		Exist	✅ Pass
+	ANM-02	Birds (الطيور)	Check cards inside Animals carousel	Renders thumbnail 'الطيور' and subtitle 'طيور و جوارح'	❌ Fail	un mapped	Exist	❌ Fail
+	ANM-03	Horse (الحصان)	Scroll Animals carousel left	Renders thumbnail and subtitle 'شريك النبلاء'	Pass		Exist	⚠️ Partial
+	ANM-04	Wild Animals (الوحوش البرية)	Scroll Animals carousel left	Renders thumbnail and subtitle 'شجاعة البرية'	❌ Fail	un mapped	Exist	⚠️ Partial
+	ANM-05	Cattle (الماشية)	Scroll Animals carousel left	Renders thumbnail and subtitle 'قطعان الصحراء'	Pass		Exist	⚠️ Partial
+	ANM-06	Reptiles (الزواحف)	Scroll Animals carousel left	Renders thumbnail and subtitle 'دروس الصمت'	❌ Fail	un mapped	Exist	⚠️ Partial
+	ANM-07	Sea (البحر)	Scroll Animals carousel left	Renders thumbnail and subtitle 'روح المحيط'	⚠️ Partial	there are 11 records while should be less - DB content review is needed - Most likely a mention of "الشعر بحر" that was wrongfully triggered as "Sea"	Exist	Critical
+	ANM-08	Camels (الإبل)	Scroll Animals carousel left	Renders thumbnail and subtitle 'وفاء الصحراء'	Pass		Exist	⚠️ Partial
+								
+Sub-Category: Places	PLC-01	pure site (الأماكن المجردة)	Scroll to Places carousel	Renders thumbnail 'الأماكن المجردة'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-02	social site (المواقع الاجتماعية)	Scroll to Places carousel	Renders thumbnail 'المواقع الاجتماعية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-03	uae site (الأراضي الإماراتية)	Scroll to Places carousel	Renders thumbnail 'الأراضي الإماراتية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-04	zabeel site (قصر زعبيل)	Scroll to Places carousel	Renders thumbnail 'قصر زعبيل'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-05	countries (البلاد)	Scroll to Places carousel	Renders thumbnail 'البلاد'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-06	nature site (الطبيعة العامة)	Scroll to Places carousel	Renders thumbnail 'الطبيعة العامة'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-07	religios site (المواقع الدينية)	Scroll to Places carousel	Renders thumbnail 'المواقع الدينية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-08	nabaty site (المواقع النبطية)	Scroll to Places carousel	Renders thumbnail 'المواقع النبطية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-09	landmarks site (المعالم الإماراتية)	Scroll to Places carousel	Renders thumbnail 'المعالم الإماراتية'	⚠️ Partial	un mapped	Exist	❌ Fail
+	PLC-010	Physique & Limbs(الأعضاء و الجوارح)	Scroll to Places carousel	Renders thumbnail 'الأعضاء والجوارح'	❌ Fail	un mapped - images also not displayed	Exist	❌ Fail
+	PLC-011	Manifestations(تجلّيات الزمن)	Scroll to Places carousel	Renders thumbnail 'تجلّيات الزمن'	❌ Fail	un mapped - images also not displayed	Exist	❌ Fail
+								
+Sub-Category: Events	EVT-01	National Day (اليوم الوطني)	Scroll to Events carousel	Renders thumbnail 'اليوم الوطني' and subtitle 'اتحاد وفخر'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-02	Martyrs Day (يوم الشهيد)	Scroll to Events carousel	Renders thumbnail 'يوم الشهيد' and subtitle 'تضحية وكرامة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-03	Flag Day (يوم العلم)	Scroll to Events carousel	Renders thumbnail 'يوم العلم' and subtitle 'وحدة وهوية'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-04	Eid Fitr (عيد الفطر)	Scroll to Events carousel	Renders thumbnail 'عيد الفطر' and subtitle 'فرح وبركات'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-05	New Year (العام الجديد)	Scroll to Events carousel	Renders thumbnail 'العام الجديد' and subtitle 'بدايات جديدة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-06	Qadr (ليلة القدر)	Scroll to Events carousel	Renders thumbnail 'ليلة القدر' and subtitle 'ليلة مباركة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-07	Umrah (العمرة)	Scroll to Events carousel	Renders thumbnail 'العمرة' and subtitle 'رحلة مقدسة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-08	Sohor (السحور)	Scroll to Events carousel	Renders thumbnail 'السحور' and subtitle 'قبل الصيام'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-09	Valentine (عيد الحب)	Scroll to Events carousel	Renders thumbnail 'عيد الحب' and subtitle 'حب ووفاء'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-10	Friday (صلاة الجمعة)	Scroll to Events carousel	Renders thumbnail 'صلاة الجمعة' and subtitle 'لقاء مقدس'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-11	Birthday (عيد ميلاد)	Scroll to Events carousel	Renders thumbnail 'عيد ميلاد' and subtitle 'احتفال وفرح'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-12	Hawks (صيد الصقور)	Scroll to Events carousel	Renders thumbnail 'صيد الصقور' and subtitle 'تراث الصقارة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-13	Ramadan (رمضان)	Scroll to Events carousel	Renders thumbnail 'رمضان' and subtitle 'شهر التقوى'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-14	Breakfast (الإفطار)	Scroll to Events carousel	Renders thumbnail 'الإفطار' and subtitle 'كسر الصيام'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-15	Inauguration (عيد الجلوس)	Scroll to Events carousel	Renders thumbnail 'عيد الجلوس' and subtitle 'يوم القيادة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-16	Hajj (الحج)	Scroll to Events carousel	Renders thumbnail 'الحج' and subtitle 'فريضة الحج'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-17	Horses (سباق الخيل)	Scroll to Events carousel	Renders thumbnail 'سباق الخيل' and subtitle 'أمجاد الفروسية'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-18	Arafat (وقفة عرفات)	Scroll to Events carousel	Renders thumbnail 'وقفة عرفات' and subtitle 'يوم الرحمة'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+	EVT-19	Hijn (سباق الهجن)	Scroll to Events carousel	Renders thumbnail 'سباق الهجن' and subtitle 'سباقات الهجن'	⚠️ Partial	Breaching the rule of "more than 10 mentions" to be eligable - need to check DB to confirm why only 1/3 poems are populated in the App	Exist	⚠️Critical⚠️
+								
+Sub-Category: Subjects	SUB-01	Separation & Emig. (الفراق والهجر)	Scroll to Subjects carousel	Renders thumbnail 'الفراق والهجر' and subtitle 'جراح البعد'	Pass		Exist	✅ Pass
+	SUB-02	Leadership & Leaders (القيادة والزعماء)	Scroll to Subjects carousel	Renders thumbnail 'القيادة والزعماء' and subtitle 'إرث العمالقة'	Pass		Exist	✅ Pass
+	SUB-03	Love & Infatuation (الحب والغزل)	Scroll to Subjects carousel	Renders thumbnail 'الحب والغزل' and subtitle 'قلوب في حرب'	Pass		Exist	✅ Pass
+	SUB-04	Longing & nostalgia (الشوق والحنين)	Scroll to Subjects carousel	Renders thumbnail 'الشوق والحنين' and subtitle 'نار الذكرى'	Pass		Exist	✅ Pass
+	SUB-05	Envy & Complaint (الغيرة والعتاب)	Scroll to Subjects carousel	Renders thumbnail 'الغيرة والعتاب' and subtitle 'نار العشاق'	Pass		Exist	✅ Pass
+	SUB-06	Fidelity & Patience (الوفاء والصبر)	Scroll to Subjects carousel	Renders thumbnail 'الوفاء والصبر' and subtitle 'عهود من فولاذ'	Pass		Exist	✅ Pass
+	SUB-07	Honor & Glory (المجد والعز)	Scroll to Subjects carousel	Renders thumbnail 'المجد والعز' and subtitle 'تيجان الكرامة'	Pass		Exist	✅ Pass
+	SUB-08	Pain & Sorrow (الألم والحزن)	Scroll to Subjects carousel	Renders thumbnail 'الألم والحزن' and subtitle 'أعماق الألم'	Pass		Exist	✅ Pass
+	SUB-09	Poetry & Creativity (الشعر والإبداع)	Scroll to Subjects carousel	Renders thumbnail 'الشعر والإبداع' and subtitle 'أبيات الخلود'	Pass		Exist	✅ Pass
+	SUB-10	Beauty & Eyes (الجمال والعيون)	Scroll to Subjects carousel	Renders thumbnail 'الجمال والعيون' and subtitle 'سيوف الجمال'	⚠️ Partial	unmapped content	Exist	❌ Fail
+								
+Singers DB Pipeline	SNG-01	حسين الجسمي (Hussein Al Jassmi)	Scroll to 'المؤدون' carousel	Avatar renders; DB songs count matches UI (32)	⚠️ Partial	2 songs unmapped	Exist	❌ Fail
+	SNG-02	راشد الماجد (Rashid Al Majid)	Scroll to 'المؤدون' carousel	Avatar renders; DB songs count matches UI	⚠️ Partial	6 songs unmapped	Exist	❌ Fail
+	SNG-03	اسماء لمنور (Asma Lmnawar)	Scroll to 'المؤدون' carousel	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-04	ميحد حمد (Mehad Hamad)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	8 songs unmapped	Exist	❌ Fail
+	SNG-05	كاظم الساهر (Kadim Al Sahir)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped	Exist	❌ Fail
+	SNG-06	ابوبكر سالم (Abu Bakr Salem)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-07	بلقيس فتحي (Balqees Fathi)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped	Exist	❌ Fail
+	SNG-08	الوسمي (Al Wasmi)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped	Exist	❌ Fail
+	SNG-09	عبدالمجيد عبدالله (Abdul Majeed)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	4 songs unmapped	Exist	❌ Fail
+	SNG-10	محمد عبده (Mohammed Abdu)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	10 songs unmapped	Exist	⚠️Critical⚠️
+	SNG-11	اريام (Aryam)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-12	عباس ابراهيم (Abbas Ibrahim)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-13	فايز السعيد (Fayez Al Saeed)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-14	حمد العامري (Hamad Al Ameri)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped	Exist	❌ Fail
+	SNG-15	اصاله نصري (Assala Nasri)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	⚠️ Partial
+	SNG-16	يارا (Yara)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	⚠️ Partial
+	SNG-17	لطيفة التونسية (Latifa)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	⚠️ Partial
+	SNG-18	سلمان حميد (Salman Hamid)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	⚠️ Partial
+	SNG-19	علي بن محمد (Ali Bin Mohammed)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped	Exist	❌ Fail
+	SNG-20	نبيل شعيل (Nabeel Shuail)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	❌ Fail	1 song unmapped, only 1 song found, while he has Numerous confirmed songs not found in DB aswell	Exist	⚠️Critical⚠️
+	SNG-21	خالد عبدالرحمن (Khalid Abdulrahman)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	✅ Pass
+	SNG-22	عيضة المنهالي (Eida Al Menhali)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail
+	SNG-23	اصيل ابوبكر (Aseel Abu Bakr)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	Pass		Exist	⚠️ Partial
+	SNG-24	اطفال الامارات (UAE Children)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail
+	SNG-25	محمد المنهالي (Mohammed Al Menhali)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail
+	SNG-26	هزاع الرئيسي (Hazza Al Raisi)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail
+	SNG-27	ماجد المهندس (Majid Al Mohandis)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail
+	SNG-28	مشاري راشد العفاسي (Mishary Alafasy)	Scroll 'المؤدون' carousel left	Avatar renders; DB songs count matches UI	⚠️ Partial	1 song unmapped, while he has Numerous confirmed songs not found in DB aswell	Exist	❌ Fail

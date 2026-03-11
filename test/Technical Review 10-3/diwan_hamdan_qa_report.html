@@ -1,0 +1,2053 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diwan Hamdan - Technical Report</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0f111a;
+        --card: #1a1d27;
+        --card2: #1e2130;
+        --border: #2a2e3d;
+        --red: #ff4c4c;
+        --red-dim: rgba(255, 76, 76, 0.12);
+        --yellow: #ffb800;
+        --yellow-dim: rgba(255, 184, 0, 0.12);
+        --green: #00d084;
+        --green-dim: rgba(0, 208, 132, 0.12);
+        --blue: #4c8eff;
+        --blue-dim: rgba(76, 142, 255, 0.12);
+        --muted: #6b7280;
+        --text: #e8eaf0;
+        --text2: #9ca3af;
+        --arabic: "Tajawal", sans-serif;
+        --sans: "Inter", sans-serif;
+      }
+
+      /* ── LIGHT MODE ── */
+      body.light {
+        --bg: #f5f0e8;
+        --card: #fffdf9;
+        --card2: #f9f5ee;
+        --border: #e2d9cc;
+        --red: #d93025;
+        --red-dim: rgba(217, 48, 37, 0.08);
+        --yellow: #c47d00;
+        --yellow-dim: rgba(196, 125, 0, 0.08);
+        --green: #0a7b55;
+        --green-dim: rgba(10, 123, 85, 0.08);
+        --blue: #1a5fc8;
+        --blue-dim: rgba(26, 95, 200, 0.08);
+        --muted: #8a7f72;
+        --text: #1c1917;
+        --text2: #57534e;
+      }
+
+      /* ── TOGGLE BUTTON ── */
+      .theme-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 999;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 8px 16px;
+        font-family: var(--sans);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+      .theme-toggle:hover {
+        color: var(--text);
+        border-color: var(--muted);
+      }
+      .theme-toggle .toggle-icon {
+        font-size: 15px;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 0 0 60px;
+      }
+
+      /* ── TOP HEADER ── */
+      .top-header {
+        background: linear-gradient(135deg, var(--card2) 0%, var(--card) 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 28px 48px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+      .header-left h1 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+        color: var(--text);
+        background: none;
+        -webkit-background-clip: unset;
+        -webkit-text-fill-color: var(--text);
+      }
+      .header-left .sub {
+        font-family: var(--arabic);
+        font-size: 15px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .header-meta {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: right;
+        line-height: 1.8;
+      }
+
+      /* ── NOGO BANNER ── */
+      .nogo-banner {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 76, 76, 0.18) 0%,
+          rgba(255, 76, 76, 0.06) 100%
+        );
+        border: 1px solid rgba(255, 76, 76, 0.35);
+        border-left: 4px solid var(--red);
+        margin: 28px 48px 0;
+        border-radius: 12px;
+        padding: 18px 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .nogo-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .nogo-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--red);
+        margin-bottom: 4px;
+      }
+      .nogo-body {
+        font-size: 13px;
+        color: var(--text2);
+        line-height: 1.6;
+      }
+
+      /* ── KPI ROW ── */
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin: 24px 48px 0;
+      }
+      .kpi-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 20px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+      .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 12px 12px 0 0;
+      }
+      .kpi-card.red::before {
+        background: var(--red);
+      }
+      .kpi-card.yellow::before {
+        background: var(--yellow);
+      }
+      .kpi-card.green::before {
+        background: var(--green);
+      }
+      .kpi-card.blue::before {
+        background: var(--blue);
+      }
+      .kpi-value {
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 6px;
+      }
+      .kpi-value.red {
+        color: var(--red);
+      }
+      .kpi-value.yellow {
+        color: var(--yellow);
+      }
+      .kpi-value.green {
+        color: var(--green);
+      }
+      .kpi-value.blue {
+        color: var(--blue);
+      }
+      .kpi-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      /* ── SECTION TITLE ── */
+      .section-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 36px 48px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .section-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ── MODULE GRID ── */
+      .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin: 0 48px;
+      }
+      .module-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px 22px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .module-card.critical {
+        border-color: rgba(255, 76, 76, 0.3);
+      }
+      .module-card.warning {
+        border-color: rgba(255, 184, 0, 0.3);
+      }
+      .module-card.healthy {
+        border-color: rgba(0, 208, 132, 0.3);
+      }
+
+      .module-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .module-title-block {
+        flex: 1;
+      }
+      .module-badge {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        flex-shrink: 0;
+      }
+      .badge-critical {
+        background: var(--red-dim);
+        color: var(--red);
+      }
+      .badge-warning {
+        background: var(--yellow-dim);
+        color: var(--yellow);
+      }
+      .badge-healthy {
+        background: var(--green-dim);
+        color: var(--green);
+      }
+      .module-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.3;
+      }
+      .module-name-ar {
+        font-family: var(--arabic);
+        font-size: 12px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+
+      /* Donut chart */
+      .donut-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .donut-wrap {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
+      }
+      .donut-wrap svg {
+        transform: rotate(-90deg);
+      }
+      .donut-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .donut-pct {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .donut-sub {
+        font-size: 9px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .score-bars {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .score-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+      .score-label {
+        width: 52px;
+        color: var(--text2);
+        flex-shrink: 0;
+      }
+      .score-bar {
+        flex: 1;
+        height: 5px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .score-bar-fill {
+        height: 100%;
+        border-radius: 99px;
+      }
+      .score-count {
+        width: 24px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--text);
+        flex-shrink: 0;
+      }
+
+      /* Findings */
+      .findings {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .finding-item {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        font-size: 12px;
+        color: var(--text2);
+        line-height: 1.45;
+      }
+      .finding-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+      .finding-item.crit .finding-dot {
+        background: var(--red);
+      }
+      .finding-item.warn .finding-dot {
+        background: var(--yellow);
+      }
+      .finding-item.good .finding-dot {
+        background: var(--green);
+      }
+      .finding-item.info .finding-dot {
+        background: var(--blue);
+      }
+      .finding-item strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .module-footer {
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        font-size: 11px;
+        color: var(--muted);
+        font-style: italic;
+        line-height: 1.5;
+      }
+
+      /* ── CRITICAL ISSUES ── */
+      .issues-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin: 0 48px;
+      }
+      .issue-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--red);
+        border-radius: 12px;
+        padding: 18px 22px;
+      }
+      .issue-card.high {
+        border-left-color: var(--yellow);
+      }
+      .issue-id-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .issue-id {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: var(--red-dim);
+        color: var(--red);
+        font-family: monospace;
+      }
+      .issue-id.high {
+        background: var(--yellow-dim);
+        color: var(--yellow);
+      }
+      .issue-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .issue-body {
+        font-size: 13px;
+        color: var(--text2);
+        line-height: 1.6;
+        margin-bottom: 10px;
+      }
+      .issue-impact {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--red-dim);
+        color: #fca5a5;
+      }
+      .issue-impact.high {
+        background: var(--yellow-dim);
+        color: #fcd34d;
+      }
+
+      /* ── TWO-COL SECTION ── */
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin: 0 48px;
+      }
+
+      /* ── SINGERS TABLE ── */
+      .singers-table {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .table-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .table-header .badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 20px;
+      }
+      .singer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        border-bottom: 1px solid rgba(42, 46, 61, 0.5);
+        font-size: 12px;
+      }
+      .singer-row:last-child {
+        border-bottom: none;
+      }
+      .singer-name {
+        font-family: var(--arabic);
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+        flex: 1;
+      }
+      .singer-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
+      }
+      .s-fail {
+        background: var(--red-dim);
+        color: var(--red);
+      }
+      .s-pass {
+        background: var(--green-dim);
+        color: var(--green);
+      }
+      .s-partial {
+        background: var(--yellow-dim);
+        color: var(--yellow);
+      }
+      .s-critical {
+        background: rgba(255, 76, 76, 0.25);
+        color: #ff6b6b;
+        font-weight: 800;
+      }
+      .singer-missing {
+        font-size: 11px;
+        color: var(--muted);
+        text-align: right;
+        min-width: 110px;
+      }
+
+      /* ── CONTENT MAP ── */
+      .content-map {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .map-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 20px;
+        border-bottom: 1px solid rgba(42, 46, 61, 0.5);
+        font-size: 12px;
+      }
+      .map-row:last-child {
+        border-bottom: none;
+      }
+      .map-category {
+        font-family: var(--arabic);
+        font-size: 13px;
+        color: var(--text);
+        flex: 1;
+      }
+      .map-bar-outer {
+        width: 90px;
+        height: 6px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .map-bar-inner {
+        height: 100%;
+        border-radius: 99px;
+      }
+      .map-pct {
+        font-size: 11px;
+        font-weight: 700;
+        width: 36px;
+        text-align: right;
+      }
+      .map-label {
+        font-size: 10px;
+        color: var(--muted);
+        width: 70px;
+        text-align: right;
+      }
+
+      /* ── RELEASE RECOMMENDATION ── */
+      .release-card {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 76, 76, 0.1),
+          rgba(255, 76, 76, 0.04)
+        );
+        border: 1px solid rgba(255, 76, 76, 0.3);
+        border-radius: 14px;
+        padding: 28px 32px;
+        margin: 0 48px;
+      }
+      .release-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--red);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .release-body {
+        font-size: 13px;
+        color: var(--text2);
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+      .action-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+      .action-list li {
+        font-size: 13px;
+        color: var(--text);
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .action-list li::before {
+        content: "→";
+        color: var(--red);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .release-meta {
+        display: flex;
+        gap: 24px;
+        font-size: 12px;
+      }
+      .release-meta-item strong {
+        color: var(--text);
+      }
+      .release-meta-item {
+        color: var(--text2);
+      }
+
+      /* ── FOOTER ── */
+      .footer {
+        margin: 48px 48px 0;
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .footer-logo {
+        font-size: 16px;
+        font-family: var(--arabic);
+        font-weight: 700;
+        color: var(--text2);
+      }
+
+      @media (max-width: 1100px) {
+        .kpi-row {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .modules-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="light">
+    <!-- <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+      <span class="toggle-icon">🌙</span>
+      <span id="themeLabel">Dark Mode</span>
+    </button> -->
+
+    <script>
+      function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById("themeBtn");
+        const label = document.getElementById("themeLabel");
+        const icon = btn.querySelector(".toggle-icon");
+        if (body.classList.contains("light")) {
+          body.classList.remove("light");
+          icon.textContent = "☀️";
+          label.textContent = "Light Mode";
+        } else {
+          body.classList.add("light");
+          icon.textContent = "🌙";
+          label.textContent = "Dark Mode";
+        }
+      }
+    </script>
+
+    <!-- ══════════════ TOP HEADER ══════════════ -->
+    <div class="top-header">
+      <div class="header-left">
+        <h1>Diwan Hamdan — QA Technical Review</h1>
+        <div class="sub">
+          ديوان حمدان · Technical System Review · Sprint Q1 2026
+        </div>
+      </div>
+      <div class="header-meta">
+        Reporting to: Mr.Rashid<br />
+        Test Period: 10 Feb – 11 Feb 2026<br />
+        Device: iPhone 13 Pro Max<br />
+        Strategy: Technical System Review<br />
+        Reviewer: Haitham
+      </div>
+    </div>
+
+    <!-- ══════════════ NO-GO BANNER ══════════════ -->
+    <div class="nogo-banner">
+      <div class="nogo-icon">🚫</div>
+      <div>
+        <div class="nogo-title">RELEASE BLOCKED — NO GO DECISION</div>
+        <div class="nogo-body">
+          5 systemic failures identified across People mapping, Events pipeline,
+          Singers DB sync, Onboarding, and Search rendering. The People
+          sub-category is <strong>100% unmapped</strong>. All 19 Events show
+          critical threshold violations. The Singers pipeline has
+          <strong>45+ songs missing</strong> across 22 of 28 tested performers.
+          These must be resolved before any public release.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ KPI ROW ══════════════ -->
+    <div class="kpi-row">
+      <div class="kpi-card red">
+        <div class="kpi-value red">NO GO</div>
+        <div class="kpi-label">Release Decision</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-value red">9</div>
+        <div class="kpi-label">Critical Bugs</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-value yellow">47%</div>
+        <div class="kpi-label">Overall Pass Rate</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-value yellow">127</div>
+        <div class="kpi-label">Total Test Cases</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-value blue">8</div>
+        <div class="kpi-label">Modules Tested</div>
+      </div>
+    </div>
+
+    <!-- ══════════════ MODULE HEALTH ══════════════ -->
+    <div class="section-title">Module Health Analysis</div>
+    <div class="modules-grid">
+      <!-- MODULE 1: People Sub-Category -->
+      <div class="module-card critical">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">People Sub-Category</div>
+            <div class="module-name-ar">الشخصيات — Icons &amp; Legacy</div>
+          </div>
+          <span class="module-badge badge-critical">Critical Risk</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FF4C4C"
+                stroke-width="10"
+                stroke-dasharray="0 175.9"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--red)">0%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 0%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">0</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 100%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">8</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 0%; background: var(--yellow)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--yellow)">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>All 8 personalities are unmapped.</strong> حمدان, محمد بن
+              زايد, محمد بن راشد, زايد, خليفة, راشد بن سعيد, سلطان قابوس, سلمان
+              — none render correctly.</span
+            >
+          </div>
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Root cause is DB-level.</strong> Entity-to-category
+              mapping table is either missing or not populated. This is not a UI
+              bug — the data pipeline never linked person IDs to carousel
+              entries.</span
+            >
+          </div>
+          <div class="finding-item info">
+            <div class="finding-dot"></div>
+            <span
+              >All portrait assets likely exist; the failure is purely the
+              mapping layer between DB entities and carousel rendering
+              logic.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          Business Impact: The Poet Prince himself (حمدان بن محمد) does not
+          appear in his own poetry app's People section. Highest severity for a
+          cultural product of this profile.
+        </div>
+      </div>
+
+      <!-- MODULE 2: Events Sub-Category -->
+      <div class="module-card critical">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Events Sub-Category</div>
+            <div class="module-name-ar">الأحداث — National Celebrations</div>
+          </div>
+          <span class="module-badge badge-critical">Critical Risk</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FF4C4C"
+                stroke-width="10"
+                stroke-dasharray="0 175.9"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--red)">0%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 0%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">0</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Critical</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 100%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">19</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div class="score-bar-fill" style="width: 0%"></div>
+              </div>
+              <span class="score-count">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>All 19 events are ⚠️ Critical.</strong> اليوم الوطني, يوم
+              الشهيد, رمضان, الحج, عيد الفطر — every event category shows only
+              1/3 of expected poems.</span
+            >
+          </div>
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Threshold rule is breached.</strong> The "minimum 10
+              mentions" eligibility rule is being violated — events appear in
+              the UI but the DB filter is not applying correctly, returning ~33%
+              of content.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              >Root cause is likely a
+              <strong>broken pagination or WHERE filter</strong> in the events
+              carousel query — a single SQL bug affects all 19 events
+              simultaneously.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          A single query bug affects the entire Events module. Fix is likely one
+          SQL change — high ROI fix.
+        </div>
+      </div>
+
+      <!-- MODULE 3: Singers DB Pipeline -->
+      <div class="module-card critical">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Singers DB Pipeline</div>
+            <div class="module-name-ar">المؤدون — Song-to-Poem Mapping</div>
+          </div>
+          <span class="module-badge badge-critical">Critical Risk</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FF4C4C"
+                stroke-width="10"
+                stroke-dasharray="37.4 138.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--red)">21%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 21%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">6</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 54%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">15</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 18%; background: var(--yellow)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--yellow)">5</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>45+ songs missing</strong> across 22 of 28 tested
+              performers. محمد عبده alone has 10 unmapped songs.</span
+            >
+          </div>
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>نبيل شعيل &amp; عيضة المنهالي:</strong> Numerous
+              confirmed songs not found in DB at all — likely ingestion was
+              never run for these artists.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              >6 singers fully pass (أسماء لمنور, أبوبكر سالم, أريام, عباس
+              إبراهيم, فايز السعيد, خالد عبدالرحمن) — indicating the pipeline
+              works correctly when data exists.</span
+            >
+          </div>
+          <div class="finding-item info">
+            <div class="finding-dot"></div>
+            <span
+              >Root cause is <strong>incomplete data ingestion</strong>, not a
+              code bug. The missing songs were never loaded into the songs
+              table.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          A data completeness problem, not an engineering bug. Requires a full
+          audit of the songs DB against confirmed discographies.
+        </div>
+      </div>
+
+      <!-- MODULE 4: Search Results UI -->
+      <div class="module-card warning">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Search Results UI</div>
+            <div class="module-name-ar">
+              نتائج البحث — Rendering &amp; Display
+            </div>
+          </div>
+          <span class="module-badge badge-warning">Warning</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FFB800"
+                stroke-width="10"
+                stroke-dasharray="105.5 70.4"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--yellow)">60%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 60%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">3</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 40%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">2</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div class="score-bar-fill" style="width: 0%"></div>
+              </div>
+              <span class="score-count">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Semantic match % shows 135% and 115%</strong> (تطابق
+              دلالي). Cosine similarity scores are not capped at 1.0 before
+              display multiplication. Frontend is rendering raw floating-point
+              values without normalization.</span
+            >
+          </div>
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Expanded query shown instead of original.</strong> The
+              N8N-expanded context_query is passed back to the UI as the search
+              term, confusing users who typed a simple phrase but see a verbose
+              AI expansion.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >AI Analysis box renders correctly with gradient border, strict
+              RTL alignment, and UAE flag emoji.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >Tab switching (تطابق نصي ↔ تطابق دلالي) is smooth with correct
+              active state styling.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          SR-01 fix is a one-line frontend cap: min(score, 1.0) × 100. SR-05 fix
+          requires passing original query separately from context_query in the
+          API response.
+        </div>
+      </div>
+
+      <!-- MODULE 5: Places Sub-Category -->
+      <div class="module-card warning">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Places Sub-Category</div>
+            <div class="module-name-ar">الأماكن — Land &amp; Heritage</div>
+          </div>
+          <span class="module-badge badge-warning">Warning</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FFB800"
+                stroke-width="10"
+                stroke-dasharray="17.6 158.3"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--red)">10%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 9%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">0</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 18%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">2</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 81%; background: var(--yellow)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--yellow)">9</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>9 of 11 place categories unmapped.</strong> All of:
+              الأماكن المجردة, المواقع الاجتماعية, الأراضي الإماراتية, قصر
+              زعبيل, البلاد, الطبيعة العامة, المواقع الدينية, المواقع النبطية,
+              المعالم الإماراتية show Partial/unmapped.</span
+            >
+          </div>
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>الأعضاء والجوارح &amp; تجلّيات الزمن</strong> have no
+              images AND are unmapped — two-layer failure.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              >البحر (Sea) shows 11 records but the data is suspect — "الشعر
+              بحر" (poetry is a sea) is triggering false positive animal
+              classification.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          Same root cause as People: the place sub-category mapping table is not
+          populated. One pipeline fix covers all 9 partial entries.
+        </div>
+      </div>
+
+      <!-- MODULE 6: Religion Sub-Category -->
+      <div class="module-card warning">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Religion Sub-Category</div>
+            <div class="module-name-ar">الدين — Faith &amp; Devotion</div>
+          </div>
+          <span class="module-badge badge-warning">Warning</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#FFB800"
+                stroke-width="10"
+                stroke-dasharray="75.4 100.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--yellow)">43%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 43%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">3</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 57%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">4</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div class="score-bar-fill" style="width: 0%"></div>
+              </div>
+              <span class="score-count">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item crit">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>4 of 7 religion sub-categories unmapped:</strong> الأماكن
+              المقدسة, المناسبات الدينية, الكتب المقدسة, المفاهيم الإيمانية all
+              fail to render content.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >الله, الاقتباسات الدينية, and الأنبياء render correctly — the
+              mapping infrastructure exists and works for 3 categories.</span
+            >
+          </div>
+          <div class="finding-item info">
+            <div class="finding-dot"></div>
+            <span
+              >Pattern consistent with other sub-categories: the mapping exists
+              for high-priority/obvious items (الله, الأنبياء) but was never
+              extended to the remaining 4.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          Partial mapping proves the system works. Completing the remaining 4
+          entries is a data task, not an engineering task.
+        </div>
+      </div>
+
+      <!-- MODULE 7: Home Carousels & Navigation -->
+      <div class="module-card healthy">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Home Carousels &amp; Navigation</div>
+            <div class="module-name-ar">الرئيسية، القائمة الجانبية</div>
+          </div>
+          <span class="module-badge badge-healthy">Healthy</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#00D084"
+                stroke-width="10"
+                stroke-dasharray="145.5 30.4"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--green)">83%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 83%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">10</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 8%; background: var(--red)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--red)">1</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Partial</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 16%; background: var(--yellow)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--yellow)">2</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >Image aspect ratios preserved across all 112 artwork cards
+              handled manually — visual quality is high.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >RTL swipe on carousels is smooth; small thumbnails snap
+              correctly; top carousel flawless.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >Arabic grammar for titles (usage of ال) handled programmatically
+              and correctly.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Side menu has redundant "السجل"</strong> while "recent
+              searches" already serves the same purpose — causes UX
+              confusion.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              >Singer song counts Partial — HC-02 shows counts don't match DB
+              (detailed in Singers module).</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          The most polished module. The 112 manually-handled artworks show high
+          attention to visual quality. Remaining issues are data-driven, not
+          design-driven.
+        </div>
+      </div>
+
+      <!-- MODULE 8: Data Normalization -->
+      <div class="module-card healthy">
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-name">Data Normalization &amp; Pipeline</div>
+            <div class="module-name-ar">معالجة البيانات — Arabic NLP</div>
+          </div>
+          <span class="module-badge badge-healthy">Healthy</span>
+        </div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#2A2E3D"
+                stroke-width="10"
+              />
+              <circle
+                cx="36"
+                cy="36"
+                r="28"
+                fill="none"
+                stroke="#00D084"
+                stroke-width="10"
+                stroke-dasharray="158.3 17.6"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" style="color: var(--green)">90%</div>
+              <div class="donut-sub">pass</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Pass</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 90%; background: var(--green)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--green)">4</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fail</span>
+              <div class="score-bar">
+                <div class="score-bar-fill" style="width: 0%"></div>
+              </div>
+              <span class="score-count">0</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Unknown</span>
+              <div class="score-bar">
+                <div
+                  class="score-bar-fill"
+                  style="width: 20%; background: var(--muted)"
+                ></div>
+              </div>
+              <span class="score-count" style="color: var(--muted)">1</span>
+            </div>
+          </div>
+        </div>
+        <div class="findings">
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >Alif variants (أ/إ/آ/أ) all normalize correctly to 'ا'. ي vs ى
+              correctly preserved as distinct characters.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >Tashkeel (diacritics) and Tatweel (ـ) fully stripped from
+              _cleaned columns — no false negatives in search.</span
+            >
+          </div>
+          <div class="finding-item good">
+            <div class="finding-dot"></div>
+            <span
+              >DB integrity confirmed: 4,213 lines across 353 poems. JSONB
+              arrays well-formed. No scalar resolved_from issues
+              remaining.</span
+            >
+          </div>
+          <div class="finding-item warn">
+            <div class="finding-dot"></div>
+            <span
+              ><strong>Auto-ingest pipeline status unknown.</strong> Currently
+              appears to be manual SQL — no automated ingestion confirmed.</span
+            >
+          </div>
+        </div>
+        <div class="module-footer">
+          The strongest technical foundation in the project. Past bugs (ي→ا
+          collapse, Row 194 scalar crash) have been resolved. The normalization
+          layer is production-ready.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ CRITICAL ISSUES ══════════════ -->
+    <div class="section-title">Critical Issues — Requires Immediate Fix</div>
+    <div class="issues-list">
+      <div class="issue-card">
+        <div class="issue-id-row">
+          <span class="issue-id">BUG-CRIT-01</span>
+          <span class="issue-title"
+            >People Sub-Category — 100% Unmapped (All 8 Personalities)</span
+          >
+        </div>
+        <div class="issue-body">
+          All 8 personality entries (حمدان بن محمد, محمد بن زايد, محمد بن راشد,
+          زايد بن سلطان, خليفة بن زايد, راشد بن سعيد, سلطان قابوس, سلمان بن
+          عبدالعزيز) fail to render. The entity-to-carousel mapping table was
+          never populated. The carousel exists in the UI, but the DB query
+          returns zero results for every person.
+        </div>
+        <div class="issue-impact">
+          ⚡ Critical Impact: The Poet Prince himself does not appear in his own
+          app's People section. Unacceptable for a product of this cultural
+          significance. Blocks release entirely.
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-id-row">
+          <span class="issue-id">BUG-CRIT-02</span>
+          <span class="issue-title"
+            >Events Carousel — All 19 Events Show Only 1/3 of Expected
+            Content</span
+          >
+        </div>
+        <div class="issue-body">
+          Every event (اليوم الوطني, يوم الشهيد, رمضان, الحج, عيد الفطر, and 14
+          others) violates the "minimum 10 mentions" threshold and displays
+          approximately one-third of expected poems. Root cause is likely a
+          single broken SQL WHERE clause or pagination bug in the events
+          carousel query that applies to all events simultaneously.
+        </div>
+        <div class="issue-impact">
+          ⚡ Critical Impact: Time-sensitive content (رمضان, اليوم الوطني) will
+          be visibly incomplete during the most important cultural moments. One
+          SQL fix likely resolves all 19.
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-id-row">
+          <span class="issue-id">BUG-CRIT-03</span>
+          <span class="issue-title"
+            >Singers Pipeline — 45+ Songs Missing Across 22 Artists</span
+          >
+        </div>
+        <div class="issue-body">
+          محمد عبده (10 missing), نبيل شعيل (numerous confirmed songs not in
+          DB), ميحد حمد (8), راشد الماجد (6), عبدالمجيد عبدالله (4). The
+          pipeline works correctly for 6 singers, confirming the architecture is
+          sound — but data ingestion was never completed for the majority of the
+          roster.
+        </div>
+        <div class="issue-impact">
+          ⚡ Critical Impact: The Singers feature (المؤدون) is the app's key
+          multimedia differentiator. Launching with 45+ missing songs creates
+          immediate negative user reviews.
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-id-row">
+          <span class="issue-id">BUG-CRIT-04</span>
+          <span class="issue-title"
+            >Semantic Score Displays Impossible Values (135%, 115%)</span
+          >
+        </div>
+        <div class="issue-body">
+          The تطابق دلالي (Semantic Match) percentage badges display values
+          above 100%. The cosine similarity score from OpenAI embeddings (range:
+          0.0–1.0) is being multiplied by 100 without first being clamped. Fix:
+          apply Math.min(score, 1.0) * 100 before rendering.
+        </div>
+        <div class="issue-impact">
+          ⚡ Critical Impact: Destroys user trust immediately. A user seeing
+          "135% match" perceives the app as broken or untrustworthy before
+          reading a single poem.
+        </div>
+      </div>
+
+      <div class="issue-card high">
+        <div class="issue-id-row">
+          <span class="issue-id high">BUG-HIGH-01</span>
+          <span class="issue-title"
+            >Search Shows Expanded Query Instead of User's Original Query</span
+          >
+        </div>
+        <div class="issue-body">
+          When a user types "الشوق", the search result header displays the
+          N8N-expanded context_query (e.g. "قصائد عن الشوق والحنين والفراق")
+          instead of the original "الشوق". The original query string is not
+          being preserved separately in the API response before AI expansion
+          replaces it.
+        </div>
+        <div class="issue-impact high">
+          ⚠️ High Impact: Breaks the fundamental search UX contract — what you
+          type is not what you see. Confusing for all users, especially
+          non-technical.
+        </div>
+      </div>
+
+      <div class="issue-card high">
+        <div class="issue-id-row">
+          <span class="issue-id high">BUG-HIGH-02</span>
+          <span class="issue-title"
+            >البحر (Sea) Category Contains False Positives — "الشعر بحر"
+            Misclassified</span
+          >
+        </div>
+        <div class="issue-body">
+          The Sea animal sub-category shows 11 records when fewer are expected.
+          The metaphorical Arabic phrase "الشعر بحر" (poetry is a sea) is
+          triggering the animals classification for Sea, as the AI metadata
+          extraction is not distinguishing between literal and metaphorical uses
+          of "بحر".
+        </div>
+        <div class="issue-impact high">
+          ⚠️ High Impact: Degrades content quality in the animals section.
+          Requires refining the AI extraction prompt to distinguish literal from
+          figurative use.
+        </div>
+      </div>
+      <div class="issue-card process">
+        <div class="issue-id-row">
+          <span class="issue-id process">PROCESS-COOP-01</span>
+          <span class="issue-title"
+            >Team Cooperation — Process Observations & Recommendations</span
+          >
+        </div>
+
+        <div class="issue-body">
+          <strong>Observation (Process):</strong>
+          Mobile and Backend teams exhibited strong collaboration and
+          adaptability. However, Design Team repeatedly enforced a premature
+          design freeze and forwarded artifacts to Mobile without formal
+          architecture validation or sign-off, causing requirements drift.
+        </div>
+
+        <div class="issue-impact">
+          <strong>Impact (Scope / Quality / Delivery):</strong>
+          Requirements drift, blocked API integrations (hardcoded samples),
+          missing/mismatched pages, and <strong>52 bug reports</strong> raised
+          to realign the product. This increased technical debt, delayed
+          validation, and created avoidable team friction.
+        </div>
+
+        <div class="issue-rootcause">
+          <strong>Root Cause (Governance):</strong>
+          Lack of an enforced <em>Design→Architecture Validation Gate</em>,
+          missing RACI sign-offs, and absent requirements traceability.
+        </div>
+
+        <div class="issue-recommendation">
+          <strong>Recommendations:</strong>
+          <ol>
+            <li>
+              Introduce an enforced Design–Architecture Validation Gate (design
+              proposal → architecture review → PO sign-off).
+            </li>
+            <li>
+              Apply RACI to design approvals and require documented sign-offs in
+              PRs/change logs.
+            </li>
+            <li>
+              Time-box iterative prototyping before any design freeze (e.g., 2
+              iterations).
+            </li>
+            <li>
+              Prohibit hardcoded API samples in acceptance builds; use traceable
+              feature flags or mocks.
+            </li>
+            <li>
+              Link design artifacts to acceptance criteria via a traceability
+              matrix.
+            </li>
+            <li>
+              Log integration risk in the risk register and reflect rework in
+              sprint planning.
+            </li>
+            <li>
+              Hold a cross-functional retrospective and update the Definition of
+              Done (DoD).
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SINGERS DETAIL + CONTENT MAP ══════════════ -->
+    <div class="section-title">
+      Singers Pipeline Detail &amp; Content Mapping Health
+    </div>
+    <div class="two-col">
+      <div class="singers-table">
+        <div class="table-header">
+          <span>Singers DB Sync — المؤدون</span>
+          <span class="badge badge-critical">21% Pass · 28 Tested</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">محمد عبده (Mohammed Abdu)</span
+          ><span class="singer-missing">10 songs missing</span
+          ><span class="singer-status s-critical">⚠️ Critical</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">نبيل شعيل (Nabeel Shuail)</span
+          ><span class="singer-missing">Numerous not in DB</span
+          ><span class="singer-status s-critical">⚠️ Critical</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">ميحد حمد (Mehad Hamad)</span
+          ><span class="singer-missing">8 songs missing</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">راشد الماجد (Rashid Al Majid)</span
+          ><span class="singer-missing">6 songs missing</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">عبدالمجيد عبدالله (Abdul Majeed)</span
+          ><span class="singer-missing">4 songs missing</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">حسين الجسمي (Hussein Al Jassmi)</span
+          ><span class="singer-missing">2 songs missing</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">كاظم الساهر · بلقيس · الوسمي</span
+          ><span class="singer-missing">1 each missing</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">عيضة المنهالي · أطفال الإمارات</span
+          ><span class="singer-missing">1+ numerous</span
+          ><span class="singer-status s-fail">❌ Fail</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">أسماء لمنور · أبوبكر سالم · أريام</span
+          ><span class="singer-missing">—</span
+          ><span class="singer-status s-pass">✅ Pass</span>
+        </div>
+        <div class="singer-row">
+          <span class="singer-name">عباس إبراهيم · فايز السعيد · خالد ع.</span
+          ><span class="singer-missing">—</span
+          ><span class="singer-status s-pass">✅ Pass</span>
+        </div>
+      </div>
+
+      <div class="content-map">
+        <div class="table-header">
+          <span>Content Mapping Health by Category</span>
+          <span class="badge badge-warning">Sub-Category Status</span>
+        </div>
+        <div class="map-row">
+          <span class="map-category">المشاعر (Sentiments)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 100%; background: var(--green)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--green)">100%</span>
+          <span class="map-label" style="color: var(--green)">13/13 Pass</span>
+        </div>
+        <div class="map-row">
+          <span class="map-category">المواضيع (Subjects)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 90%; background: var(--green)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--green)">90%</span>
+          <span class="map-label" style="color: var(--green)">9/10 Pass</span>
+        </div>
+        <div class="map-row">
+          <span class="map-category">الفئات الرئيسية (Main Cat.)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 100%; background: var(--green)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--green)">100%</span>
+          <span class="map-label" style="color: var(--green)">7/7 Pass</span>
+        </div>
+        <div class="map-row">
+          <span class="map-category">الدين (Religion)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 43%; background: var(--yellow)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--yellow)">43%</span>
+          <span class="map-label" style="color: var(--yellow)"
+            >3/7 · 4 unmapped</span
+          >
+        </div>
+        <div class="map-row">
+          <span class="map-category">المخلوقات (Animals)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 38%; background: var(--yellow)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--yellow)">38%</span>
+          <span class="map-label" style="color: var(--yellow)"
+            >Mixed + false pos.</span
+          >
+        </div>
+        <div class="map-row">
+          <span class="map-category">الأماكن (Places)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 10%; background: var(--red)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--red)">10%</span>
+          <span class="map-label" style="color: var(--red)">9/11 unmapped</span>
+        </div>
+        <div class="map-row">
+          <span class="map-category">الأحداث (Events)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 0%; background: var(--red)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--red)">0%</span>
+          <span class="map-label" style="color: var(--red)"
+            >19/19 Critical</span
+          >
+        </div>
+        <div class="map-row">
+          <span class="map-category">الشخصيات (People)</span>
+          <div class="map-bar-outer">
+            <div
+              class="map-bar-inner"
+              style="width: 0%; background: var(--red)"
+            ></div>
+          </div>
+          <span class="map-pct" style="color: var(--red)">0%</span>
+          <span class="map-label" style="color: var(--red)">8/8 unmapped</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ RELEASE RECOMMENDATION ══════════════ -->
+    <div class="section-title">Release Recommendation</div>
+    <div class="release-card">
+      <div class="release-title">
+        <span>🚫</span> RELEASE BLOCKED — Critical Issues Must Be Resolved
+      </div>
+      <div class="release-body">
+        The Q1 2026 release cannot proceed. 5 of 8 tested modules have Critical
+        or Warning status. The core content discovery experience (People,
+        Events, Places) is severely degraded due to systematic mapping failures.
+        The Singers feature has incomplete data for 79% of tested artists.
+        Semantic scores display logically impossible values, destroying user
+        trust before engagement begins.
+      </div>
+      <ul class="action-list">
+        <li>
+          Populate People entity-to-carousel mapping table for all 8
+          personalities (PPL-01 through PPL-08) — data task, 1-2 days
+        </li>
+        <li>
+          Debug Events carousel SQL — single WHERE clause or pagination bug
+          causing 1/3 content display across all 19 events — engineering task, 1
+          day
+        </li>
+        <li>
+          Complete Singers DB ingestion audit — run full discography check
+          against DB for 22 affected artists, especially محمد عبده and نبيل شعيل
+        </li>
+        <li>
+          Cap semantic similarity score: Math.min(score, 1.0) × 100 before
+          rendering تطابق دلالي — frontend fix, 30 minutes
+        </li>
+        <li>
+          Preserve original query string in API response separately from
+          context_query — backend fix, 1 hour
+        </li>
+        <li>
+          Populate remaining Places (9 entries), Religion (4 entries) mapping
+          data
+        </li>
+        <li>
+          Review البحر classification — add literal/metaphorical disambiguation
+          to AI extraction prompt
+        </li>
+      </ul>
+      <div class="release-meta">
+        <div class="release-meta-item">
+          <strong>Estimated Fix Time:</strong> 5–7 business days for Critical
+          items
+        </div>
+        <div class="release-meta-item">
+          <strong>Retest Required:</strong> All modules after fixes
+        </div>
+        <div class="release-meta-item">
+          <strong>Revised Target:</strong> Re-evaluate after Critical items
+          resolved
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ FOOTER ══════════════ -->
+    <div class="footer">
+      <div class="footer-logo">ديوان حمدان</div>
+      <div>
+        Technical System Review · Q1 2026 · Reviewer: Haitham · Confidential
+      </div>
+      <div>Generated: Sprint Q1 2026 · 127 test cases across 8 modules</div>
+    </div>
+  </body>
+</html>
